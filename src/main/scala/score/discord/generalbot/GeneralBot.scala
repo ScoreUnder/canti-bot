@@ -1,15 +1,18 @@
 package score.discord.generalbot
 
-import java.awt.Color
 import java.io.File
 
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder, events}
-import score.discord.generalbot.command.HelpCommand
-import score.discord.generalbot.functionality.{Commands, VoiceRoles}
+import score.discord.generalbot.command.{HelpCommand, PlayCommand}
+import score.discord.generalbot.functionality.{Commands, TableFlip, VoiceRoles}
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.collection.JavaConverters._
+
+object GeneralBot extends App {
+  new GeneralBot().start()
+}
 
 class GeneralBot {
   val config = Config.load(new File("config.yml"))
@@ -19,12 +22,14 @@ class GeneralBot {
   bot.setToken(config.token)
 
   val commands = new Commands()
-  bot.addEventListener(commands)
-  bot.addEventListener(new VoiceRoles(database, commands))
+  bot addEventListener commands
+  bot addEventListener new VoiceRoles(database, commands)
+  bot addEventListener new TableFlip
 
-  commands.registerCommand(new HelpCommand(commands))
+  commands register new HelpCommand(commands)
+  commands register new PlayCommand
 
-  bot.addEventListener(new EventListener {
+  bot addEventListener new EventListener {
     override def onEvent(_event: events.Event) {
       println(_event match {
         case ev: events.ReadyEvent =>
@@ -55,11 +60,7 @@ class GeneralBot {
           s"${_event.getClass}"
       })
     }
-  })
-  bot.buildBlocking()
-}
+  }
 
-object GeneralBot {
-  val ERROR_COLOR = new Color(240, 100, 100)
-  val OKAY_COLOR = new Color(100, 130, 240)
+  def start() = bot.buildBlocking()
 }

@@ -10,6 +10,8 @@ import scala.reflect.ClassTag
 class Config(val token: String)
 
 object Config {
+  val BOT_OWNER = 226521865537978368L  // TODO: Make this configurable
+
   def load(file: File) = {
     val map = new Yaml().load(new FileReader(file)) match {
       case m: JMap[_, _] => m

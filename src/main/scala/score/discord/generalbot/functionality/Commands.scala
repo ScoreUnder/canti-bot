@@ -1,49 +1,54 @@
 package score.discord.generalbot.functionality
 
-import net.dv8tion.jda.core.{EmbedBuilder, Permission}
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.EventListener
-import score.discord.generalbot.GeneralBot
 import score.discord.generalbot.command.Command
+import score.discord.generalbot.util.BotMessages
+import score.discord.generalbot.wrappers.Conversions._
 
 import scala.collection.mutable
 
 class Commands extends EventListener {
+  // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
+  // Commands list excluding aliases
+  private val commandList = {
+    implicit val commandOrdering = new Ordering[Command] {
+      override def compare(x: Command, y: Command) = x.name compare y.name
+    }
+    mutable.TreeSet[Command]()
+  }
+  // String prepended before a command
   private val prefix = "&"
 
-  def registerCommand(command: Command): Unit = {
+  def register(command: Command): Unit = {
     commands(command.name) = command
     for (alias <- command.aliases) {
       commands(alias) = command
     }
+    commandList += command
   }
 
   def apply(commandName: String) = commands(commandName)
 
-  def keys = commands.keys
+  def names = commandList.toList
 
-  def length = commands.size
+  def length = commandList.size
 
   override def onEvent(event: Event) {
     event match {
       case ev: MessageReceivedEvent =>
+        if (ev.getAuthor.isBot) return
+
         val message = ev.getMessage.getRawContent
         if (message.startsWith(prefix)) {
-          def canExecute(cmd: Command) = !cmd.isAdminOnly || ev.getMember.hasPermission(Permission.MANAGE_SERVER)
-
           def callCommand(name: String, arg: String) = {
-            commands.get(name) foreach { cmd =>
-              if (canExecute(cmd)) {
+            for (cmd <- commands.get(name)) {
+              if (cmd checkPermission ev.getMessage) {
                 cmd.execute(ev.getMessage, arg)
               } else {
-                ev.getChannel.sendMessage(
-                  new EmbedBuilder().
-                    setDescription("You don't have permission to run that command.").
-                    setColor(GeneralBot.ERROR_COLOR).
-                    build()
-                ).queue()
+                ev.getChannel ! BotMessages.error("You don't have permission to run that command.")
               }
             }
           }
