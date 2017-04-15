@@ -14,7 +14,7 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler) extends Command.
 
   override def name = "help"
 
-  override def aliases = Nil
+  override def aliases = List("h")
 
   override def description = "Show descriptions for all commands, or view one command in detail"
 
@@ -45,11 +45,13 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler) extends Command.
         }
 
       case None =>
-        commands.get(args) match {
+        commands get args.stripPrefix(commands.prefix) match {
           case Some(command) => Right(BotMessages.plain(
-            s"**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`\n" +
-              s"**Restrictions:** ${command.permissionMessage}\n" +
-              s"${command.description}\n\n${command.longDescription}"
+            s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
+               |**Restrictions:** ${command.permissionMessage}
+               |${command.description}
+               |
+               |${command.longDescription}""".stripMargin
           ))
           case None => Left("Expected a page number or command name, but got something else.")
         }
