@@ -5,7 +5,7 @@ import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.util.BotMessages
-import score.discord.generalbot.wrappers.Conversions._
+import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.collection.mutable
 
@@ -20,7 +20,7 @@ class Commands extends EventListener {
     mutable.TreeSet[Command]()
   }
   // String prepended before a command
-  private val prefix = "&"
+  val prefix = "&"
 
   def register(command: Command): Unit = {
     commands(command.name) = command
@@ -30,7 +30,9 @@ class Commands extends EventListener {
     commandList += command
   }
 
-  def apply(commandName: String) = commands(commandName)
+  // def apply(commandName: String) = commands(commandName)
+
+  def get(commandName: String) = commands.get(commandName)
 
   def names = commandList.toList
 
@@ -43,25 +45,19 @@ class Commands extends EventListener {
 
         val message = ev.getMessage.getRawContent
         if (message.startsWith(prefix)) {
-          def callCommand(name: String, arg: String) = {
-            for (cmd <- commands.get(name)) {
-              if (cmd checkPermission ev.getMessage) {
-                cmd.execute(ev.getMessage, arg)
-              } else {
-                ev.getChannel ! BotMessages.error("You don't have permission to run that command.")
-              }
-            }
+          val pivot = message.indexOf(' ') match {
+            case -1 => message.length
+            case x => x
           }
 
-          message.indexOf(' ') match {
-            case -1 =>
-              val cmdName = message.substring(prefix.length)
-              callCommand(cmdName, "")
-
-            case pivot =>
-              val cmdName = message.substring(prefix.length, pivot)
-              val cmdExtra = message.substring(pivot + 1)
-              callCommand(cmdName, cmdExtra)
+          val cmdName = message.slice(prefix.length, pivot)
+          val cmdExtra = message drop pivot + 1
+          for (cmd <- commands.get(cmdName)) {
+            if (cmd checkPermission ev.getMessage) {
+              cmd.execute(ev.getMessage, cmdExtra)
+            } else {
+              ev.getChannel ! BotMessages.error(cmd.permissionMessage)
+            }
           }
         }
 

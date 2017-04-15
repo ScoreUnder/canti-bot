@@ -7,7 +7,7 @@ import org.yaml.snakeyaml.Yaml
 
 import scala.reflect.ClassTag
 
-class Config(val token: String)
+class Config(val token: String, val owner: Long)
 
 object Config {
   val BOT_OWNER = 226521865537978368L  // TODO: Make this configurable
@@ -26,7 +26,8 @@ object Config {
     }
 
     new Config(
-      token = grab[String]("token")
+      token = grab[String]("token"),
+      owner = grab[Long]("owner")
     )
   }
 }

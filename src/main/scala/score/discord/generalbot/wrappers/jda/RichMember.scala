@@ -1,4 +1,4 @@
-package score.discord.generalbot.wrappers
+package score.discord.generalbot.wrappers.jda
 
 import net.dv8tion.jda.core.entities.impl.MemberImpl
 import net.dv8tion.jda.core.entities.{Member, Role}

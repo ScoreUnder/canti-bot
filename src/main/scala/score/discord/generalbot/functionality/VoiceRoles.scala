@@ -1,18 +1,22 @@
 package score.discord.generalbot.functionality
 
+import java.util.concurrent.ConcurrentHashMap
+
 import net.dv8tion.jda.core.entities.{GuildVoiceState, Member, Message}
-import net.dv8tion.jda.core.events.guild.voice.{GenericGuildVoiceEvent, GuildVoiceDeafenEvent, GuildVoiceJoinEvent, GuildVoiceLeaveEvent}
+import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.command.Command
-import score.discord.generalbot.util.{BotMessages, RoleByGuild}
-import score.discord.generalbot.wrappers.Conversions._
+import score.discord.generalbot.util.{BotMessages, GuildUserId, RoleByGuild}
+import score.discord.generalbot.wrappers.Scheduler
+import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 import scala.util.Try
 
-class VoiceRoles(database: Database, commands: Commands) extends EventListener {
+class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Scheduler) extends EventListener {
   private val roleByGuild = new RoleByGuild(database, "voice_active_role")
 
   commands register new Command.ServerAdminOnly {
@@ -20,7 +24,7 @@ class VoiceRoles(database: Database, commands: Commands) extends EventListener {
 
     override def aliases = Nil
 
-    override def description = "Sets the role automatically assigned to voice chat users"
+    override def description = "Set the role automatically assigned to voice chat users"
 
     override def execute(message: Message, args: String) {
       val roleName = args.trim
@@ -29,7 +33,7 @@ class VoiceRoles(database: Database, commands: Commands) extends EventListener {
         getOrElse(message.getGuild.getRolesByName(roleName, true).asScala)
 
       matchingRoles match {
-        case Seq() =>
+        case Nil =>
           message.getChannel ! BotMessages.error("Could not find a role by that name.").
             addField("Requested by", s"<@!${message.getAuthor.getIdLong}>", true).
             addField("Search term", roleName, true)
@@ -76,51 +80,79 @@ class VoiceRoles(database: Database, commands: Commands) extends EventListener {
 
     override def aliases = List("rmvoicerole", "removevoicerole", "clearvoicerole")
 
-    override def description = "Clears the voice chat role (i.e. stops tagging voice chat users)"
+    override def description = "Clear the voice chat role (i.e. stops tagging voice chat users)"
 
     override def execute(message: Message, args: String) = {
       roleByGuild remove message.getGuild
     }
   }
 
-  private def attachRole(member: Member, force: Boolean): Unit = {
+  private def setRole(member: Member, shouldHaveRole: Boolean, force: Boolean): Boolean = {
+    var changed = false
     for (role <- roleByGuild(member.getGuild)
-         if force || !(member has role)) {
-      member.roles += role
+         if force || shouldHaveRole != (member has role)) {
+      if (shouldHaveRole)
+        member.roles += role
+      else
+        member.roles -= role
+      changed = true
     }
+    changed
   }
 
-  private def removeRole(member: Member, force: Boolean): Unit = {
-    for (role <- roleByGuild(member.getGuild)
-         if force || (member has role)) {
-      member.roles -= role
-    }
+  private def correctRole(member: Member, force: Boolean = false): Boolean = {
+    setRole(member, shouldHaveRole(member.getVoiceState), force)
   }
 
-  private def correctRole(state: GuildVoiceState, force: Boolean = false): Unit = {
-    if (state.inVoiceChannel && !state.isDeafened) {
-      attachRole(state.getMember, force)
-    } else {
-      removeRole(state.getMember, force)
+  private def shouldHaveRole(state: GuildVoiceState) = state.inVoiceChannel && !state.isDeafened
+
+  val pendingRoleUpdates = new ConcurrentHashMap[GuildUserId, GuildUserId]
+
+  private def queueRoleUpdate(member: Member): Unit = {
+    /*
+      Why queue role updates?
+      Because the "join"/"deafen" events come one after the other,
+      and that often means that we see a join, add a role, see a deafen,
+      and remove the role. Then we get the role updates from the server
+      after all that, which means if we were only changing roles that
+      looked like they needed changing, we would miss the change on the
+      deafen event (because it's after a server-side role change but before
+      it sends the update to our client).
+     */
+    val memberId = GuildUserId(member)
+
+    def updateRole() = {
+      pendingRoleUpdates remove memberId
+      // TODO: No thread-safe way to do this
+      correctRole(member)
     }
+
+    def queueUpdate() =
+      pendingRoleUpdates.put(memberId, memberId) match {
+        case null => scheduler.schedule(50 milliseconds) { updateRole() }
+        case _ =>
+      }
+
+    // This holds locks, so do it away from the main thread
+    scheduler.submit { queueUpdate() }
   }
 
   override def onEvent(event: Event) = {
     event match {
       case ev: ReadyEvent =>
-        for (guild <- ev.getJDA.getGuilds.asScala;
-             voiceState <- guild.getVoiceStates.asScala) {
-          correctRole(voiceState)
+        val jda = ev.getJDA
+        scheduler.schedule(0 minutes, 1 minute) {
+          for (guild <- jda.guilds;
+               voiceState <- guild.voiceStates) {
+            queueRoleUpdate(voiceState.getMember)
+          }
         }
 
       case ev: GenericGuildVoiceEvent =>
-        correctRole(ev.getVoiceState, force = ev match {
-          case _: GuildVoiceDeafenEvent | _: GuildVoiceJoinEvent | _: GuildVoiceLeaveEvent =>
-            true
-          case _ => false
-        })
+        queueRoleUpdate(ev.getMember)
 
       case _ =>
     }
   }
 }
+

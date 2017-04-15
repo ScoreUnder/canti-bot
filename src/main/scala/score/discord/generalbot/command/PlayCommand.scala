@@ -2,7 +2,7 @@ package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.entities.{Game, Message}
 
-class PlayCommand extends Command.BotOwnerOnly {
+class PlayCommand(val userId: Long) extends Command.OneUserOnly {
   override def name = "playing"
 
   override def aliases = Nil

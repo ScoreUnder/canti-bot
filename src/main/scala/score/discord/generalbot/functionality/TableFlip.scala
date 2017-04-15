@@ -3,7 +3,7 @@ package score.discord.generalbot.functionality
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.EventListener
-import score.discord.generalbot.wrappers.Conversions._
+import score.discord.generalbot.wrappers.jda.Conversions._
 
 class TableFlip extends EventListener {
   val flip = "(╯°□°）╯︵ ┻━┻"

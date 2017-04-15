@@ -13,7 +13,11 @@ trait Command {
 
   def description: String
 
+  def longDescription: String = ""
+
   def checkPermission(message: Message): Boolean
+
+  def permissionMessage: String
 
   def execute(message: Message, args: String): Unit
 }
@@ -23,15 +27,22 @@ object Command {
   trait ServerAdminOnly extends Command {
     override def checkPermission(message: Message) =
       Option(message.getGuild).exists(_ getMember message.getAuthor hasPermission Permission.MANAGE_SERVER)
+
+    override def permissionMessage = "Only server admins may use this command."
   }
 
   trait Anyone extends Command {
     override def checkPermission(message: Message) = true
+
+    override def permissionMessage = "Anyone may use this command."
   }
 
-  trait BotOwnerOnly extends Command {
+  trait OneUserOnly extends Command {
     override def checkPermission(message: Message) =
       message.getAuthor.getIdLong == Config.BOT_OWNER
-  }
 
+    override def permissionMessage = s"This command may only be run by <@$userId>"
+
+    def userId: Long
+  }
 }
