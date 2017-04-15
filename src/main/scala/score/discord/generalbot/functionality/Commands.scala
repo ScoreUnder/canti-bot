@@ -34,7 +34,7 @@ class Commands extends EventListener {
 
   def get(commandName: String) = commands.get(commandName)
 
-  def names = commandList.toList
+  def all = commandList.toList
 
   def length = commandList.size
 
@@ -64,5 +64,4 @@ class Commands extends EventListener {
       case _ =>
     }
   }
-
 }

@@ -24,15 +24,16 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler) extends Command.
       case x => Try(x.toInt).toOption
     }) match {
       case Some(page) =>
+        val myCommands = commands.all.filter { _.checkPermission(message) }
         val pageOffset = pageSize * (page - 1)
-        val numPages = (commands.length + pageSize - 1) / pageSize
+        val numPages = (myCommands.length + pageSize - 1) / pageSize
 
         if (page < 1)
           Left("ಠ_ಠ")
         else if (page > numPages)
           Left(s"There are only $numPages pages, but you asked for page $page. That page does not exist.")
         else {
-          val helpList = commands.names.slice(pageOffset, pageOffset + pageSize)
+          val helpList = myCommands.slice(pageOffset, pageOffset + pageSize)
           val embed = new EmbedBuilder()
           embed.setTitle(s"Help (page $page of $numPages)", null)
 
