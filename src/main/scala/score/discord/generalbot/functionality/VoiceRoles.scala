@@ -7,7 +7,7 @@ import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.command.Command
-import score.discord.generalbot.util.{BotMessages, GuildUserId, RoleByGuild}
+import score.discord.generalbot.util.{BotMessages, CommandHelper, GuildUserId, RoleByGuild}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.jdbc.SQLiteProfile.api._
@@ -65,13 +65,11 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
     override def description = "Check the voice chat role"
 
     override def execute(message: Message, args: String) = {
-      roleByGuild(message.getGuild) match {
-        case Some(role) =>
-          message.getChannel ! BotMessages.okay(s"The voice chat role is currently set to <@&${role.getIdLong}>.")
-
-        case None =>
-          message.getChannel ! BotMessages.plain("There is currently no voice chat role set.")
-      }
+      message.getChannel ! (
+        for (guild <- CommandHelper(message).guild.left.map(BotMessages.error);
+             role <- roleByGuild(guild).toRight(BotMessages.plain("There is currently no voice chat role set.")))
+          yield BotMessages okay s"The voice chat role is currently set to <@&${role.getIdLong}>."
+        ).fold(identity, identity).toMessage
     }
   }
 
