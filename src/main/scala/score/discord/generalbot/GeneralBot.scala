@@ -46,7 +46,7 @@ class GeneralBot {
         bot addEventListener new EventListener {
           override def onEvent(_event: events.Event) {
             println(_event match {
-              case ev: ReadyEvent =>
+              case _: ReadyEvent =>
                 "Bot is ready."
               case ev: DisconnectEvent =>
                 s"Disconnected. code=${ev.getCloseCode.getCode} meaning=${ev.getCloseCode.getMeaning}"
