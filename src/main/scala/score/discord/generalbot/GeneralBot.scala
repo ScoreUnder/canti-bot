@@ -13,6 +13,9 @@ import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.jdbc.SQLiteProfile.api._
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 object GeneralBot extends App {
   new GeneralBot().start()
 }
@@ -70,11 +73,19 @@ class GeneralBot {
     }
   }
 
-  def stop() {
-    discord foreach {
-      _.shutdown()
+  def stop(timeout: Duration = 1 minute) {
+    discord match {
+      case Right(bot) =>
+        executor.shutdown()
+        bot.shutdown(true)
+        discord = Left(new JDABuilder(AccountType.BOT))
+        try executor.awaitTermination(timeout.length, timeout.unit)
+        catch {
+          case _: InterruptedException =>
+        }
+
+      case Left(_) =>
+        throw new UnsupportedOperationException("Cannot stop() a bot which has not start()ed")
     }
-    discord = Left(new JDABuilder(AccountType.BOT))
-    executor.shutdown()
   }
 }
