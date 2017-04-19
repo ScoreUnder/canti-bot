@@ -51,7 +51,7 @@ class GeneralBot {
               case ev: DisconnectEvent =>
                 s"Disconnected. code=${ev.getCloseCode.getCode} meaning=${ev.getCloseCode.getMeaning}"
               case ev: MessageReceivedEvent =>
-                s"MESSAGE: ${ev.getMessage.getIdLong} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
+                s"MESSAGE: ${ev.getMessage.id} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
                   ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n")
               case ev: MessageDeleteEvent =>
                 s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}"

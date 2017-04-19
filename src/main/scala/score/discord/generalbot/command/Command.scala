@@ -3,6 +3,7 @@ package score.discord.generalbot.command
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.Config
+import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.collection.GenIterable
 
@@ -39,7 +40,7 @@ object Command {
 
   trait OneUserOnly extends Command {
     override def checkPermission(message: Message) =
-      message.getAuthor.getIdLong == Config.BOT_OWNER
+      message.getAuthor.id == Config.BOT_OWNER
 
     override def permissionMessage = s"This command may only be run by <@$userId>"
 

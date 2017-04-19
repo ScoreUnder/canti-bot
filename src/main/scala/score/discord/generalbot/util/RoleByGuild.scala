@@ -1,6 +1,7 @@
 package score.discord.generalbot.util
 
 import net.dv8tion.jda.core.entities.{Guild, Role}
+import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.jdbc.SQLiteProfile.api._
 import slick.jdbc.meta.MTable
 
@@ -31,11 +32,11 @@ class RoleByGuild(database: Database, tableName: String) {
     Await.result(database.run(roleByGuildTable.result), Duration.Inf): _*
   )
 
-  def apply(guild: Guild): Option[Role] = apply(guild.getIdLong).flatMap(roleId => Option(guild.getRoleById(roleId)))
+  def apply(guild: Guild): Option[Role] = apply(guild.id).flatMap(roleId => Option(guild.getRoleById(roleId)))
 
   def apply(guild: Long): Option[Long] = roleByGuild.get(guild)
 
-  def update(guild: Guild, role: Role): Unit = update(guild.getIdLong, role.getIdLong)
+  def update(guild: Guild, role: Role): Unit = update(guild.id, role.id)
 
   def update(guild: Long, role: Long) {
     roleByGuild(guild) = role
@@ -43,7 +44,7 @@ class RoleByGuild(database: Database, tableName: String) {
     database.run(roleByGuildTable.insertOrUpdate(guild, role))
   }
 
-  def remove(guild: Guild): Unit = remove(guild.getIdLong)
+  def remove(guild: Guild): Unit = remove(guild.id)
 
   def remove(guild: Long) {
     roleByGuild.remove(guild)
