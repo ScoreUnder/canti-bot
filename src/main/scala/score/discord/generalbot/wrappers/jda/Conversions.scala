@@ -3,6 +3,8 @@ package score.discord.generalbot.wrappers.jda
 import net.dv8tion.jda.core.entities._
 import net.dv8tion.jda.core.{EmbedBuilder, JDA, MessageBuilder}
 
+import scala.language.implicitConversions
+
 object Conversions {
   implicit final def toRichChannel(channel: Channel): RichChannel = new RichChannel(channel)
 
@@ -15,6 +17,8 @@ object Conversions {
   implicit final def toRichGuild(guild: Guild): RichGuild = new RichGuild(guild)
 
   implicit final def toRichUser(user: User): RichUser = new RichUser(user)
+
+  implicit final def toRichSnowflake(snowflake: ISnowflake): RichSnowflake = new RichSnowflake(snowflake)
 
   trait MessageFromX {
     def toMessage: Message
