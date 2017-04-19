@@ -29,7 +29,6 @@ class GeneralBot {
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
 
-        val Left(bot) = discord
         bot.setToken(config.token)
 
         val commands = new Commands()
