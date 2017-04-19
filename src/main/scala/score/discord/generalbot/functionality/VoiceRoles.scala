@@ -14,6 +14,7 @@ import slick.jdbc.SQLiteProfile.api._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Try
 
 class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Scheduler) extends EventListener {
