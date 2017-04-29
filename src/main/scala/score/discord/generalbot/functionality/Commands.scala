@@ -14,9 +14,8 @@ class Commands extends EventListener {
   private val commands = mutable.HashMap[String, Command]()
   // Commands list excluding aliases
   private val commandList = {
-    implicit val commandOrdering = new Ordering[Command] {
-      override def compare(x: Command, y: Command) = x.name compare y.name
-    }
+    implicit val commandOrdering: Ordering[Command] =
+      (x, y) => x.name compare y.name
     mutable.TreeSet[Command]()
   }
   // String prepended before a command
