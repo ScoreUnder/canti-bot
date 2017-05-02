@@ -20,6 +20,8 @@ object Conversions {
 
   implicit final def toRichSnowflake(snowflake: ISnowflake): RichSnowflake = new RichSnowflake(snowflake)
 
+  implicit final def toRichRole(role: Role): RichRole = new RichRole(role)
+
   trait MessageFromX {
     def toMessage: Message
   }

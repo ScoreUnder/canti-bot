@@ -36,21 +36,21 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
       matchingRoles match {
         case Nil =>
           message.getChannel ! BotMessages.error("Could not find a role by that name.").
-            addField("Requested by", s"<@!${message.getAuthor.id}>", true).
+            addField("Requested by", message.getAuthor.mention, true).
             addField("Search term", roleName, true)
 
         case Seq(role) =>
           roleByGuild(message.getGuild) = role
-          message.getChannel ! BotMessages.okay(s"Set the new voice chat role to <@&${role.id}>").
-            addField("Requested by", s"<@!${message.getAuthor.id}>", true)
+          message.getChannel ! BotMessages.okay(s"Set the new voice chat role to ${role.mention}").
+            addField("Requested by", message.getAuthor.mention, true)
 
         case Seq(_*) =>
           val embed = BotMessages.error("Too many roles by that name.").
-            addField("Requested by", s"<@!${message.getAuthor.id}>", true).
+            addField("Requested by", message.getAuthor.mention, true).
             addField("Search term", roleName, true)
 
           for (role <- matchingRoles) {
-            embed.appendDescription(s"\n${role.id}: <@&${role.id}>")
+            embed.appendDescription(s"\n${role.id}: ${role.mention}")
           }
 
           message.getChannel ! embed
@@ -69,7 +69,7 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
       message.getChannel ! (
         for (guild <- CommandHelper(message).guild.left.map(BotMessages.error);
              role <- roleByGuild(guild).toRight(BotMessages.plain("There is currently no voice chat role set.")))
-          yield BotMessages okay s"The voice chat role is currently set to <@&${role.id}>."
+          yield BotMessages okay s"The voice chat role is currently set to ${role.mention}."
         ).fold(identity, identity).toMessage
     }
   }
