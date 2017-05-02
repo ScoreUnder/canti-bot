@@ -7,15 +7,14 @@ import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.command.Command
+import score.discord.generalbot.util.ParseUtils._
 import score.discord.generalbot.util.{BotMessages, CommandHelper, GuildUserId, RoleByGuild}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.jdbc.SQLiteProfile.api._
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.Try
 
 class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Scheduler) extends EventListener {
   private val roleByGuild = new RoleByGuild(database, "voice_active_role")
@@ -28,33 +27,12 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
     override def description = "Set the role automatically assigned to voice chat users"
 
     override def execute(message: Message, args: String) {
-      val roleName = args.trim
-      val matchingRoles = Try(roleName.toLong).
-        map(id => List(message.getGuild.getRoleById(id))).
-        getOrElse(message.getGuild.getRolesByName(roleName, true).asScala)
-
-      matchingRoles match {
-        case Nil =>
-          message.getChannel ! BotMessages.error("Could not find a role by that name.").
-            addField("Requested by", message.getAuthor.mention, true).
-            addField("Search term", roleName, true)
-
-        case Seq(role) =>
+      message.getChannel ! findRole(message.getGuild, args.trim).fold(
+        identity,
+        { role =>
           roleByGuild(message.getGuild) = role
-          message.getChannel ! BotMessages.okay(s"Set the new voice chat role to ${role.mention}").
-            addField("Requested by", message.getAuthor.mention, true)
-
-        case Seq(_*) =>
-          val embed = BotMessages.error("Too many roles by that name.").
-            addField("Requested by", message.getAuthor.mention, true).
-            addField("Search term", roleName, true)
-
-          for (role <- matchingRoles) {
-            embed.appendDescription(s"\n${role.id}: ${role.mention}")
-          }
-
-          message.getChannel ! embed
-      }
+          BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
+        }).addField("Requested by", message.getAuthor.mention, true)
     }
   }
 
