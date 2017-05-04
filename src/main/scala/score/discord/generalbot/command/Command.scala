@@ -1,7 +1,7 @@
 package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.core.entities.{ISnowflake, Message}
 import score.discord.generalbot.Config
 import score.discord.generalbot.wrappers.jda.Conversions._
 
@@ -37,6 +37,8 @@ object Command {
 
     override def permissionMessage = "Anyone may use this command."
   }
+
+  trait ServerAdminDiscretion extends Anyone with ISnowflake
 
   trait OneUserOnly extends Command {
     override def checkPermission(message: Message) =

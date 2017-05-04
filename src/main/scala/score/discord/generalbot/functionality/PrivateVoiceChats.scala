@@ -121,7 +121,7 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
 
     commands register accept
     commands register invite
-    commands register new Command.Anyone {
+    commands register new Command.ServerAdminDiscretion {
       override def name = "private"
 
       override val aliases = List("prv", "privatevoice", "privatechat", "prvoice")

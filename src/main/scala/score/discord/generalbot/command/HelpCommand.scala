@@ -42,7 +42,9 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler) extends Command.
            |${command.longDescription}""".stripMargin.trim)
 
   private def showHelpPage(message: Message, page: Int) = {
-    val myCommands = commands.all.filter { _.checkPermission(message) }
+    val myCommands = commands.all.filter {
+      cmd => cmd.checkPermission(message) && commands.isAllowedOnServer(cmd, message)
+    }
     val pageOffset = pageSize * (page - 1)
     val numPages = (myCommands.length + pageSize - 1) / pageSize
 
