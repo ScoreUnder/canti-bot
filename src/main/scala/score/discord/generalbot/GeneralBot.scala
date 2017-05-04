@@ -8,7 +8,7 @@ import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder, events}
 import score.discord.generalbot.command.{HelpCommand, PlayCommand, StopCommand}
-import score.discord.generalbot.functionality.{Commands, TableFlip, VoiceRoles}
+import score.discord.generalbot.functionality.{Commands, PrivateVoiceChats, TableFlip, VoiceRoles}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.jdbc.SQLiteProfile.api._
@@ -38,6 +38,7 @@ class GeneralBot {
         bot addEventListener commands
         bot addEventListener new VoiceRoles(database, commands)
         bot addEventListener new TableFlip
+        bot addEventListener new PrivateVoiceChats(database, commands)
 
         commands register new HelpCommand(commands)
         commands register new PlayCommand(userId = config.owner)
