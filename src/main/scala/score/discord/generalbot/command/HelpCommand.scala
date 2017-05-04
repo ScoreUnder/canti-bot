@@ -23,41 +23,43 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler) extends Command.
       case "" => Some(1)
       case x => Try(x.toInt).toOption
     }) match {
-      case Some(page) =>
-        val myCommands = commands.all.filter { _.checkPermission(message) }
-        val pageOffset = pageSize * (page - 1)
-        val numPages = (myCommands.length + pageSize - 1) / pageSize
-
-        if (page < 1)
-          Left("ಠ_ಠ")
-        else if (page > numPages)
-          Left(s"There are only $numPages pages, but you asked for page $page. That page does not exist.")
-        else {
-          val helpList = myCommands.slice(pageOffset, pageOffset + pageSize)
-          val embed = new EmbedBuilder()
-          embed.setTitle(s"Help (page $page of $numPages)", null)
-
-          for (command <- helpList) {
-            embed appendDescription s"`${command.name}`: ${command.description}\n"
-          }
-
-          Right(embed)
-        }
-
-      case None =>
-        commands get args.stripPrefix(commands.prefix) match {
-          case Some(command) => Right(BotMessages.plain(
-            s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
-               |**Restrictions:** ${command.permissionMessage}
-               |${command.description}
-               |
-               |${command.longDescription}""".stripMargin
-          ))
-          case None => Left("Expected a page number or command name, but got something else.")
-        }
+      case Some(page) => showHelpPage(message, page)
+      case None => showCommandHelp(args)
     }) match {
       case Left(msg) => message.getChannel ! BotMessages.error(msg)
       case Right(msg) => message.getChannel ! msg
+    }
+  }
+
+  private def showCommandHelp(command: String) =
+    commands.get(command.stripPrefix(commands.prefix))
+      .toRight("Expected a page number or command name, but got something else.")
+      .map(command => BotMessages plain
+        s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
+           |**Restrictions:** ${command.permissionMessage}
+           |${command.description}
+           |
+           |${command.longDescription}""".stripMargin.trim)
+
+  private def showHelpPage(message: Message, page: Int) = {
+    val myCommands = commands.all.filter { _.checkPermission(message) }
+    val pageOffset = pageSize * (page - 1)
+    val numPages = (myCommands.length + pageSize - 1) / pageSize
+
+    if (page < 1)
+      Left("ಠ_ಠ")
+    else if (page > numPages)
+      Left(s"There are only $numPages pages, but you asked for page $page. That page does not exist.")
+    else {
+      val helpList = myCommands.slice(pageOffset, pageOffset + pageSize)
+      val embed = new EmbedBuilder()
+      embed.setTitle(s"Help (page $page of $numPages)", null)
+
+      for (command <- helpList) {
+        embed appendDescription s"`${command.name}`: ${command.description}\n"
+      }
+
+      Right(embed)
     }
   }
 }
