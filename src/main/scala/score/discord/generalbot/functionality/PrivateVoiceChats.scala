@@ -44,7 +44,10 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
       override def execute(message: Message, args: String): Unit = {
         val channel = message.getChannel
 
-        message.delete.queue()
+        try message.delete.queue()
+        catch {
+          case _: PermissionException =>
+        }
 
         def ensureInviteValid(inv: Invite) =
           if (inv.valid) Right(inv)
