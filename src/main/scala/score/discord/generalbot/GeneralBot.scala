@@ -8,7 +8,7 @@ import net.dv8tion.jda.core.events.message.{MessageDeleteEvent, MessageReceivedE
 import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder, events}
-import score.discord.generalbot.command.{HelpCommand, PlayCommand, RestrictCommand, StopCommand}
+import score.discord.generalbot.command._
 import score.discord.generalbot.functionality.{Commands, PrivateVoiceChats, TableFlip, VoiceRoles}
 import score.discord.generalbot.util.CommandPermissionLookup
 import score.discord.generalbot.wrappers.Scheduler
@@ -47,6 +47,7 @@ class GeneralBot {
         commands register new PlayCommand(userId = config.owner)
         commands register new StopCommand(this, userId = config.owner)
         commands register new RestrictCommand(commands)
+        commands register new BotInviteCommand
 
         bot addEventListener new EventListener {
           override def onEvent(_event: events.Event) {
