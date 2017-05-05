@@ -3,6 +3,7 @@ package score.discord.generalbot
 import java.io.File
 import java.util.concurrent.{Executors, ScheduledExecutorService}
 
+import net.dv8tion.jda.core.entities.Game
 import net.dv8tion.jda.core.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
 import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
@@ -41,7 +42,8 @@ class GeneralBot {
         bot addEventListener new TableFlip
         bot addEventListener new PrivateVoiceChats(database, commands)
 
-        commands register new HelpCommand(commands)
+        val helpCommand = new HelpCommand(commands)
+        commands register helpCommand
         commands register new PlayCommand(userId = config.owner)
         commands register new StopCommand(this, userId = config.owner)
         commands register new RestrictCommand(commands)
@@ -50,6 +52,8 @@ class GeneralBot {
           override def onEvent(_event: events.Event) {
             println(_event match {
               case _: ReadyEvent =>
+                // TODO: Make configurable?
+                _event.getJDA.getPresence.setGame(Game of s"Usage: ${commands.prefix}${helpCommand.name}")
                 "Bot is ready."
               case ev: DisconnectEvent =>
                 s"Disconnected. code=${ev.getCloseCode.getCode} meaning=${ev.getCloseCode.getMeaning}"
