@@ -110,8 +110,7 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
         case _ =>
       }
 
-    // This holds locks, so do it away from the main thread
-    scheduler.submit { queueUpdate() }
+    queueUpdate()
   }
 
   override def onEvent(event: Event) = {
