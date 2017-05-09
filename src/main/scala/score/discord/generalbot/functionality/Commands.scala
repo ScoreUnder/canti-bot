@@ -51,33 +51,45 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
       member <- Option(message.getMember)
     } yield member has role) getOrElse true
 
+  def canRunCommand(cmd: Command, message: Message) =
+    if (!(cmd checkPermission message))
+      Left(cmd.permissionMessage)
+    else if (!isAllowedOnServer(cmd, message))
+      Left("The usage of that command is restricted on this server.")
+    else
+      Right(cmd)
+
+  def splitCommand(message: Message, requirePrefix: Boolean = true) = {
+    val messageRaw = message.getRawContent
+    val hasPrefix = messageRaw.startsWith(prefix)
+    if (requirePrefix && !hasPrefix)
+      None
+    else {
+      val unprefixed = if (hasPrefix) messageRaw.drop(prefix.length) else messageRaw
+      val split = unprefixed.split("[\\s　]", 2)
+
+      val cmdName = split(0)
+      val cmdExtra = if (split.length < 2) "" else split(1)
+
+      Some((cmdName, cmdExtra))
+    }
+  }
+
   override def onEvent(event: Event) {
     event match {
       case ev: MessageReceivedEvent =>
         if (ev.getAuthor.isBot) return
 
-        val message = ev.getMessage.getRawContent
-        if (message.startsWith(prefix)) {
-          val pivot = message.indexOf(' ') match {
-            case -1 => message.length
-            case x => x
-          }
-
-          val cmdName = message.slice(prefix.length, pivot)
-          val cmdExtra = message drop pivot + 1
-          for (cmd <- commands.get(cmdName)) {
-            if (cmd checkPermission ev.getMessage) {
-              if (isAllowedOnServer(cmd, ev.getMessage)) {
-                cmd.execute(ev.getMessage, cmdExtra)
-              } else {
-                ev.getChannel sendTemporary BotMessages.error("The usage of that command is restricted on this server.")
-              }
-            } else {
-              ev.getChannel ! BotMessages.error(cmd.permissionMessage)
-            }
+        val message = ev.getMessage
+        for {
+          (cmdName, cmdExtra) <- splitCommand(message)
+          cmd <- commands.get(cmdName)
+        } {
+          canRunCommand(cmd, message) match {
+            case Right(_) => cmd.execute(message, cmdExtra)
+            case Left(err) => ev.getChannel sendTemporary BotMessages.error(err)
           }
         }
-
       case _ =>
     }
   }
