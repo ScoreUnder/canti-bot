@@ -1,6 +1,6 @@
 package score.discord.generalbot.functionality
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom}
 
 import net.dv8tion.jda.core.entities.{GuildVoiceState, Member, Message}
 import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
@@ -84,7 +84,8 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
   private def shouldHaveRole(state: GuildVoiceState) =
     !state.isDeafened && Option(state.getChannel).exists(_ != state.getGuild.getAfkChannel)
 
-  val pendingRoleUpdates = new ConcurrentHashMap[GuildUserId, GuildUserId]
+  private val pendingRoleUpdates = new ConcurrentHashMap[GuildUserId, ScheduledFuture[_]]
+  private[this] val rng = ThreadLocalRandom.current()
 
   private def queueRoleUpdate(member: Member): Unit = {
     /*
@@ -105,11 +106,18 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
       correctRole(member)
     }
 
-    def queueUpdate() =
-      pendingRoleUpdates.put(memberId, memberId) match {
-        case null => scheduler.schedule(50 milliseconds) { updateRole() }
-        case _ =>
+    def queueUpdate() = {
+      // Delay to ensure that rapid switching of deafen doesn't run our
+      // rate limits out.
+      val newFuture = scheduler.schedule((200 + rng.nextInt(300)) milliseconds) {
+        updateRole()
       }
+      val previousFuture = pendingRoleUpdates.put(memberId, newFuture)
+      previousFuture match {
+        case null =>
+        case future => future.cancel(false)
+      }
+    }
 
     queueUpdate()
   }
