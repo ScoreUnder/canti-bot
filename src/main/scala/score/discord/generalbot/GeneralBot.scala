@@ -48,6 +48,7 @@ class GeneralBot {
         commands register new StopCommand(this, userId = config.owner)
         commands register new RestrictCommand(commands)
         commands register new BotInviteCommand
+        commands register new FuriganaCommand(commands)
 
         bot addEventListener new EventListener {
           override def onEvent(_event: events.Event) {

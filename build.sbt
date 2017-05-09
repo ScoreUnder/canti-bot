@@ -14,6 +14,7 @@ lazy val root = (project in file(".")).
       "net.dv8tion" % "JDA" % "3.0.0_188",
       "org.yaml" % "snakeyaml" % "1.18",
       "org.xerial" % "sqlite-jdbc" % "3.16.1",
-      "com.typesafe.slick" %% "slick" % "3.2.0"
+      "com.typesafe.slick" %% "slick" % "3.2.0",
+      "org.scala-lang.modules" %% "scala-async" % "0.9.6"
     )
   )
