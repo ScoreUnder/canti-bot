@@ -5,7 +5,8 @@ import java.util.concurrent.{Executors, ScheduledExecutorService}
 
 import net.dv8tion.jda.core.entities.Game
 import net.dv8tion.jda.core.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
-import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent}
+import net.dv8tion.jda.core.events.user.{GenericUserEvent, UserGameUpdateEvent, UserOnlineStatusUpdateEvent, UserTypingEvent}
+import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent, StatusChangeEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder, events}
 import score.discord.generalbot.command._
@@ -52,24 +53,28 @@ class GeneralBot {
 
         bot addEventListener new EventListener {
           override def onEvent(_event: events.Event) {
-            println(_event match {
+            _event match {
               case _: ReadyEvent =>
                 // TODO: Make configurable?
                 _event.getJDA.getPresence.setGame(Game of s"Usage: ${commands.prefix}${helpCommand.name}")
-                "Bot is ready."
+                println("Bot is ready.")
+              case ev: StatusChangeEvent =>
+                println(s"Bot status changed to ${ev.getStatus}")
               case ev: DisconnectEvent =>
-                s"Disconnected. code=${ev.getCloseCode.getCode} meaning=${ev.getCloseCode.getMeaning}"
+                println(s"Disconnected. code=${ev.getCloseCode.getCode} meaning=${ev.getCloseCode.getMeaning}")
               case ev: MessageReceivedEvent =>
-                s"MESSAGE: ${ev.getMessage.id} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-                  ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n")
+                println(s"MESSAGE: ${ev.getMessage.id} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
+                  ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
               case ev: MessageDeleteEvent =>
-                s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}"
+                println(s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}")
               case ev: MessageUpdateEvent =>
-                s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-                  ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n")
+                println(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
+                  ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
+              case _: GenericUserEvent =>
+                // Ignored (they're pretty boring)
               case _ =>
-                s"${_event.getClass}"
-            })
+                println(_event.getClass)
+            }
           }
         }
 
