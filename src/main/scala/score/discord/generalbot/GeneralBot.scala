@@ -51,32 +51,28 @@ class GeneralBot {
         commands register new BotInviteCommand
         commands register new FuriganaCommand(commands)
 
-        bot addEventListener new EventListener {
-          override def onEvent(_event: events.Event) {
-            _event match {
-              case _: ReadyEvent =>
-                // TODO: Make configurable?
-                _event.getJDA.getPresence.setGame(Game of s"Usage: ${commands.prefix}${helpCommand.name}")
-                println("Bot is ready.")
-              case ev: StatusChangeEvent =>
-                println(s"Bot status changed to ${ev.getStatus}")
-              case ev: DisconnectEvent =>
-                println(s"Disconnected. code=${ev.getCloseCode.getCode} meaning=${ev.getCloseCode.getMeaning}")
-              case ev: MessageReceivedEvent =>
-                println(s"MESSAGE: ${ev.getMessage.id} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-                  ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
-              case ev: MessageDeleteEvent =>
-                println(s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}")
-              case ev: MessageUpdateEvent =>
-                println(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-                  ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
-              case _: GenericUserEvent =>
-                // Ignored (they're pretty boring)
-              case _ =>
-                println(_event.getClass)
-            }
-          }
-        }
+        bot addEventListener ({
+          case ev: ReadyEvent =>
+            // TODO: Make configurable?
+            ev.getJDA.getPresence.setGame(Game of s"Usage: ${commands.prefix}${helpCommand.name}")
+            println("Bot is ready.")
+          case ev: StatusChangeEvent =>
+            println(s"Bot status changed to ${ev.getStatus}")
+          case ev: DisconnectEvent =>
+            println(s"Disconnected. code=${ev.getCloseCode.getCode} meaning=${ev.getCloseCode.getMeaning}")
+          case ev: MessageReceivedEvent =>
+            println(s"MESSAGE: ${ev.getMessage.id} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
+              ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
+          case ev: MessageDeleteEvent =>
+            println(s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}")
+          case ev: MessageUpdateEvent =>
+            println(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
+              ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
+          case _: GenericUserEvent =>
+            // Ignored (they're pretty boring)
+          case ev =>
+            println(ev.getClass)
+        }: EventListener)
 
         // The discord bot spawns off new threads and its event handlers expect
         // everything to have been set up, so this must come last.
