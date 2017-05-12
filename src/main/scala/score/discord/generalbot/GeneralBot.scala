@@ -59,7 +59,10 @@ class GeneralBot {
           case ev: StatusChangeEvent =>
             println(s"Bot status changed to ${ev.getStatus}")
           case ev: DisconnectEvent =>
-            println(s"Disconnected. code=${ev.getCloseCode.getCode} meaning=${ev.getCloseCode.getMeaning}")
+            ev.getCloseCode match {
+              case null => println("Disconnected, no reason provided.")
+              case code => println(s"Disconnected. code=${code.getCode} meaning=${code.getMeaning}")
+            }
           case ev: MessageReceivedEvent =>
             println(s"MESSAGE: ${ev.getMessage.id} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
               ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
