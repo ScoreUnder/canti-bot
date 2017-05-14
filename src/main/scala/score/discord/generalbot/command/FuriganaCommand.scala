@@ -35,12 +35,6 @@ class FuriganaCommand(commands: Commands) extends Command.Anyone {
     """.stripMargin
 
   override def execute(message: Message, args: String) = {
-    def stringUntil(input: String, stop: Char) =
-      input.indexOf(stop) match {
-        case -1 => input
-        case n => input take n
-      }
-
     def parseInput() = {
       var input = args
       val arr = mutable.ArrayBuffer.empty[(String, String)]
