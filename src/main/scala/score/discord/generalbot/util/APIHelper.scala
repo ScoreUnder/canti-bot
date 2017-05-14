@@ -1,7 +1,12 @@
 package score.discord.generalbot.util
 
 import net.dv8tion.jda.core.entities.MessageChannel
+import net.dv8tion.jda.core.requests.RestAction
 import score.discord.generalbot.wrappers.jda.Conversions._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.Try
 
 object APIHelper {
   /** Curried function to report an exception to the console.
@@ -24,5 +29,18 @@ object APIHelper {
   def loudFailure(whatFailed: String, channel: MessageChannel)(exception: Throwable) {
     failure(whatFailed)(exception)
     channel ! BotMessages.error(s"Unknown error occurred when $whatFailed")
+  }
+
+  /** Tries to run apiCall, then queues the result if successful.
+    *
+    * @param apiCall API call to queue, by name (exceptions are caught)
+    * @param onFail  function to run on failure
+    * @tparam T type of object returned by API call
+    * @return Future corresponding to the success/failure of the API call
+    */
+  def tryRequest[T](apiCall: => RestAction[T], onFail: (Throwable) => Unit) = {
+    val future = Try(apiCall).fold(Future.failed, _.queueFuture())
+    future.failed.foreach(onFail)
+    future
   }
 }

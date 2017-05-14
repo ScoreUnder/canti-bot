@@ -17,8 +17,11 @@ import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.jdbc.SQLiteProfile.api._
 
+import scala.async.Async._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.blocking
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
@@ -63,16 +66,15 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
             .toRight("The voice channel you were invited to no longer exists.")
           memberName = member.getEffectiveName
           voiceMention = s"<#${voiceChannel.id}>"
-          _ <- Try(message.getGuild.getController.moveVoiceMember(member, voiceChannel).queue(
-            { _ =>
-              invites.remove(GuildUserId(member))
-              channel sendTemporary BotMessages
-                .okay(s"Moved you into the $voiceMention channel.")
-                .setTitle(s"$memberName: Success!", null)
-            },
-            APIHelper.loudFailure("moving you into another channel", channel)
-          )).toEither.left.map(translateChannelMoveError)
-        } yield ()
+        } yield APIHelper.tryRequest(
+          message.getGuild.getController.moveVoiceMember(member, voiceChannel),
+          onFail = sendChannelMoveError(channel)
+        ).foreach { _ =>
+          invites.remove(GuildUserId(member))
+          channel sendTemporary BotMessages
+            .okay(s"Moved you into the $voiceMention channel.")
+            .setTitle(s"$memberName: Success!", null)
+        }
 
         for (err <- result.left) {
           val errEmbed = BotMessages.error(err)
@@ -149,24 +151,25 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
             channelReq <- createChannel(name, guild)
           } yield {
             val channel = message.getChannel
+            async {
+              addChannelPermissions(channelReq, member, limit)
 
-            addChannelPermissions(channelReq, member, limit)
-            channelReq.queue(
-              { voiceChannel =>
-                userByChannel.synchronized {
-                  userByChannel(voiceChannel) = message.getAuthor
-                }
+              val channelFuture = channelReq.queueFuture()
+              channelFuture.failed.foreach(APIHelper.loudFailure("creating a channel", channel))
+              val voiceChannel = await(channelFuture)
 
-                // TODO: Fix your shit JDA (asInstanceOf cast)
-                Try(guild.getController.moveVoiceMember(member, voiceChannel.asInstanceOf[VoiceChannel]).queue(
-                  _ => (), APIHelper.loudFailure("moving you into the newly created channel", channel)
-                )).failed.map(translateChannelMoveError).foreach { err =>
-                  channel sendTemporary BotMessages.error(err)
-                }
+              userByChannel.synchronized {
+                userByChannel(voiceChannel) = message.getAuthor
+              }
 
-                channel sendTemporary BotMessages.okay("Your channel has been created.").setTitle("Success", null)
-              }, APIHelper.loudFailure("creating a channel", channel)
-            )
+              channel sendTemporary BotMessages.okay("Your channel has been created.").setTitle("Success", null)
+
+              // TODO: Fix your shit JDA (asInstanceOf cast)
+              APIHelper.tryRequest(
+                guild.getController.moveVoiceMember(member, voiceChannel.asInstanceOf[VoiceChannel]),
+                onFail = sendChannelMoveError(channel)
+              )
+            }
           }
 
         for (err <- result.left)
@@ -245,6 +248,9 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
       "An error occurred while trying to move you to another channel."
   }
 
+  private def sendChannelMoveError(chan: MessageChannel)(ex: Throwable) =
+    chan sendTemporary BotMessages.error(translateChannelMoveError(ex))
+
   override def onEvent(event: Event): Unit = event match {
     case ev: ReadyEvent =>
       val jda = ev.getJDA
@@ -258,15 +264,14 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
             } match {
               case None =>
                 toRemove += ((guildId, channelId))
-              case Some(channel) =>
-                if (channel.getMembers.isEmpty) {
-                  Try(channel.delete.queue(
-                    _ => userByChannel.synchronized {
-                      userByChannel remove channel
-                    },
-                    APIHelper.failure("deleting unused private channel")
-                  )).failed.foreach(APIHelper.failure("deleting unused private channel"))
-                }
+              case Some(channel) if channel.getMembers.isEmpty =>
+                async {
+                  await(channel.delete.queueFuture())
+                  userByChannel.synchronized {
+                    userByChannel remove channel
+                  }
+                }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+              case _ =>
             }
           }
 
@@ -281,16 +286,16 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
         case ev: GuildVoiceLeaveEvent => ev.getChannelLeft
         case ev: GuildVoiceMoveEvent => ev.getChannelLeft
       }
-      scheduler submit {
-        if (channel.getMembers.isEmpty && userByChannel.synchronized(userByChannel(channel)).isDefined) {
-          Try(channel.delete.queue(
-            _ => userByChannel.synchronized {
+
+      if (channel.getMembers.isEmpty)
+        async {
+          if (blocking(userByChannel.synchronized(userByChannel(channel))).isDefined) {
+            await(channel.delete.queueFuture())
+            userByChannel synchronized {
               userByChannel remove channel
-            },
-            APIHelper.failure("deleting unused private channel")
-          )).failed.foreach(APIHelper.failure("deleting unused private channel"))
-        }
-      }
+            }
+          }
+        }.failed.foreach(APIHelper.failure("deleting unused private channel"))
 
     case _ =>
   }

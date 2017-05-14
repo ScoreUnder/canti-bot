@@ -1,6 +1,7 @@
 package score.discord.generalbot.wrappers.jda
 
 import net.dv8tion.jda.core.entities._
+import net.dv8tion.jda.core.requests.RestAction
 import net.dv8tion.jda.core.{EmbedBuilder, JDA, MessageBuilder}
 
 import scala.language.implicitConversions
@@ -21,6 +22,8 @@ object Conversions {
   implicit final def toRichSnowflake(snowflake: ISnowflake): RichSnowflake = new RichSnowflake(snowflake)
 
   implicit final def toRichRole(role: Role): RichRole = new RichRole(role)
+
+  implicit final def toRichRestAction[T](restAction: RestAction[T]): RichRestAction[T] = new RichRestAction[T](restAction)
 
   trait MessageFromX {
     def toMessage: Message
