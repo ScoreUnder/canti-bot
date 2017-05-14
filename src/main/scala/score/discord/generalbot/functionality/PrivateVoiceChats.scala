@@ -158,8 +158,10 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
               channelFuture.failed.foreach(APIHelper.loudFailure("creating a channel", channel))
               val voiceChannel = await(channelFuture)
 
-              userByChannel.synchronized {
-                userByChannel(voiceChannel) = message.getAuthor
+              blocking {
+                userByChannel.synchronized {
+                  userByChannel(voiceChannel) = message.getAuthor
+                }
               }
 
               channel sendTemporary BotMessages.okay("Your channel has been created.").setTitle("Success", null)
@@ -254,29 +256,33 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
   override def onEvent(event: Event): Unit = event match {
     case ev: ReadyEvent =>
       val jda = ev.getJDA
-      scheduler submit {
-        userByChannel.synchronized {
-          val toRemove = new mutable.HashSet[(Long, Long)]
+      async {
+        blocking {
+          userByChannel.synchronized {
+            val toRemove = new mutable.HashSet[(Long, Long)]
 
-          for (((guildId, channelId), _) <- userByChannel) {
-            Option(jda.getGuildById(guildId)) flatMap { guild =>
-              Option(guild.getVoiceChannelById(channelId))
-            } match {
-              case None =>
-                toRemove += ((guildId, channelId))
-              case Some(channel) if channel.getMembers.isEmpty =>
-                async {
-                  await(channel.delete.queueFuture())
-                  userByChannel.synchronized {
-                    userByChannel remove channel
-                  }
-                }.failed.foreach(APIHelper.failure("deleting unused private channel"))
-              case _ =>
+            for (((guildId, channelId), _) <- userByChannel) {
+              Option(jda.getGuildById(guildId)) flatMap { guild =>
+                Option(guild.getVoiceChannelById(channelId))
+              } match {
+                case None =>
+                  toRemove += ((guildId, channelId))
+                case Some(channel) if channel.getMembers.isEmpty =>
+                  async {
+                    await(channel.delete.queueFuture())
+                    blocking {
+                      userByChannel.synchronized {
+                        userByChannel remove channel
+                      }
+                    }
+                  }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+                case _ =>
+              }
             }
-          }
 
-          for ((guildId, channelId) <- toRemove)
-            userByChannel.remove(guildId, channelId)
+            for ((guildId, channelId) <- toRemove)
+              userByChannel.remove(guildId, channelId)
+          }
         }
       }
 
@@ -291,8 +297,10 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
         async {
           if (blocking(userByChannel.synchronized(userByChannel(channel))).isDefined) {
             await(channel.delete.queueFuture())
-            userByChannel synchronized {
-              userByChannel remove channel
+            blocking {
+              userByChannel synchronized {
+                userByChannel remove channel
+              }
             }
           }
         }.failed.foreach(APIHelper.failure("deleting unused private channel"))
