@@ -7,6 +7,7 @@ import javax.imageio.ImageIO
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.functionality.Commands
+import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.annotation.tailrec
 import scala.async.Async._
@@ -167,8 +168,8 @@ class FuriganaCommand(commands: Commands) extends Command.Anyone {
         // Allow channel mentions - why not?
         // Also, work around a JDA bug by putting EVERYONE/HERE at the end
         .stripMentions(guild, USER, ROLE, EVERYONE, HERE)
-        .build
-      message.getChannel.sendFile(outputStream.toByteArray, ".png", newMessage).queue()
+      newMessage.getStringBuilder.insert(0, s"${message.getAuthor.mention} ")
+      message.getChannel.sendFile(outputStream.toByteArray, ".png", newMessage.build).queue()
     }.failed foreach { err =>
       err.printStackTrace()
     }
