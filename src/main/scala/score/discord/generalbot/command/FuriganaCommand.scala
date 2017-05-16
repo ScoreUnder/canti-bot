@@ -58,10 +58,19 @@ class FuriganaCommand(commands: Commands) extends Command.Anyone {
       arr
     }
 
+    val guild = message.getGuild
+    def mentionsToPlaintext(input: String) = {
+      import net.dv8tion.jda.core.MessageBuilder.MentionType._
+      new MessageBuilder().append(input).stripMentions(guild, USER, ROLE, CHANNEL).getStringBuilder.toString
+    }
+
     async {
       message.getChannel.sendTyping().queue()
 
-      val furiText = parseInput()
+      val (origWithoutFuri, furiText) = {
+        val orig = parseInput()
+        (orig.map(_._1).mkString, orig.map(t => (mentionsToPlaintext(t._1), mentionsToPlaintext(t._2))))
+      }
 
       val imageMaxWidth = 1000
       val furiYAdjust = 10
@@ -151,9 +160,13 @@ class FuriganaCommand(commands: Commands) extends Command.Anyone {
 
       ImageIO.write(image, "PNG", outputStream)
       graphics.dispose()
+
+      import net.dv8tion.jda.core.MessageBuilder.MentionType._
       val newMessage = new MessageBuilder()
-        .append(furiText.map(_._1).mkString)
-        .stripMentions(message.getGuild)
+        .append(origWithoutFuri)
+        // Allow channel mentions - why not?
+        // Also, work around a JDA bug by putting EVERYONE/HERE at the end
+        .stripMentions(guild, USER, ROLE, EVERYONE, HERE)
         .build
       message.getChannel.sendFile(outputStream.toByteArray, ".png", newMessage).queue()
     }.failed foreach { err =>
