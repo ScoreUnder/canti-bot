@@ -66,6 +66,7 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
 
     override def execute(message: Message, args: String) = {
       roleByGuild remove message.getGuild
+      message.addReaction("👌").queue()
     }
   }
 

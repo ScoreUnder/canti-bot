@@ -14,5 +14,6 @@ class PlayCommand(val userId: Long) extends Command.OneUserOnly {
       case "" => null
       case _ => Game of args
     })
+    message.addReaction("👌").queue()
   }
 }
