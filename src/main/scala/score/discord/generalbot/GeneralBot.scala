@@ -10,6 +10,7 @@ import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent, StatusChangeEve
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder, events}
 import score.discord.generalbot.command._
+import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MemoryMessageOwnership}
 import score.discord.generalbot.functionality.{Commands, PrivateVoiceChats, TableFlip, VoiceRoles}
 import score.discord.generalbot.util.CommandPermissionLookup
 import score.discord.generalbot.wrappers.Scheduler
@@ -34,6 +35,7 @@ class GeneralBot {
         val database = Database.forURL("jdbc:sqlite:state.db", driver = "org.sqlite.JDBC")
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
+        implicit val messageOwnership = new MemoryMessageOwnership(20000)
 
         bot.setToken(config.token)
 
@@ -42,6 +44,7 @@ class GeneralBot {
         bot addEventListener new VoiceRoles(database, commands)
         bot addEventListener new TableFlip
         bot addEventListener new PrivateVoiceChats(database, commands)
+        bot addEventListener new DeleteOwnedMessages
 
         val helpCommand = new HelpCommand(commands)
         commands register helpCommand

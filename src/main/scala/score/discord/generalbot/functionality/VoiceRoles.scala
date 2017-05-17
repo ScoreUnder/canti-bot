@@ -7,6 +7,7 @@ import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.command.Command
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.ParseUtils._
 import score.discord.generalbot.util.{BotMessages, CommandHelper, GuildUserId, RoleByGuild}
 import score.discord.generalbot.wrappers.Scheduler
@@ -16,7 +17,7 @@ import slick.jdbc.SQLiteProfile.api._
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Scheduler) extends EventListener {
+class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
   private val roleByGuild = new RoleByGuild(database, "voice_active_role")
 
   commands register new Command.ServerAdminOnly {
@@ -27,12 +28,14 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
     override def description = "Set the role automatically assigned to voice chat users"
 
     override def execute(message: Message, args: String) {
-      message.getChannel ! findRole(message.getGuild, args.trim).fold(
+      message.getChannel.sendOwned(findRole(message.getGuild, args.trim).fold(
         identity,
         { role =>
           roleByGuild(message.getGuild) = role
           BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
-        }).addField("Requested by", message.getAuthor.mention, true)
+        }).addField("Requested by", message.getAuthor.mention, true),
+        owner = message.getAuthor
+      )
     }
   }
 
@@ -44,11 +47,13 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
     override def description = "Check the voice chat role"
 
     override def execute(message: Message, args: String) = {
-      message.getChannel ! (
+      message.getChannel.sendOwned((
         for (guild <- CommandHelper(message).guild.left.map(BotMessages.error);
              role <- roleByGuild(guild).toRight(BotMessages.plain("There is currently no voice chat role set.")))
           yield BotMessages okay s"The voice chat role is currently set to ${role.mention}."
-        ).fold(identity, identity).toMessage
+        ).fold(identity, identity).toMessage,
+        owner = message.getAuthor
+      )
     }
   }
 

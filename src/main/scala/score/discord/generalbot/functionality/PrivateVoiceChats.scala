@@ -12,6 +12,7 @@ import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.requests.restaction.ChannelAction
 import score.discord.generalbot.command.Command
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -26,7 +27,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
 
-class PrivateVoiceChats(database: Database, commands: Commands)(implicit scheduler: Scheduler) extends EventListener {
+class PrivateVoiceChats(database: Database, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
   private val userByChannel = new UserByChannel(database, "user_created_channels")
 
@@ -93,7 +94,7 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
       override def description = "Asks another user to join your current voice channel"
 
       override def execute(message: Message, args: String): Unit = {
-        (for {
+        val response = (for {
           member <- CommandHelper(message).member
           chan <- Option(member.getVoiceState.getChannel)
             .toRight("You must be in voice chat to use this command.")
@@ -117,10 +118,8 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
                    |to accept this invitation.""".stripMargin
               )
           }
-        } yield success) match {
-          case Left(err) => message.getChannel ! BotMessages.error(err)
-          case Right(succ) => message.getChannel ! succ
-        }
+        } yield success).fold(BotMessages.error(_): MessageFromX, x => x: MessageFromX)
+        message.getChannel.sendOwned(response, message.getAuthor)
       }
     }
 
@@ -175,7 +174,7 @@ class PrivateVoiceChats(database: Database, commands: Commands)(implicit schedul
           }
 
         for (err <- result.left)
-          message.getChannel ! BotMessages.error(err)
+          message.getChannel.sendOwned(BotMessages.error(err), message.getAuthor)
       }
 
       private def addChannelPermissions(channelReq: ChannelAction, member: Member, limit: Int) = {

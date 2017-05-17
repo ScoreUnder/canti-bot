@@ -2,11 +2,12 @@ package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.functionality.Commands
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.util.ParseUtils._
 import score.discord.generalbot.wrappers.jda.Conversions._
 
-class RestrictCommand(commands: Commands) extends Command.ServerAdminOnly {
+class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.ServerAdminOnly {
   override def name = "restrict"
 
   override def aliases = Nil
@@ -69,6 +70,6 @@ class RestrictCommand(commands: Commands) extends Command.ServerAdminOnly {
         }
     }
 
-    message.getChannel ! result.fold(identity, identity).toMessage
+    message.getChannel.sendOwned(result.fold(identity, identity).toMessage, message.getAuthor)
   }
 }

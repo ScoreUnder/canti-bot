@@ -3,13 +3,14 @@ package score.discord.generalbot.command
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.functionality.Commands
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.util.Try
 
-class HelpCommand(commands: Commands)(implicit exec: Scheduler) extends Command.Anyone {
+class HelpCommand(commands: Commands)(implicit exec: Scheduler, messageOwnership: MessageOwnership) extends Command.Anyone {
   val pageSize = 10
 
   override def name = "help"
@@ -19,16 +20,14 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler) extends Command.
   override def description = "Show descriptions for all commands, or view one command in detail"
 
   override def execute(message: Message, args: String) {
-    ((args match {
+    val response = ((args match {
       case "" => Some(1)
       case x => Try(x.toInt).toOption
     }) match {
       case Some(page) => showHelpPage(message, page)
       case None => showCommandHelp(args)
-    }) match {
-      case Left(msg) => message.getChannel ! BotMessages.error(msg)
-      case Right(msg) => message.getChannel ! msg
-    }
+    }).fold(BotMessages.error, identity)
+    message.getChannel.sendOwned(response, message.getAuthor)
   }
 
   private def showCommandHelp(command: String) =

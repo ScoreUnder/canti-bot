@@ -7,6 +7,7 @@ import javax.imageio.ImageIO
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.functionality.Commands
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.annotation.tailrec
@@ -14,7 +15,7 @@ import scala.async.Async._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class FuriganaCommand(commands: Commands) extends Command.Anyone {
+class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   private val dummyImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB)
   private val dummyGraphics = dummyImage.createGraphics()
   private val mainFont = new Font("M+ 2c regular", Font.PLAIN, 60)
@@ -169,7 +170,8 @@ class FuriganaCommand(commands: Commands) extends Command.Anyone {
         // Also, work around a JDA bug by putting EVERYONE/HERE at the end
         .stripMentions(guild, USER, ROLE, EVERYONE, HERE)
       newMessage.getStringBuilder.insert(0, s"${message.getAuthor.mention} ")
-      message.getChannel.sendFile(outputStream.toByteArray, ".png", newMessage.build).queue()
+      val newMsg = await(message.getChannel.sendFile(outputStream.toByteArray, ".png", newMessage.build).queueFuture())
+      messageOwnership(newMsg) = message.getAuthor
     }.failed foreach { err =>
       err.printStackTrace()
     }
