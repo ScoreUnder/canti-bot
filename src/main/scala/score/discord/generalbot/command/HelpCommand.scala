@@ -54,7 +54,8 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler, messageOwnership
     else {
       val helpList = myCommands.slice(pageOffset, pageOffset + pageSize)
       val embed = new EmbedBuilder()
-      embed.setTitle(s"Help (page $page of $numPages)", null)
+      embed.appendDescription("You can erase most replies this bot sends to you by reacting with ❌ or 🚮.\n" +
+        s"Commands (page $page of $numPages):\n")
 
       for (command <- helpList) {
         embed appendDescription s"`${command.name}`: ${command.description}\n"
