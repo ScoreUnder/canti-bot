@@ -70,10 +70,10 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
     }
   }
 
-  private def setRole(member: Member, shouldHaveRole: Boolean, force: Boolean): Boolean = {
+  private def setRole(member: Member, shouldHaveRole: Boolean): Boolean = {
     var changed = false
     for (role <- roleByGuild(member.getGuild)
-         if force || shouldHaveRole != (member has role)) {
+         if shouldHaveRole != (member has role)) {
       if (shouldHaveRole)
         member.roles += role
       else
@@ -83,8 +83,8 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
     changed
   }
 
-  private def correctRole(member: Member, force: Boolean = false): Boolean = {
-    setRole(member, shouldHaveRole(member.getVoiceState), force)
+  private def correctRole(member: Member): Boolean = {
+    setRole(member, shouldHaveRole(member.getVoiceState))
   }
 
   private def shouldHaveRole(state: GuildVoiceState) =
