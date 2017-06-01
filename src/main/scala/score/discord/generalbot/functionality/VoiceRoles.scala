@@ -88,7 +88,7 @@ class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Sch
   }
 
   private def shouldHaveRole(state: GuildVoiceState) =
-    !state.isDeafened && Option(state.getChannel).exists(_ != state.getGuild.getAfkChannel)
+    !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(_ != state.getGuild.getAfkChannel)
 
   private val pendingRoleUpdates = new ConcurrentHashMap[GuildUserId, ScheduledFuture[_]]
   private[this] val rng = ThreadLocalRandom.current()
