@@ -1,21 +1,24 @@
 package score.discord.generalbot
 
 import java.io.File
+import java.net.URLClassLoader
 import java.util.concurrent.{Executors, ScheduledExecutorService}
 
+import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.core.entities.Game
 import net.dv8tion.jda.core.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
-import net.dv8tion.jda.core.events.user.{GenericUserEvent, UserGameUpdateEvent, UserOnlineStatusUpdateEvent, UserTypingEvent}
+import net.dv8tion.jda.core.events.user.GenericUserEvent
 import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent, StatusChangeEvent}
 import net.dv8tion.jda.core.hooks.EventListener
-import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder, events}
+import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder}
 import score.discord.generalbot.command._
 import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MemoryMessageOwnership}
 import score.discord.generalbot.functionality.{Commands, PrivateVoiceChats, TableFlip, VoiceRoles}
-import score.discord.generalbot.util.CommandPermissionLookup
+import score.discord.generalbot.util.{CommandPermissionLookup, RoleByGuild, UserByChannel}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
-import slick.jdbc.SQLiteProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -31,19 +34,22 @@ class GeneralBot {
   def start() {
     discord match {
       case Left(bot) =>
-        val config = Config.load(new File("config.yml"))
-        val database = Database.forURL("jdbc:sqlite:state.db", driver = "org.sqlite.JDBC")
+        val rawConfig = ConfigFactory.load(URLClassLoader.newInstance(Array(
+          new File(".").toURI.toURL
+        )))
+        val config = Config.load(rawConfig)
+        val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
         implicit val messageOwnership = new MemoryMessageOwnership(20000)
 
         bot.setToken(config.token)
 
-        val commands = new Commands(new CommandPermissionLookup(database, "command_perms"))
+        val commands = new Commands(new CommandPermissionLookup(dbConfig, "command_perms"))
         bot addEventListener commands
-        bot addEventListener new VoiceRoles(database, commands)
+        bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role"), commands)
         bot addEventListener new TableFlip
-        bot addEventListener new PrivateVoiceChats(database, commands)
+        bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, "user_created_channels"), commands)
         bot addEventListener new DeleteOwnedMessages
 
         val helpCommand = new HelpCommand(commands)

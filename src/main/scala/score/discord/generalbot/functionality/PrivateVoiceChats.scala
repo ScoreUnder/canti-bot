@@ -16,7 +16,6 @@ import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
-import slick.jdbc.SQLiteProfile.api._
 
 import scala.async.Async._
 import scala.collection.JavaConverters._
@@ -27,9 +26,8 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
 
-class PrivateVoiceChats(database: Database, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
+class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
-  private val userByChannel = new UserByChannel(database, "user_created_channels")
 
   private type Timestamp = Long
 

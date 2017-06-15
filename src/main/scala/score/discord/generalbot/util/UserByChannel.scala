@@ -2,7 +2,8 @@ package score.discord.generalbot.util
 
 import net.dv8tion.jda.core.entities._
 import score.discord.generalbot.wrappers.jda.Conversions._
-import slick.jdbc.SQLiteProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
 import scala.collection.mutable
@@ -10,7 +11,9 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-class UserByChannel(database: Database, tableName: String) extends Iterable[((Long, Long), Long)] {
+class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String) extends Iterable[((Long, Long), Long)] {
+
+  import dbConfig.profile.api._
 
   private class UserByChannelTable(tag: Tag) extends Table[(Long, Long, Long)](tag, tableName) {
     val guildId = column[Long]("guild")
@@ -23,15 +26,15 @@ class UserByChannel(database: Database, tableName: String) extends Iterable[((Lo
 
   private val userByChannelTable = TableQuery[UserByChannelTable]
 
-  Await.result(database.run(MTable.getTables).map(v => {
+  Await.result(dbConfig.db.run(MTable.getTables).map(v => {
     val names = v.map(mt => mt.name.name)
     if (!names.contains(tableName)) {
-      Await.result(database.run(userByChannelTable.schema.create), Duration.Inf)
+      Await.result(dbConfig.db.run(userByChannelTable.schema.create), Duration.Inf)
     }
   }), Duration.Inf)
 
   private val userByGuildChannel = mutable.HashMap(
-    Await.result(database.run(userByChannelTable.result), Duration.Inf) map {
+    Await.result(dbConfig.db.run(userByChannelTable.result), Duration.Inf) map {
       case (guild, channel, user) => (guild, channel) -> user
     }: _*
   )
@@ -51,7 +54,7 @@ class UserByChannel(database: Database, tableName: String) extends Iterable[((Lo
   def update(guild: Long, channel: Long, user: Long) {
     userByGuildChannel((guild, channel)) = user
     // TODO: Do I need to await this?
-    database.run(userByChannelTable.insertOrUpdate(guild, channel, user))
+    dbConfig.db.run(userByChannelTable.insertOrUpdate(guild, channel, user))
   }
 
   def remove(channel: Channel): Unit = remove(channel.getGuild.id, channel.id)
@@ -59,7 +62,7 @@ class UserByChannel(database: Database, tableName: String) extends Iterable[((Lo
   def remove(guild: Long, channel: Long) {
     userByGuildChannel.remove((guild, channel))
     // TODO: Do I need to await this?
-    database.run(userByChannelTable.filter(t => t.guildId === guild && t.channelId === channel).delete)
+    dbConfig.db.run(userByChannelTable.filter(t => t.guildId === guild && t.channelId === channel).delete)
   }
 
   override def iterator = userByGuildChannel.iterator

@@ -12,14 +12,11 @@ import score.discord.generalbot.util.ParseUtils._
 import score.discord.generalbot.util.{BotMessages, CommandHelper, GuildUserId, RoleByGuild}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
-import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class VoiceRoles(database: Database, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
-  private val roleByGuild = new RoleByGuild(database, "voice_active_role")
-
+class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
   commands register new Command.ServerAdminOnly {
     override def name = "setvoicerole"
 

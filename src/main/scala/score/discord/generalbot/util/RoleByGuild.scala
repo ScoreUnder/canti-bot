@@ -2,7 +2,8 @@ package score.discord.generalbot.util
 
 import net.dv8tion.jda.core.entities.{Guild, Role}
 import score.discord.generalbot.wrappers.jda.Conversions._
-import slick.jdbc.SQLiteProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
 import scala.collection.mutable
@@ -10,16 +11,16 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-class RoleByGuild(database: Database, tableName: String) {
-
-  private class RoleByGuildTable(tag: Tag) extends Table[(Long, Long)](tag, tableName) {
+class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String) {
+  import dbConfig.profile.api._
+  private class RoleByGuild(tag: Tag, name: String) extends Table[(Long, Long)](tag, name) {
     val guildId = column[Long]("guild", O.PrimaryKey)
     val roleId = column[Long]("role")
 
     override def * = (guildId, roleId)
   }
-
-  private val roleByGuildTable = TableQuery[RoleByGuildTable]
+  private val database = dbConfig.db
+  private val roleByGuildTable = TableQuery[RoleByGuild](new RoleByGuild(_: Tag, tableName))
 
   Await.result(database.run(MTable.getTables).map(v => {
     val names = v.map(mt => mt.name.name)

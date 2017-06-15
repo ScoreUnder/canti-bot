@@ -1,0 +1,11 @@
+token = "123123asdf"
+owner = 132
+database {
+  driver = "slick.jdbc.SQLiteProfile$"
+  db {
+    url = "jdbc:sqlite:state.db"
+    profile = "org.sqlite.JDBC"
+    connectionPool = disabled
+    keepAliveConnection = true
+  }
+}
