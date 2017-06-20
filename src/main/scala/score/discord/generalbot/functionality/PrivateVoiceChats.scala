@@ -11,6 +11,7 @@ import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.requests.restaction.ChannelAction
+import score.discord.generalbot.collections.UserByChannel
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._

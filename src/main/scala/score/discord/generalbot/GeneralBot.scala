@@ -11,10 +11,10 @@ import net.dv8tion.jda.core.events.user.GenericUserEvent
 import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent, StatusChangeEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder}
+import score.discord.generalbot.collections.{CommandPermissionLookup, RoleByGuild, UserByChannel}
 import score.discord.generalbot.command._
 import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MemoryMessageOwnership}
 import score.discord.generalbot.functionality.{Commands, PrivateVoiceChats, TableFlip, VoiceRoles}
-import score.discord.generalbot.util.{CommandPermissionLookup, RoleByGuild, UserByChannel}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.basic.DatabaseConfig

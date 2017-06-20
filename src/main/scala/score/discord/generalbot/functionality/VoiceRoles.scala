@@ -6,10 +6,11 @@ import net.dv8tion.jda.core.entities.{GuildVoiceState, Member, Message}
 import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
+import score.discord.generalbot.collections.RoleByGuild
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.ParseUtils._
-import score.discord.generalbot.util.{BotMessages, CommandHelper, GuildUserId, RoleByGuild}
+import score.discord.generalbot.util.{BotMessages, CommandHelper, GuildUserId}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 

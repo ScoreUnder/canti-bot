@@ -1,4 +1,4 @@
-package score.discord.generalbot.util
+package score.discord.generalbot.collections
 
 import net.dv8tion.jda.core.entities._
 import score.discord.generalbot.wrappers.jda.Conversions._

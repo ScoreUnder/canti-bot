@@ -4,8 +4,9 @@ import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.EventListener
+import score.discord.generalbot.collections.CommandPermissionLookup
 import score.discord.generalbot.command.Command
-import score.discord.generalbot.util.{BotMessages, CommandPermissionLookup}
+import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 
