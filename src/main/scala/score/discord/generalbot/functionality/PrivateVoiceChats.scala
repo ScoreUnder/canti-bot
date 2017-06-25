@@ -17,6 +17,7 @@ import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.ID
 
 import scala.async.Async._
 import scala.collection.JavaConverters._
@@ -32,7 +33,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
   private type Timestamp = Long
 
-  case class Invite(from: Long, channel: Long, expiry: Timestamp) {
+  case class Invite(from: ID[User], channel: ID[Channel], expiry: Timestamp) {
     def valid = System.currentTimeMillis() < expiry
   }
 
@@ -62,7 +63,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
           inv <- Option(invites get GuildUserId(member))
             .toRight("You don't have any pending voice chat invitations.")
           _ <- ensureInviteValid(inv)
-          voiceChannel <- Option(message.getGuild.getVoiceChannelById(inv.channel))
+          voiceChannel <- message.getGuild.findVoiceChannel(inv.channel)
             .toRight("The voice channel you were invited to no longer exists.")
           memberName = member.getEffectiveName
           voiceMention = s"<#${voiceChannel.id}>"
@@ -102,8 +103,8 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
             case Seq(mentions@_*) =>
               for (mention <- mentions)
                 invites.put(
-                  GuildUserId(chan.getGuild.id, mention.id),
-                  Invite(message.getAuthor.id, chan.id, System.currentTimeMillis() + (10 minutes).toMillis)
+                  GuildUserId(chan.getGuild.typedId, mention.typedId),
+                  Invite(message.getAuthor.typedId, chan.typedId, System.currentTimeMillis() + (10 minutes).toMillis)
                 )
 
               val mentioned = mentions map {
@@ -255,33 +256,24 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
     case ev: ReadyEvent =>
       val jda = ev.getJDA
       async {
-        blocking {
-          userByChannel.synchronized {
-            val toRemove = new mutable.HashSet[(Long, Long)]
+        val allUsersByChannel = await(userByChannel.all)
+        val toRemove = new mutable.HashSet[(ID[Guild], ID[Channel])]
 
-            for (((guildId, channelId), _) <- userByChannel) {
-              Option(jda.getGuildById(guildId)) flatMap { guild =>
-                Option(guild.getVoiceChannelById(channelId))
-              } match {
-                case None =>
-                  toRemove += ((guildId, channelId))
-                case Some(channel) if channel.getMembers.isEmpty =>
-                  async {
-                    await(channel.delete.queueFuture())
-                    blocking {
-                      userByChannel.synchronized {
-                        userByChannel remove channel
-                      }
-                    }
-                  }.failed.foreach(APIHelper.failure("deleting unused private channel"))
-                case _ =>
-              }
-            }
-
-            for ((guildId, channelId) <- toRemove)
-              userByChannel.remove(guildId, channelId)
+        for ((guildId, channelId, _) <- allUsersByChannel) {
+          jda.findGuild(guildId).flatMap(_.findVoiceChannel(channelId)) match {
+            case None =>
+              toRemove += ((guildId, channelId))
+            case Some(channel) if channel.getMembers.isEmpty =>
+              async {
+                await(channel.delete.queueFuture())
+                blocking(userByChannel remove channel)
+              }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+            case _ =>
           }
         }
+
+        for ((guildId, channelId) <- toRemove)
+          userByChannel.remove(guildId, channelId)
       }
 
     case _: GuildVoiceLeaveEvent | _: GuildVoiceMoveEvent =>
@@ -293,13 +285,10 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
       if (channel.getMembers.isEmpty)
         async {
-          if (blocking(userByChannel.synchronized(userByChannel(channel))).isDefined) {
+          val user = await(blocking(userByChannel(channel)))
+          if (user.isDefined) {
             await(channel.delete.queueFuture())
-            blocking {
-              userByChannel synchronized {
-                userByChannel remove channel
-              }
-            }
+            blocking(userByChannel.remove(channel))
           }
         }.failed.foreach(APIHelper.failure("deleting unused private channel"))
 

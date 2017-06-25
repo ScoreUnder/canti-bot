@@ -11,7 +11,7 @@ import net.dv8tion.jda.core.events.user.GenericUserEvent
 import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent, StatusChangeEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder}
-import score.discord.generalbot.collections.{CommandPermissionLookup, RoleByGuild, UserByChannel}
+import score.discord.generalbot.collections.{CommandPermissionLookup, LruCache, RoleByGuild, UserByChannel}
 import score.discord.generalbot.command._
 import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MemoryMessageOwnership}
 import score.discord.generalbot.functionality.{Commands, PrivateVoiceChats, TableFlip, VoiceRoles}
@@ -49,7 +49,7 @@ class GeneralBot {
         bot addEventListener commands
         bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role"), commands)
         bot addEventListener new TableFlip
-        bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, "user_created_channels"), commands)
+        bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands)
         bot addEventListener new DeleteOwnedMessages
 
         val helpCommand = new HelpCommand(commands)
