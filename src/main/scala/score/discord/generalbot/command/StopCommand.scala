@@ -1,9 +1,10 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.core.entities.{Message, User}
 import score.discord.generalbot.GeneralBot
+import score.discord.generalbot.wrappers.jda.ID
 
-class StopCommand(bot: GeneralBot, val userId: Long) extends Command.OneUserOnly {
+class StopCommand(bot: GeneralBot, val userId: ID[User]) extends Command.OneUserOnly {
   override def name = "stop"
 
   override def aliases = List("shutdown")

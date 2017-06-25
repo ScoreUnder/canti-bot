@@ -1,8 +1,9 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.core.entities.{Game, Message}
+import net.dv8tion.jda.core.entities.{Game, Message, User}
+import score.discord.generalbot.wrappers.jda.ID
 
-class PlayCommand(val userId: Long) extends Command.OneUserOnly {
+class PlayCommand(val userId: ID[User]) extends Command.OneUserOnly {
   override def name = "playing"
 
   override def aliases = Nil

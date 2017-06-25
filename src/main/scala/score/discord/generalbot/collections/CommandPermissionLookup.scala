@@ -3,6 +3,7 @@ package score.discord.generalbot.collections
 import net.dv8tion.jda.core.entities.{Guild, ISnowflake, Role}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.ID
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
@@ -15,10 +16,10 @@ import scala.concurrent.duration.Duration
 class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String) {
 
   import databaseConfig.profile.api._
-  private class CommandPermissionTable(tag: Tag) extends Table[(Long, Long, Long)](tag, tableName) {
-    val commandId = column[Long]("command")
-    val guildId = column[Long]("guild")
-    val roleId = column[Long]("role")
+  private class CommandPermissionTable(tag: Tag) extends Table[(ID[Command], ID[Guild], ID[Role])](tag, tableName) {
+    val commandId = column[ID[Command]]("command")
+    val guildId = column[ID[Guild]]("guild")
+    val roleId = column[ID[Role]]("role")
     val pk = primaryKey("primary", (commandId, guildId))
 
     override def * = (commandId, guildId, roleId)
@@ -40,24 +41,22 @@ class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile], 
   )
 
   def apply(command: Command with ISnowflake, guild: Guild, default: Option[Role] = None): Option[Role] =
-    apply(command.id, guild.id) map { roleId =>
-      Option(guild getRoleById roleId)
-    } getOrElse default
+    apply(command.typedId, guild.typedId) map guild.findRole getOrElse default
 
-  def apply(command: Long, guild: Long) = commandPermissionLookup.get((command, guild))
+  def apply(command: ID[Command], guild: ID[Guild]) = commandPermissionLookup.get((command, guild))
 
   def update(command: Command with ISnowflake, guild: Guild, role: Role): Unit =
-    update(command.id, guild.id, role.id)
+    update(command.typedId, guild.typedId, role.typedId)
 
-  def update(command: Long, guild: Long, role: Long) {
+  def update(command: ID[Command], guild: ID[Guild], role: ID[Role]) {
     commandPermissionLookup((command, guild)) = role
     // TODO: Do I need to await this?
     databaseConfig.db.run(commandPermissionTable.insertOrUpdate(command, guild, role))
   }
 
-  def remove(command: Command with ISnowflake, guild: Guild): Unit = remove(command.id, guild.id)
+  def remove(command: Command with ISnowflake, guild: Guild): Unit = remove(command.typedId, guild.typedId)
 
-  def remove(command: Long, guild: Long) {
+  def remove(command: ID[Command], guild: ID[Guild]) {
     commandPermissionLookup.remove((command, guild))
     // TODO: Do I need to await this?
     databaseConfig.db.run(commandPermissionTable.filter(t => t.commandId === command && t.guildId === guild).delete)
