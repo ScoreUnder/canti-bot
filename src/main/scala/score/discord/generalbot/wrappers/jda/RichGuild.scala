@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 class RichGuild(val guild: Guild) extends AnyVal {
   def name = guild.getName
 
-  def unambiguousString = s"Guild(${guild.id} /* $name */)"
+  def unambiguousString = s"Guild(${guild.rawId} /* $name */)"
 
   def voiceStates = guild.getVoiceStates.asScala
 

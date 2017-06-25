@@ -7,5 +7,5 @@ import score.discord.generalbot.wrappers.jda.ID
 case class GuildUserId(guild: ID[Guild], user: ID[User])
 
 object GuildUserId {
-  def apply(member: Member): GuildUserId = GuildUserId(member.getGuild.typedId, member.getUser.typedId)
+  def apply(member: Member): GuildUserId = GuildUserId(member.getGuild.id, member.getUser.id)
 }

@@ -66,7 +66,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
           voiceChannel <- message.getGuild.findVoiceChannel(inv.channel)
             .toRight("The voice channel you were invited to no longer exists.")
           memberName = member.getEffectiveName
-          voiceMention = s"<#${voiceChannel.id}>"
+          voiceMention = s"<#${voiceChannel.rawId}>"
         } yield APIHelper.tryRequest(
           message.getGuild.getController.moveVoiceMember(member, voiceChannel),
           onFail = sendChannelMoveError(channel)
@@ -103,8 +103,8 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
             case Seq(mentions@_*) =>
               for (mention <- mentions)
                 invites.put(
-                  GuildUserId(chan.getGuild.typedId, mention.typedId),
-                  Invite(message.getAuthor.typedId, chan.typedId, System.currentTimeMillis() + (10 minutes).toMillis)
+                  GuildUserId(chan.getGuild.id, mention.id),
+                  Invite(message.getAuthor.id, chan.id, System.currentTimeMillis() + (10 minutes).toMillis)
                 )
 
               val mentioned = mentions map {

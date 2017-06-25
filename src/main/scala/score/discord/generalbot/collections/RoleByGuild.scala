@@ -34,11 +34,11 @@ class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String)
     Await.result(database.run(roleByGuildTable.result), Duration.Inf): _*
   )
 
-  def apply(guild: Guild): Option[Role] = apply(guild.typedId).flatMap(guild.findRole)
+  def apply(guild: Guild): Option[Role] = apply(guild.id).flatMap(guild.findRole)
 
   def apply(guild: ID[Guild]): Option[ID[Role]] = roleByGuild.get(guild)
 
-  def update(guild: Guild, role: Role): Unit = update(guild.typedId, role.typedId)
+  def update(guild: Guild, role: Role): Unit = update(guild.id, role.id)
 
   def update(guild: ID[Guild], role: ID[Role]) {
     roleByGuild(guild) = role
@@ -46,7 +46,7 @@ class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String)
     database.run(roleByGuildTable.insertOrUpdate(guild, role))
   }
 
-  def remove(guild: Guild): Unit = remove(guild.typedId)
+  def remove(guild: Guild): Unit = remove(guild.id)
 
   def remove(guild: ID[Guild]) {
     roleByGuild.remove(guild)

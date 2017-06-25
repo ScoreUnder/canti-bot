@@ -13,7 +13,7 @@ import scala.language.postfixOps
 class RichMessageChannel(val channel: MessageChannel) extends AnyVal {
   def name = channel.getName
 
-  def unambiguousString = s"MessageChannel(${channel.id} /* $name */)"
+  def unambiguousString = s"MessageChannel(${channel.rawId} /* $name */)"
 
   def !(message: MessageFromX): Future[Message] = channel.sendMessage(message.toMessage).queueFuture()
 

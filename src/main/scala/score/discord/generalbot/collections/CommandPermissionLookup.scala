@@ -41,12 +41,12 @@ class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile], 
   )
 
   def apply(command: Command with ISnowflake, guild: Guild, default: Option[Role] = None): Option[Role] =
-    apply(command.typedId, guild.typedId) map guild.findRole getOrElse default
+    apply(command.id, guild.id) map guild.findRole getOrElse default
 
   def apply(command: ID[Command], guild: ID[Guild]) = commandPermissionLookup.get((command, guild))
 
   def update(command: Command with ISnowflake, guild: Guild, role: Role): Unit =
-    update(command.typedId, guild.typedId, role.typedId)
+    update(command.id, guild.id, role.id)
 
   def update(command: ID[Command], guild: ID[Guild], role: ID[Role]) {
     commandPermissionLookup((command, guild)) = role
@@ -54,7 +54,7 @@ class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile], 
     databaseConfig.db.run(commandPermissionTable.insertOrUpdate(command, guild, role))
   }
 
-  def remove(command: Command with ISnowflake, guild: Guild): Unit = remove(command.typedId, guild.typedId)
+  def remove(command: Command with ISnowflake, guild: Guild): Unit = remove(command.id, guild.id)
 
   def remove(command: ID[Command], guild: ID[Guild]) {
     commandPermissionLookup.remove((command, guild))

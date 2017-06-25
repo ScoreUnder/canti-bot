@@ -10,5 +10,5 @@ class RichUser(val me: User) extends AnyVal {
 
   def mention = me.getAsMention
 
-  def unambiguousString = s"User(${me.id} /* $name#$discriminator */)"
+  def unambiguousString = s"User(${me.rawId} /* $name#$discriminator */)"
 }

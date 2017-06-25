@@ -27,7 +27,7 @@ object ParseUtils {
           addField("Search term", roleName, true)
 
         for (role <- matchingRoles) {
-          embed.appendDescription(s"\n`${role.id}`: ${role.mention}")
+          embed.appendDescription(s"\n`${role.rawId}`: ${role.mention}")
         }
 
         Left(embed)

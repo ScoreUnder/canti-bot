@@ -43,7 +43,7 @@ object Command {
 
   trait OneUserOnly extends Command {
     override def checkPermission(message: Message) =
-      message.getAuthor.typedId == Config.BOT_OWNER
+      message.getAuthor.id == Config.BOT_OWNER
 
     override def permissionMessage = s"This command may only be run by <@$userId>"
 

@@ -16,7 +16,7 @@ class MemoryMessageOwnership(maxCapacity: Int) extends MessageOwnership {
   } yield user
 
   override def update(message: Message, user: User) {
-    backing(message.typedId) = user.typedId
+    backing(message.id) = user.id
     while (backing.size > maxCapacity)
       backing -= backing.head._1
   }

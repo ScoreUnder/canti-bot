@@ -6,7 +6,7 @@ import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 trait MessageOwnership {
-  def apply(message: Message): Option[User] = this(message.getJDA, message.typedId)
+  def apply(message: Message): Option[User] = this(message.getJDA, message.id)
 
   def apply(jda: JDA, messageId: ID[Message]): Option[User]
 

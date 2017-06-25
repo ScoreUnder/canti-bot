@@ -6,5 +6,5 @@ import score.discord.generalbot.wrappers.jda.Conversions._
 class RichChannel(val channel: Channel) extends AnyVal {
   def name = channel.getName
 
-  def unambiguousString = s"Channel(${channel.id} /* $name */)"
+  def unambiguousString = s"Channel(${channel.rawId} /* $name */)"
 }

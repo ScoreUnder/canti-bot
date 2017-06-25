@@ -38,10 +38,10 @@ class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
   })
 
   private val cache = cacheFactory(new MyCache#Backend {
-    override def keyToId(key: Channel): ID[Channel] = key.typedId
+    override def keyToId(key: Channel): ID[Channel] = key.id
 
     override def get(channel: Channel): Future[Option[ID[User]]] =
-      dbConfig.db.run(lookupQuery(channel.getGuild.typedId, channel.typedId).result).map(_.headOption)
+      dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).result).map(_.headOption)
   })
 
   // Ensure table exists on startup
@@ -58,15 +58,15 @@ class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
   }
 
   def update(channel: Channel, user: User) {
-    cache(channel) = Some(user.typedId)
+    cache(channel) = Some(user.id)
     // TODO: Do I need to await this?
-    dbConfig.db.run(userByChannelTable.insertOrUpdate(channel.getGuild.typedId, channel.typedId, user.typedId))
+    dbConfig.db.run(userByChannelTable.insertOrUpdate(channel.getGuild.id, channel.id, user.id))
   }
 
   def remove(channel: Channel): Unit = {
     cache(channel) = None
     // TODO: Do I need to await this?
-    dbConfig.db.run(lookupQuery(channel.getGuild.typedId, channel.typedId).delete)
+    dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).delete)
   }
 
   def remove(guild: ID[Guild], channel: ID[Channel]) {
