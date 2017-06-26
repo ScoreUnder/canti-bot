@@ -45,7 +45,7 @@ class GeneralBot {
 
         bot.setToken(config.token)
 
-        val commands = new Commands(new CommandPermissionLookup(dbConfig, "command_perms"))
+        val commands = new Commands(new CommandPermissionLookup(dbConfig, LruCache.empty(2000), "command_perms"))
         bot addEventListener commands
         bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands)
         bot addEventListener new TableFlip

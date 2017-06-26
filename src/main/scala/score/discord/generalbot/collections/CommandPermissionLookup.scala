@@ -8,14 +8,22 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
-import scala.collection.mutable
-import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
-class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String) {
+object CommandPermissionLookup {
+  type MyCache = Cache[(Command with ISnowflake, Guild), (ID[Command], ID[Guild]), Option[ID[Role]]]
+}
+
+import score.discord.generalbot.collections.CommandPermissionLookup.MyCache
+
+class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile],
+                              cacheFactory: (MyCache#Backend) => MyCache,
+                              tableName: String) {
 
   import databaseConfig.profile.api._
+
   private class CommandPermissionTable(tag: Tag) extends Table[(ID[Command], ID[Guild], ID[Role])](tag, tableName) {
     val commandId = column[ID[Command]]("command")
     val guildId = column[ID[Guild]]("guild")
@@ -26,7 +34,17 @@ class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile], 
   }
 
   private val commandPermissionTable = TableQuery[CommandPermissionTable]
+  private[this] val lookupQuery = Compiled((commandId: ConstColumn[ID[Command]], guildId: ConstColumn[ID[Guild]]) =>
+    commandPermissionTable.filter(t => t.commandId === commandId && t.guildId === guildId).map(_.roleId)
+  )
+  private[this] val cache = cacheFactory(new MyCache#Backend {
+    override def keyToId(key: (Command with ISnowflake, Guild)): (ID[Command], ID[Guild]) = (key._1.id, key._2.id)
 
+    override def get(key: (Command with ISnowflake, Guild)): Future[Option[ID[Role]]] =
+      databaseConfig.db.run(lookupQuery(key._1.id, key._2.id).result).map(_.headOption)
+  })
+
+  // Ensure table is created on startup
   Await.result(databaseConfig.db.run(MTable.getTables).map(v => {
     val names = v.map(mt => mt.name.name)
     if (!names.contains(tableName)) {
@@ -34,31 +52,18 @@ class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile], 
     }
   }), Duration.Inf)
 
-  private val commandPermissionLookup = mutable.HashMap(
-    Await.result(databaseConfig.db.run(commandPermissionTable.result), Duration.Inf).map({
-      case (command, guild, role) => (command, guild) -> role
-    }): _*
-  )
+  def apply(command: Command with ISnowflake, guild: Guild, default: Option[Role] = None): Future[Option[Role]] =
+    cache((command, guild)).map(_ map guild.findRole getOrElse default)
 
-  def apply(command: Command with ISnowflake, guild: Guild, default: Option[Role] = None): Option[Role] =
-    apply(command.id, guild.id) map guild.findRole getOrElse default
-
-  def apply(command: ID[Command], guild: ID[Guild]) = commandPermissionLookup.get((command, guild))
-
-  def update(command: Command with ISnowflake, guild: Guild, role: Role): Unit =
-    update(command.id, guild.id, role.id)
-
-  def update(command: ID[Command], guild: ID[Guild], role: ID[Role]) {
-    commandPermissionLookup((command, guild)) = role
+  def update(command: Command with ISnowflake, guild: Guild, role: Role): Unit = {
+    cache((command, guild)) = Some(role.id)
     // TODO: Do I need to await this?
-    databaseConfig.db.run(commandPermissionTable.insertOrUpdate(command, guild, role))
+    databaseConfig.db.run(commandPermissionTable.insertOrUpdate(command.id, guild.id, role.id))
   }
 
-  def remove(command: Command with ISnowflake, guild: Guild): Unit = remove(command.id, guild.id)
-
-  def remove(command: ID[Command], guild: ID[Guild]) {
-    commandPermissionLookup.remove((command, guild))
+  def remove(command: Command with ISnowflake, guild: Guild) {
+    cache((command, guild)) = None
     // TODO: Do I need to await this?
-    databaseConfig.db.run(commandPermissionTable.filter(t => t.commandId === command && t.guildId === guild).delete)
+    databaseConfig.db.run(lookupQuery(command.id, guild.id).delete)
   }
 }

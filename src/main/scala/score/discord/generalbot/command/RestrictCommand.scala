@@ -5,7 +5,13 @@ import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.util.ParseUtils._
+import score.discord.generalbot.wrappers.FutureEither._
 import score.discord.generalbot.wrappers.jda.Conversions._
+
+import scala.async.Async._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, blocking}
+import scala.util.{Failure, Success}
 
 class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.ServerAdminOnly {
   override def name = "restrict"
@@ -34,7 +40,7 @@ class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
     val result = args.trim.split(" +", 2) match {
       case Array(cmdName, roleName) =>
-        for {
+        futureFromRight(for {
           command <- searchCommand(cmdName)
           guild = message.getGuild
           everyone = guild.getPublicRole
@@ -43,33 +49,42 @@ class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwne
             case _ => findRole(message.getGuild, roleName)
           }
         } yield {
-          val previous = commands.permissionLookup(command, guild).getOrElse(everyone)
+          async {
+            val previous = await(blocking(commands.permissionLookup(command, guild))).getOrElse(everyone)
 
-          if (role == everyone)
-            commands.permissionLookup.remove(command, guild)
-          else
-            commands.permissionLookup(command, guild) = role
+            if (role == everyone)
+              commands.permissionLookup.remove(command, guild)
+            else
+              commands.permissionLookup(command, guild) = role
 
-          BotMessages
-            .okay("Command restriction altered")
-            .addField("Previous role", previous.mention, true)
-            .addField("New role", role.mention, true)
-            .addField("Command altered", command.name, true)
-        }
+            BotMessages
+              .okay("Command restriction altered")
+              .addField("Previous role", previous.mention, true)
+              .addField("New role", role.mention, true)
+              .addField("Command altered", command.name, true)
+          }
+        })
 
       case Array("") =>
-        Left(BotMessages error "Please refer to the help page for this command.")
+        Future.successful(Left(BotMessages error "Please refer to the help page for this command."))
 
       case Array(cmdName) =>
         for {
-          command <- searchCommand(cmdName)
-          role <- commands.permissionLookup(command, message.getGuild)
-            .toRight(BotMessages error "That command has not yet been restricted by role.")
+          command <- Future.successful(searchCommand(cmdName)).flatView
+          role <- Future(commands.permissionLookup(command, message.getGuild)).flatten
+            .map(_.toRight(BotMessages error "That command has not yet been restricted by role."))
+            .flatView
         } yield {
           BotMessages plain s"Currently, the role required to execute `${commands.prefix}${command.name}` is ${role.mention}"
         }
     }
 
-    message.getChannel.sendOwned(result.fold(identity, identity).toMessage, message.getAuthor)
+    result onComplete {
+      case Success(x) =>
+        message.getChannel.sendOwned(x.fold(identity, identity).toMessage, message.getAuthor)
+      case Failure(x) =>
+        x.printStackTrace()
+        message.getChannel.sendOwned(BotMessages.error("An unknown error occurred"), message.getAuthor)
+    }
   }
 }
