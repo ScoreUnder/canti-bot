@@ -37,6 +37,9 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
     """.stripMargin
 
   override def execute(message: Message, args: String) = {
+    if (args.isEmpty)
+      return
+
     def parseInput() = {
       var input = args
       val arr = mutable.ArrayBuffer.empty[(String, String)]
