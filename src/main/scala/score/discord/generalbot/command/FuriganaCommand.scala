@@ -60,10 +60,15 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
       arr
     }
 
-    val guild = message.getGuild
+    val maybeGuild = Option(message.getGuild)
     def mentionsToPlaintext(input: String) = {
       import net.dv8tion.jda.core.MessageBuilder.MentionType._
-      new MessageBuilder().append(input).stripMentions(guild, USER, ROLE, CHANNEL).getStringBuilder.toString
+      maybeGuild match {
+        case Some(guild) =>
+          new MessageBuilder().append(input).stripMentions(guild, USER, ROLE, CHANNEL).getStringBuilder.toString
+        case None =>
+          input
+      }
     }
 
     async {
@@ -166,9 +171,13 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
       import net.dv8tion.jda.core.MessageBuilder.MentionType._
       val newMessage = new MessageBuilder()
         .append(origWithoutFuri)
-        // Allow channel mentions - why not?
-        // Also, work around a JDA bug by putting EVERYONE/HERE at the end
-        .stripMentions(guild, USER, ROLE, EVERYONE, HERE)
+      maybeGuild match {
+        case Some(guild) =>
+          // Allow channel mentions - why not?
+          // Also, work around a JDA bug by putting EVERYONE/HERE at the end
+          newMessage.stripMentions(guild, USER, ROLE, EVERYONE, HERE)
+        case None =>
+      }
       newMessage.getStringBuilder.insert(0, s"${message.getAuthor.mention} ")
       val newMsg = await(message.getChannel.sendFile(outputStream.toByteArray, ".png", newMessage.build).queueFuture())
       messageOwnership(newMsg) = message.getAuthor
