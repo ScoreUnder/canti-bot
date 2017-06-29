@@ -27,4 +27,8 @@ class MemoryMessageOwnership(cacheFactory: (MyCache#Backend) => MyCache) extends
   override def update(message: Message, user: User) {
     cache(message.id) = Some(user.id)
   }
+
+  override def remove(message: ID[Message]) {
+    cache(message) = None
+  }
 }

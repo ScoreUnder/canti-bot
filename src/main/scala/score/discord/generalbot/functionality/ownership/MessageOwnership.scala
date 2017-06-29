@@ -13,4 +13,6 @@ trait MessageOwnership {
   def apply(jda: JDA, messageId: ID[Message]): Future[Option[User]]
 
   def update(message: Message, user: User): Unit
+
+  def remove(messageId: ID[Message]): Unit
 }

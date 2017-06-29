@@ -20,6 +20,7 @@ class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends E
                 APIHelper.tryRequest(
                   event.getChannel.deleteMessageById(event.getMessageId),
                   onFail = APIHelper.failure("deleting an owned message"))
+                  .foreach(_ => messageOwnership.remove(messageId))
               case Some(_) =>
                 event.getReaction.removeReaction(event.getUser).queue()
               case None =>
