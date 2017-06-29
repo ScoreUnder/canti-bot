@@ -8,6 +8,7 @@ import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
+import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.annotation.tailrec
@@ -36,9 +37,14 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
       |This will then be rendered into an image, with the furigana text on top of the corresponding kanji.
     """.stripMargin
 
-  override def execute(message: Message, args: String) = {
-    if (args.isEmpty)
+  override def execute(message: Message, args: String) {
+    if (args.isEmpty) {
+      message.getChannel.sendOwned(
+        BotMessages error "Please provide the text to render as part of the command.",
+        owner = message.getAuthor
+      )
       return
+    }
 
     def parseInput() = {
       var input = args
