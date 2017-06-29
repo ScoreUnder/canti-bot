@@ -44,7 +44,7 @@ class GeneralBot {
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
-        implicit val messageOwnership = new MemoryMessageOwnership(20000)
+        implicit val messageOwnership = new MemoryMessageOwnership(LruCache.empty(20000))
 
         bot.setToken(config.token)
 

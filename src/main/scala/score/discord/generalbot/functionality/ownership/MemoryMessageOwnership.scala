@@ -2,22 +2,29 @@ package score.discord.generalbot.functionality.ownership
 
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.{Message, User}
+import score.discord.generalbot.collections.{Cache, NullCacheBackend}
+import score.discord.generalbot.functionality.ownership.MemoryMessageOwnership.MyCache
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 
-import scala.collection.mutable
+import scala.async.Async._
+import scala.concurrent.ExecutionContext.Implicits.global
 
-class MemoryMessageOwnership(maxCapacity: Int) extends MessageOwnership {
-  private[this] val backing = mutable.LinkedHashMap.empty[ID[Message], ID[User]]
+object MemoryMessageOwnership {
+  type MyCache = Cache[ID[Message], ID[Message], Option[ID[User]]]
+}
 
-  override def apply(jda: JDA, messageId: ID[Message]) = for {
-    userId <- backing.get(messageId)
-    user <- jda.findUser(userId)
-  } yield user
+class MemoryMessageOwnership(cacheFactory: (MyCache#Backend) => MyCache) extends MessageOwnership {
+  private[this] val cache = cacheFactory(new NullCacheBackend.Unmapped)
+
+  override def apply(jda: JDA, messageId: ID[Message]) = async {
+    for {
+      userId <- await(cache(messageId))
+      user <- jda.findUser(userId)
+    } yield user
+  }
 
   override def update(message: Message, user: User) {
-    backing(message.id) = user.id
-    while (backing.size > maxCapacity)
-      backing -= backing.head._1
+    cache(message.id) = Some(user.id)
   }
 }
