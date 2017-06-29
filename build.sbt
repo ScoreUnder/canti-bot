@@ -13,6 +13,7 @@ lazy val root = (project in file(".")).
       scalaTest % Test,
       "net.dv8tion" % "JDA" % "3.0.0_200",
       "org.yaml" % "snakeyaml" % "1.18",
+      "org.apache.commons" % "commons-lang3" % "3.5",
       "org.xerial" % "sqlite-jdbc" % "3.16.1",
       "com.typesafe.slick" %% "slick" % "3.2.0",
       "com.typesafe" % "config" % "1.2.1",

@@ -8,9 +8,10 @@ import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.core.entities.Game
 import net.dv8tion.jda.core.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
 import net.dv8tion.jda.core.events.user.GenericUserEvent
-import net.dv8tion.jda.core.events.{DisconnectEvent, ReadyEvent, StatusChangeEvent}
+import net.dv8tion.jda.core.events.{DisconnectEvent, Event, ReadyEvent, StatusChangeEvent}
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder}
+import org.apache.commons.lang3.time.FastDateFormat
 import score.discord.generalbot.collections.{CommandPermissionLookup, LruCache, RoleByGuild, UserByChannel}
 import score.discord.generalbot.command._
 import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MemoryMessageOwnership}
@@ -60,31 +61,37 @@ class GeneralBot {
         commands register new BotInviteCommand
         commands register new FuriganaCommand(commands)
 
-        bot addEventListener ({
-          case ev: ReadyEvent =>
-            // TODO: Make configurable?
-            ev.getJDA.getPresence.setGame(Game of s"Usage: ${commands.prefix}${helpCommand.name}")
-            println("Bot is ready.")
-          case ev: StatusChangeEvent =>
-            println(s"Bot status changed to ${ev.getStatus}")
-          case ev: DisconnectEvent =>
-            ev.getCloseCode match {
-              case null => println("Disconnected, no reason provided.")
-              case code => println(s"Disconnected. code=${code.getCode} meaning=${code.getMeaning}")
-            }
-          case ev: MessageReceivedEvent =>
-            println(s"MESSAGE: ${ev.getMessage.rawId} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-              ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
-          case ev: MessageDeleteEvent =>
-            println(s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}")
-          case ev: MessageUpdateEvent =>
-            println(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-              ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
-          case _: GenericUserEvent =>
+        bot addEventListener new EventListener {
+          private[this] val format = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ssZ")
+
+          def log(msg: String): Unit = println(s"${format format System.currentTimeMillis} $msg")
+
+          override def onEvent(event: Event) = event match {
+            case ev: ReadyEvent =>
+              // TODO: Make configurable?
+              ev.getJDA.getPresence.setGame(Game of s"Usage: ${commands.prefix}${helpCommand.name}")
+              log("Bot is ready.")
+            case ev: StatusChangeEvent =>
+              log(s"Bot status changed to ${ev.getStatus}")
+            case ev: DisconnectEvent =>
+              ev.getCloseCode match {
+                case null => log("Disconnected, no reason provided.")
+                case code => log(s"Disconnected. code=${code.getCode} meaning=${code.getMeaning}")
+              }
+            case ev: MessageReceivedEvent =>
+              log(s"MESSAGE: ${ev.getMessage.rawId} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
+                ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
+            case ev: MessageDeleteEvent =>
+              log(s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}")
+            case ev: MessageUpdateEvent =>
+              log(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
+                ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
+            case _: GenericUserEvent =>
             // Ignored (they're pretty boring)
-          case ev =>
-            println(ev.getClass)
-        }: EventListener)
+            case ev =>
+              log(ev.getClass.toGenericString)
+          }
+        }
 
         // The discord bot spawns off new threads and its event handlers expect
         // everything to have been set up, so this must come last.
