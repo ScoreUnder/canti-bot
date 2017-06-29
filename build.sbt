@@ -11,7 +11,7 @@ lazy val root = (project in file(".")).
     resolvers += "jcenter-bintray" at "http://jcenter.bintray.com",
     libraryDependencies ++= Seq(
       scalaTest % Test,
-      "net.dv8tion" % "JDA" % "3.0.0_200",
+      "net.dv8tion" % "JDA" % "3.1.1_219",
       "org.apache.commons" % "commons-lang3" % "3.5",
       "org.xerial" % "sqlite-jdbc" % "3.16.1",
       "com.typesafe.slick" %% "slick" % "3.2.0",
