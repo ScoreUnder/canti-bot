@@ -6,6 +6,8 @@ import java.util.concurrent.{Executors, ScheduledExecutorService}
 
 import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.core.entities.Game
+import net.dv8tion.jda.core.events.guild.voice.{GuildVoiceJoinEvent, GuildVoiceLeaveEvent, GuildVoiceMoveEvent}
+import net.dv8tion.jda.core.events.message.guild.GenericGuildMessageEvent
 import net.dv8tion.jda.core.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
 import net.dv8tion.jda.core.events.user.GenericUserEvent
 import net.dv8tion.jda.core.events.{DisconnectEvent, Event, ReadyEvent, StatusChangeEvent}
@@ -86,7 +88,14 @@ class GeneralBot {
             case ev: MessageUpdateEvent =>
               log(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
                 ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
-            case _: GenericUserEvent =>
+            case ev: GuildVoiceJoinEvent =>
+              log(s"VOICE JOIN: ${ev.getMember.getUser.unambiguousString} in ${ev.getChannelJoined.unambiguousString}")
+            case ev: GuildVoiceLeaveEvent =>
+              log(s"VOICE PART: ${ev.getMember.getUser.unambiguousString} from ${ev.getChannelLeft.unambiguousString}")
+            case ev: GuildVoiceMoveEvent =>
+              log(s"VOICE MOVE: ${ev.getMember.getUser.unambiguousString} from " +
+                s"${ev.getChannelLeft.unambiguousString} to ${ev.getChannelJoined.unambiguousString}")
+            case _: GenericUserEvent | _: GenericGuildMessageEvent =>
             // Ignored (they're pretty boring)
             case ev =>
               log(ev.getClass.toGenericString)
