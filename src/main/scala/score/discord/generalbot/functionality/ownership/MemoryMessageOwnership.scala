@@ -29,6 +29,9 @@ class MemoryMessageOwnership(cacheFactory: (MyCache#Backend) => MyCache) extends
   }
 
   override def remove(message: ID[Message]) {
-    cache(message) = None
+    // Invalidating instead of setting to None, because it's unlikely to be
+    // referenced in the future (since the message was most likely deleted).
+    // Invalidating allows us to free just a tiny bit more memory.
+    cache.invalidate(message)
   }
 }
