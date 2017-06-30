@@ -13,7 +13,7 @@ import scala.concurrent.Future
 class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends EventListener {
   private def getOwnership(event: MessageReactionAddEvent, messageId: ID[Message]) =
     if (event.getChannelType == ChannelType.PRIVATE)
-      Future.successful(event.getUser)
+      Future.successful(Some(event.getUser))
     else
       messageOwnership(event.getJDA, messageId)
 
