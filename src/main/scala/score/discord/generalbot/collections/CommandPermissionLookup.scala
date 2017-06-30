@@ -12,14 +12,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-object CommandPermissionLookup {
-  type MyCache = Cache[(Command with ISnowflake, Guild), (ID[Command], ID[Guild]), Option[ID[Role]]]
-}
-
-import score.discord.generalbot.collections.CommandPermissionLookup.MyCache
-
 class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile],
-                              cacheFactory: (MyCache#Backend) => MyCache,
+                              cacheBase: Cache[(ID[Command], ID[Guild]), Option[ID[Role]]],
                               tableName: String) {
 
   import databaseConfig.profile.api._
@@ -37,12 +31,12 @@ class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile],
   private[this] val lookupQuery = Compiled((commandId: ConstColumn[ID[Command]], guildId: ConstColumn[ID[Guild]]) =>
     commandPermissionTable.filter(t => t.commandId === commandId && t.guildId === guildId).map(_.roleId)
   )
-  private[this] val cache = cacheFactory(new MyCache#Backend {
+  private[this] val cache = new cacheBase.Backend[(Command with ISnowflake, Guild)] {
     override def keyToId(key: (Command with ISnowflake, Guild)): (ID[Command], ID[Guild]) = (key._1.id, key._2.id)
 
-    override def get(key: (Command with ISnowflake, Guild)): Future[Option[ID[Role]]] =
+    override def missing(key: (Command with ISnowflake, Guild)): Future[Option[ID[Role]]] =
       databaseConfig.db.run(lookupQuery(key._1.id, key._2.id).result).map(_.headOption)
-  })
+  }
 
   // Ensure table is created on startup
   Await.result(databaseConfig.db.run(MTable.getTables).map(v => {

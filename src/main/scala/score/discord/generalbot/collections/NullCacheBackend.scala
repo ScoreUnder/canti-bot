@@ -1,13 +1,12 @@
 package score.discord.generalbot.collections
 
 import scala.concurrent.Future
+import scala.language.existentials
 
 object NullCacheBackend {
+  def of[K](cache: Cache[K, Option[V]] forSome {type V}) = new cache.Backend[K] {
+    override def keyToId(key: K): K = key
 
-  class Unmapped[T] extends Cache.Backend[T, T, Option[Nothing]] {
-    override def keyToId(key: T): T = key
-
-    override def get(key: T): Future[Option[Nothing]] = Future.successful(None)
+    override def missing(key: K): Future[Option[Nothing]] = Future.successful(None)
   }
-
 }

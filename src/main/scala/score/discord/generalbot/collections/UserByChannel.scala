@@ -11,14 +11,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-object UserByChannel {
-  private[UserByChannel] type MyCache = Cache[Channel, ID[Channel], Option[ID[User]]]
-}
-
-import score.discord.generalbot.collections.UserByChannel.MyCache
-
 class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
-                    cacheFactory: (MyCache#Backend) => MyCache,
+                    cacheBase: Cache[ID[Channel], Option[ID[User]]],
                     tableName: String) {
 
   import dbConfig.profile.api._
@@ -37,12 +31,12 @@ class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
     userByChannelTable.filter(t => t.guildId === guildId && t.channelId === channelId).map(_.userId)
   })
 
-  private val cache = cacheFactory(new MyCache#Backend {
+  private val cache = new cacheBase.Backend[Channel] {
     override def keyToId(key: Channel): ID[Channel] = key.id
 
-    override def get(channel: Channel): Future[Option[ID[User]]] =
+    override def missing(channel: Channel): Future[Option[ID[User]]] =
       dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).result).map(_.headOption)
-  })
+  }
 
   // Ensure table exists on startup
   Await.result(dbConfig.db.run(MTable.getTables).map(v => {

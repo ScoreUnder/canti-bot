@@ -11,14 +11,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-object RoleByGuild {
-  private[RoleByGuild] type MyCache = Cache[Guild, ID[Guild], Option[ID[Role]]]
-}
-
-import score.discord.generalbot.collections.RoleByGuild.MyCache
-
 class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile],
-                  cacheFactory: (MyCache#Backend) => MyCache,
+                  cacheBase: Cache[ID[Guild], Option[ID[Role]]],
                   tableName: String) {
 
   import dbConfig.profile.api._
@@ -36,12 +30,12 @@ class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile],
     roleByGuildTable.filter(t => t.guildId === guildId).map(_.roleId)
   })
 
-  private val cache = cacheFactory(new MyCache#Backend {
+  private val cache = new cacheBase.Backend[Guild] {
     override def keyToId(key: Guild): ID[Guild] = key.id
 
-    override def get(key: Guild): Future[Option[ID[Role]]] =
+    override def missing(key: Guild): Future[Option[ID[Role]]] =
       dbConfig.db.run(lookupQuery(key.id).result).map(_.headOption)
-  })
+  }
 
   Await.result(database.run(MTable.getTables).map(v => {
     val names = v.map(mt => mt.name.name)

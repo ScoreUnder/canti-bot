@@ -3,19 +3,14 @@ package score.discord.generalbot.functionality.ownership
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.{Message, User}
 import score.discord.generalbot.collections.{Cache, NullCacheBackend}
-import score.discord.generalbot.functionality.ownership.MemoryMessageOwnership.MyCache
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object MemoryMessageOwnership {
-  type MyCache = Cache[ID[Message], ID[Message], Option[ID[User]]]
-}
-
-class MemoryMessageOwnership(cacheFactory: (MyCache#Backend) => MyCache) extends MessageOwnership {
-  private[this] val cache = cacheFactory(new NullCacheBackend.Unmapped)
+class MemoryMessageOwnership(cacheBase: Cache[ID[Message], Option[ID[User]]]) extends MessageOwnership {
+  private[this] val cache = NullCacheBackend of cacheBase
 
   override def apply(jda: JDA, messageId: ID[Message]) = async {
     for {
