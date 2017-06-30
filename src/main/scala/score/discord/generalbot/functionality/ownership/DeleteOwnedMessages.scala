@@ -1,21 +1,31 @@
 package score.discord.generalbot.functionality.ownership
 
-import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.core.entities.{ChannelType, Message}
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.util.APIHelper
 import score.discord.generalbot.wrappers.jda.ID
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends EventListener {
+  private def getOwnership(event: MessageReactionAddEvent, messageId: ID[Message]) =
+    if (event.getChannelType == ChannelType.PRIVATE)
+      Future.successful(event.getUser)
+    else
+      messageOwnership(event.getJDA, messageId)
+
   override def onEvent(ev: Event) {
     ev match {
       case event: MessageReactionAddEvent =>
-        event.getReaction.getEmote.getName match {
+        if (event.getUser.isBot) return
+
+        event.getReactionEmote.getName match {
           case "❌" | "🚮" =>
             val messageId = new ID[Message](event.getMessageIdLong)
-            messageOwnership(event.getJDA, messageId).foreach {
+            getOwnership(event, messageId).foreach {
               case Some(user) if user == event.getUser =>
                 APIHelper.tryRequest(
                   event.getChannel.deleteMessageById(event.getMessageId),
