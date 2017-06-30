@@ -1,15 +1,14 @@
 package score.discord.generalbot.collections
 
 import net.dv8tion.jda.core.entities._
+import score.discord.generalbot.util.DBUtils
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import slick.jdbc.meta.MTable
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
                     cacheBase: Cache[ID[Channel], Option[ID[User]]],
@@ -38,13 +37,7 @@ class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
       dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).result).map(_.headOption)
   }
 
-  // Ensure table exists on startup
-  Await.result(dbConfig.db.run(MTable.getTables).map(v => {
-    val names = v.map(mt => mt.name.name)
-    if (!names.contains(tableName)) {
-      Await.result(dbConfig.db.run(userByChannelTable.schema.create), Duration.Inf)
-    }
-  }), Duration.Inf)
+  DBUtils.ensureTableCreated(dbConfig, userByChannelTable, tableName)
 
   def apply(channel: Channel): Future[Option[User]] = {
     val jda = channel.getJDA
