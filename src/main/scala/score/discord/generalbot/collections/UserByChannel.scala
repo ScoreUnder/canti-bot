@@ -53,19 +53,16 @@ class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
 
   def update(channel: Channel, user: User) {
     cache(channel) = Some(user.id)
-    // TODO: Do I need to await this?
     dbConfig.db.run(userByChannelTable.insertOrUpdate(channel.getGuild.id, channel.id, user.id))
   }
 
   def remove(channel: Channel): Unit = {
     cache(channel) = None
-    // TODO: Do I need to await this?
     dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).delete)
   }
 
   def remove(guild: ID[Guild], channel: ID[Channel]) {
     cache.updateById(channel, None)
-    // TODO: Do I need to await this?
     dbConfig.db.run(lookupQuery(guild, channel).delete)
   }
 

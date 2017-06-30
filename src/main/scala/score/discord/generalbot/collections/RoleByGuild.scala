@@ -48,7 +48,6 @@ class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile],
 
   def update(guild: Guild, role: Role) {
     cache(guild) = Some(role.id)
-    // TODO: Do I need to await this?
     database.run(roleByGuildTable.insertOrUpdate(guild.id, role.id))
   }
 
@@ -56,7 +55,6 @@ class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile],
 
   def remove(guild: ID[Guild]) {
     cache.updateById(guild, None)
-    // TODO: Do I need to await this?
     database.run(lookupQuery(guild).delete)
   }
 }

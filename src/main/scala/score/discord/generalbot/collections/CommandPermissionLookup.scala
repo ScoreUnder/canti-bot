@@ -51,13 +51,11 @@ class CommandPermissionLookup(databaseConfig: DatabaseConfig[_ <: JdbcProfile],
 
   def update(command: Command with ISnowflake, guild: Guild, role: Role): Unit = {
     cache((command, guild)) = Some(role.id)
-    // TODO: Do I need to await this?
     databaseConfig.db.run(commandPermissionTable.insertOrUpdate(command.id, guild.id, role.id))
   }
 
   def remove(command: Command with ISnowflake, guild: Guild) {
     cache((command, guild)) = None
-    // TODO: Do I need to await this?
     databaseConfig.db.run(lookupQuery(command.id, guild.id).delete)
   }
 }
