@@ -17,8 +17,11 @@ class RichMessageChannel(val channel: MessageChannel) extends AnyVal {
 
   def !(message: MessageFromX): Future[Message] = channel.sendMessage(message.toMessage).queueFuture()
 
-  def sendOwned(message: MessageFromX, owner: User)(implicit messageOwnership: MessageOwnership) =
-    (this ! message).foreach(messageOwnership(_) = owner)
+  def sendOwned(message: MessageFromX, owner: User)(implicit messageOwnership: MessageOwnership) = {
+    val future = this ! message
+    future.foreach(messageOwnership(_) = owner)
+    future
+  }
 
   def sendTemporary(message: MessageFromX, duration: Duration = 10 seconds)(implicit exec: Scheduler): Unit =
     channel.sendMessage(message.toMessage).queue({ (message) =>

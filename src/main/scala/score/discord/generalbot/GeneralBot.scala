@@ -14,10 +14,10 @@ import net.dv8tion.jda.core.events.{DisconnectEvent, Event, ReadyEvent, StatusCh
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder}
 import org.apache.commons.lang3.time.FastDateFormat
-import score.discord.generalbot.collections.{CommandPermissionLookup, LruCache, RoleByGuild, UserByChannel}
+import score.discord.generalbot.collections._
 import score.discord.generalbot.command._
 import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MemoryMessageOwnership}
-import score.discord.generalbot.functionality.{Commands, PrivateVoiceChats, TableFlip, VoiceRoles}
+import score.discord.generalbot.functionality._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.basic.DatabaseConfig
@@ -54,6 +54,7 @@ class GeneralBot {
         bot addEventListener new TableFlip
         bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands)
         bot addEventListener new DeleteOwnedMessages
+        bot addEventListener new Spoilers(new StringByMessage(dbConfig, LruCache.empty(100), "spoilers_by_message"), commands)
 
         val helpCommand = new HelpCommand(commands)
         commands register helpCommand
