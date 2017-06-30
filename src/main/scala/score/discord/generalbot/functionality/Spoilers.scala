@@ -2,10 +2,10 @@ package score.discord.generalbot.functionality
 
 import net.dv8tion.jda.core.entities.{Message, TextChannel}
 import net.dv8tion.jda.core.events.Event
+import net.dv8tion.jda.core.events.message.MessageDeleteEvent
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.core.exceptions.{ErrorResponseException, PermissionException}
 import net.dv8tion.jda.core.hooks.EventListener
-import net.dv8tion.jda.core.requests.ErrorResponse
 import score.discord.generalbot.collections.StringByMessage
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -93,6 +93,8 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
           }
         case _ =>
       }
+    case ev: MessageDeleteEvent =>
+      spoilerTexts.remove(new ID[Message](ev.getMessageIdLong))
     case _ =>
   }
 }

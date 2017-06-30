@@ -2,6 +2,7 @@ package score.discord.generalbot.functionality.ownership
 
 import net.dv8tion.jda.core.entities.{ChannelType, Message}
 import net.dv8tion.jda.core.events.Event
+import net.dv8tion.jda.core.events.message.MessageDeleteEvent
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.util.APIHelper
@@ -30,13 +31,14 @@ class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends E
                 APIHelper.tryRequest(
                   event.getChannel.deleteMessageById(event.getMessageId),
                   onFail = APIHelper.failure("deleting an owned message"))
-                  .foreach(_ => messageOwnership.remove(messageId))
               case Some(_) =>
                 event.getReaction.removeReaction(event.getUser).queue()
               case None =>
             }
           case _ =>
         }
+      case event: MessageDeleteEvent =>
+        messageOwnership.remove(new ID[Message](event.getMessageIdLong))
       case _ =>
     }
   }
