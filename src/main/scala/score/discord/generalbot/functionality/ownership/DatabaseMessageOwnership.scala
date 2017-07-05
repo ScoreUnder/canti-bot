@@ -49,7 +49,8 @@ class DatabaseMessageOwnership(dbConfig: DatabaseConfig[_ <: JdbcProfile],
   }
 
   override def remove(messageId: ID[Message]): Unit = {
-    cache.invalidate(messageId)
-    database.run(lookupQuery(messageId).delete)
+    database.run(lookupQuery(messageId).delete).foreach { _ =>
+      cache.invalidate(messageId)
+    }
   }
 }
