@@ -16,8 +16,8 @@ import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder}
 import org.apache.commons.lang3.time.FastDateFormat
 import score.discord.generalbot.collections._
 import score.discord.generalbot.command._
-import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MemoryMessageOwnership}
 import score.discord.generalbot.functionality._
+import score.discord.generalbot.functionality.ownership.{DatabaseMessageOwnership, DeleteOwnedMessages}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import slick.basic.DatabaseConfig
@@ -44,7 +44,7 @@ class GeneralBot {
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
-        implicit val messageOwnership = new MemoryMessageOwnership(LruCache.empty(20000))
+        implicit val messageOwnership = new DatabaseMessageOwnership(dbConfig, LruCache.empty(20000))
 
         bot.setToken(config.token)
 
