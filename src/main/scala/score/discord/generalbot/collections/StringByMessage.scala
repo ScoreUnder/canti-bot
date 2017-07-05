@@ -44,12 +44,9 @@ class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile],
     database.run(stringByMessage.insertOrUpdate(messageId, text))
   }
 
-  def remove(messageId: ID[Message], invalidate: Boolean = false) {
+  def remove(messageId: ID[Message]) {
     database.run(lookupQuery(messageId).delete).foreach { _ =>
-      if (invalidate)
-        cache.invalidate(messageId)
-      else
-        cache(messageId) = None
+      cache.invalidate(messageId)
     }
   }
 }

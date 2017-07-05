@@ -94,7 +94,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
         case _ =>
       }
     case ev: MessageDeleteEvent =>
-      spoilerTexts.remove(new ID[Message](ev.getMessageIdLong), invalidate = true)
+      spoilerTexts.remove(new ID[Message](ev.getMessageIdLong))
     case _ =>
   }
 }
