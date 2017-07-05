@@ -67,7 +67,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
           spoilerTexts(spoilerMessage.id) = spoilerText.trim
           spoilerMessage.addReaction(spoilerEmote).queue()
         }
-      }
+      }.failed.foreach(APIHelper.loudFailure("running spoiler command", message.getChannel))
     }
 
     override def getIdLong = -1145591283071885991L

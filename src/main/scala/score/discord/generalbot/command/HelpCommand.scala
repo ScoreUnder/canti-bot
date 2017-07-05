@@ -4,7 +4,7 @@ import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.BotMessages
+import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 
@@ -32,7 +32,7 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler, messageOwnership
         case None => showCommandHelp(args)
       }).fold(BotMessages.error, identity)
       message.getChannel.sendOwned(response, message.getAuthor)
-    }
+    }.failed foreach APIHelper.loudFailure("running help command", message.getChannel)
   }
 
   private def showCommandHelp(command: String) =

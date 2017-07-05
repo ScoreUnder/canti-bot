@@ -8,7 +8,7 @@ import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.BotMessages
+import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.annotation.tailrec
@@ -190,8 +190,6 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
       newMessage.getStringBuilder.insert(0, s"${message.getAuthor.mention} ")
       val newMsg = await(message.getChannel.sendFile(outputStream.toByteArray, ".png", newMessage.build).queueFuture())
       messageOwnership(newMsg) = message.getAuthor
-    }.failed foreach { err =>
-      err.printStackTrace()
-    }
+    }.failed foreach APIHelper.loudFailure("rendering furigana", message.getChannel)
   }
 }
