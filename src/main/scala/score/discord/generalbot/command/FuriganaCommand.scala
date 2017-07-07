@@ -188,7 +188,7 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
         case None =>
       }
       newMessage.getStringBuilder.insert(0, s"${message.getAuthor.mention} ")
-      val newMsg = await(message.getChannel.sendFile(outputStream.toByteArray, ".png", newMessage.build).queueFuture())
+      val newMsg = await(message.getChannel.sendFile(outputStream.toByteArray, "furigana.png", newMessage.build).queueFuture())
       messageOwnership(newMsg) = message.getAuthor
     }.failed foreach APIHelper.loudFailure("rendering furigana", message.getChannel)
   }
