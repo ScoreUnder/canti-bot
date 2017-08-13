@@ -27,7 +27,7 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
   override def name = "furigana"
 
-  override def aliases = List("furi")
+  override def aliases = List("furi", "fg")
 
   override def description = "Render text with furigana as an image"
 
