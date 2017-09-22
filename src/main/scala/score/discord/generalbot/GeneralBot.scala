@@ -117,7 +117,7 @@ class GeneralBot {
     discord match {
       case Right(bot) =>
         executor.shutdown()
-        bot.shutdown(true)
+        bot.shutdown()
         discord = Left(new JDABuilder(AccountType.BOT))
         try executor.awaitTermination(timeout.length, timeout.unit)
         catch {
