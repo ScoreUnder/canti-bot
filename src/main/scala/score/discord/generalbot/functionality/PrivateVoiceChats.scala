@@ -152,14 +152,13 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
             val channel = message.getChannel
             async {
               addChannelPermissions(channelReq, member, limit)
+              channelReq setParent voiceChannel.getParent
 
-              val channelFuture = channelReq.queueFuture()
-              channelFuture.failed.foreach(APIHelper.loudFailure("creating a channel", channel))
-              val voiceChannel = await(channelFuture)
+              val newVoiceChannel = await(channelReq.queueFuture())
 
               blocking {
                 userByChannel.synchronized {
-                  userByChannel(voiceChannel) = message.getAuthor
+                  userByChannel(newVoiceChannel) = message.getAuthor
                 }
               }
 
@@ -167,10 +166,10 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
               // TODO: Fix your shit JDA (asInstanceOf cast)
               APIHelper.tryRequest(
-                guild.getController.moveVoiceMember(member, voiceChannel.asInstanceOf[VoiceChannel]),
+                guild.getController.moveVoiceMember(member, newVoiceChannel.asInstanceOf[VoiceChannel]),
                 onFail = sendChannelMoveError(channel)
               )
-            }
+            }.failed.map(APIHelper.loudFailure("creating private channel", channel))
           }
 
         for (err <- result.left)
