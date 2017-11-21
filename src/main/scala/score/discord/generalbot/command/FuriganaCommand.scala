@@ -21,8 +21,8 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
   override def longDescription =
     s"""Mix text and furigana:
-      |`${commands.prefix}$name {郵便局:ゆうびんきょく}に{行:い}きました`
-      |This will then be rendered into an image, with the furigana text on top of the corresponding kanji.
+       |`${commands.prefix}$name {郵便局:ゆうびんきょく}に{行:い}きました`
+       |This will then be rendered into an image, with the furigana text on top of the corresponding kanji.
     """.stripMargin
 
   override def execute(message: Message, args: String) {
@@ -73,7 +73,9 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
       val (origWithoutFuri, furiText) = {
         val orig = parseInput()
-        (orig.map(_._1).mkString, orig.map(t => (mentionsToPlaintext(t._1), mentionsToPlaintext(t._2))))
+        (orig.map(_._1).mkString, orig.map(t => (
+          mentionsToPlaintext(t._1),
+          mentionsToPlaintext(t._2))))
       }
 
       val imageBytes = Furigana.renderPNG(furiText)
