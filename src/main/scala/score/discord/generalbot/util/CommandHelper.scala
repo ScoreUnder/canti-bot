@@ -1,7 +1,7 @@
 package score.discord.generalbot.util
 
 import net.dv8tion.jda.core.entities.{Guild, Member}
-import net.dv8tion.jda.core.entities
+import net.dv8tion.jda.core.{MessageBuilder, entities}
 
 object CommandHelper {
   def apply(message: entities.Message): Message = new CommandHelper.Message(message)
@@ -14,6 +14,17 @@ object CommandHelper {
         Option(guild.getMember(_me.getAuthor))
           .toRight("Internal error: Can't find your server membership. This might be a temporary problem.")
       }
-  }
 
+    def mentionsToPlaintext(input: String = _me.getRawContent): String = {
+      import net.dv8tion.jda.core.MessageBuilder.MentionType._
+      val builder = new MessageBuilder().append(input)
+      guild match {
+        case Right(guild) =>
+          builder.stripMentions(guild, USER, ROLE, CHANNEL)
+        case Left(_) =>
+          builder.stripMentions(_me.getJDA, USER, ROLE, CHANNEL)
+      }
+      builder.getStringBuilder.toString
+    }
+  }
 }

@@ -1,10 +1,11 @@
 package score.discord.generalbot.command
+
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.Furigana
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.{APIHelper, BotMessages}
+import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.async.Async._
@@ -58,24 +59,17 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
     }
 
     val maybeGuild = Option(message.getGuild)
-    def mentionsToPlaintext(input: String) = {
-      import net.dv8tion.jda.core.MessageBuilder.MentionType._
-      maybeGuild match {
-        case Some(guild) =>
-          new MessageBuilder().append(input).stripMentions(guild, USER, ROLE, CHANNEL).getStringBuilder.toString
-        case None =>
-          input
-      }
-    }
 
     async {
       message.getChannel.sendTyping().queue()
 
+      val commandHelper = CommandHelper(message)
+
       val (origWithoutFuri, furiText) = {
         val orig = parseInput()
         (orig.map(_._1).mkString, orig.map(t => (
-          mentionsToPlaintext(t._1),
-          mentionsToPlaintext(t._2))))
+          commandHelper.mentionsToPlaintext(t._1),
+          commandHelper.mentionsToPlaintext(t._2))))
       }
 
       val imageBytes = Furigana.renderPNG(furiText)
