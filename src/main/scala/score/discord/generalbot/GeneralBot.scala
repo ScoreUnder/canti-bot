@@ -64,6 +64,8 @@ class GeneralBot {
         commands register new BotInviteCommand
         commands register new FuriganaCommand(commands)
         commands register new BlameCommand(commands)
+        val readCommand = new ReadCommand(commands)
+        if (readCommand.available) commands register readCommand
 
         bot addEventListener new EventListener {
           private[this] val format = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ssZ")
