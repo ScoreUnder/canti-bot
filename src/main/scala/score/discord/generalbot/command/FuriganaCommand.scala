@@ -35,7 +35,7 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
     }
 
     def parseInput() = {
-      var input = args
+      var input = args.trim
       val arr = mutable.ArrayBuffer.empty[(String, String)]
       while (!input.isEmpty) {
         {
