@@ -65,6 +65,8 @@ class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messa
         val romaji = await(romajiFuture)
         val romajiMessage =
           new MessageBuilder()
+            .append(message.getAuthor.mention)
+            .append(' ')
             .append(romaji)
             .stripMentions(message.getJDA, MentionType.EVERYONE, MentionType.HERE)
             .build()
