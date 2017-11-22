@@ -18,8 +18,8 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
 
 class ReadCommand(commands: Commands, messageCache: MessageCache) extends Command.Anyone {
-  private val KAKASI_FURIGANA = "kakasi -s -f -iutf8 -outf8 -JH".split(" ")
-  private val KAKASI_ROMAJI = "kakasi -s -iutf8 -outf8 -Ja -Ka -Ha -Ea".split(" ")
+  private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
+  private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea".split(" ")
   private val DICT_FILE = new File("extra_words")
   private val WHITESPACE = "\\s".r
   private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
@@ -95,17 +95,17 @@ class ReadCommand(commands: Commands, messageCache: MessageCache) extends Comman
       val kakasi = Runtime.getRuntime.exec(withDict)
       val os = kakasi.getOutputStream
       async(blocking {
-        os.write(text.getBytes("utf-8"))
+        os.write(text.getBytes("EUC-JP"))
         os.flush()
         os.close()
       })
 
       val stdout = async(blocking {
-        io.Source.fromInputStream(kakasi.getInputStream).mkString
+        io.Source.fromInputStream(kakasi.getInputStream, "EUC-JP").mkString
       })
 
       val stderr = async(blocking {
-        io.Source.fromInputStream(kakasi.getErrorStream).mkString
+        io.Source.fromInputStream(kakasi.getErrorStream, "EUC-JP").mkString
       })
 
       val exitCode = blocking(kakasi.waitFor())
