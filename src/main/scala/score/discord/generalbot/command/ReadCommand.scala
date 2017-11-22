@@ -27,7 +27,7 @@ class ReadCommand(commands: Commands, messageCache: MessageCache) extends Comman
   override def description = "Show the romaji and furigana readings of Japanese text"
 
   override val longDescription =
-    s"""~~When invoked alone (with no message), acts on the previous message in the channel.~~ (not yet implemented)
+    s"""When invoked alone (with no message), acts on the previous message in the channel.
        |Otherwise, give this command some text to work with.
        |Example: ${commands.prefix}$name 藁で束ねても男一匹
     """.stripMargin
