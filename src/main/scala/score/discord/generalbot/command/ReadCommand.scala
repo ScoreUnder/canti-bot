@@ -2,6 +2,8 @@ package score.discord.generalbot.command
 
 import java.util.concurrent.TimeUnit
 
+import net.dv8tion.jda.core.MessageBuilder
+import net.dv8tion.jda.core.MessageBuilder.MentionType
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.Furigana
 import score.discord.generalbot.collections.MessageCache
@@ -54,8 +56,13 @@ class ReadCommand(commands: Commands, messageCache: MessageCache) extends Comman
         val image = Furigana.renderPNG(furigana)
 
         val romaji = await(romajiFuture)
+        val romajiMessage =
+          new MessageBuilder()
+            .append(romaji)
+            .stripMentions(message.getJDA, MentionType.EVERYONE, MentionType.HERE)
+            .build()
 
-        await(message.getChannel.sendFile(image, "furigana.png", romaji.toMessage).queueFuture())
+        await(message.getChannel.sendFile(image, "furigana.png", romajiMessage).queueFuture())
       }
     }.failed.foreach(APIHelper.loudFailure("displaying kakasi reading", message.getChannel))
   }
