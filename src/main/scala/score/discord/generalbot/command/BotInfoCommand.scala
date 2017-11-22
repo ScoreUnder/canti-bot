@@ -19,7 +19,7 @@ class BotInfoCommand(override val userId: ID[User]) extends Command.OneUserOnly 
     async {
       val jda = message.getJDA
       val allGuilds = jda.guilds
-      val topGuilds = allGuilds.sortBy(_.getMemberCache.size).take(10).map { guild =>
+      val topGuilds = allGuilds.sortBy(-_.getMemberCache.size).take(10).map { guild =>
         val memberCount = guild.getMemberCache.size
         val owner = guild.getOwner.getUser
         s"${guild.getName} ($memberCount users; owner: ${owner.name}#${owner.discriminator})"
