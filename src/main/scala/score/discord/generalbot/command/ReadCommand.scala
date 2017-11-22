@@ -1,6 +1,8 @@
 package score.discord.generalbot.command
 
 import java.io.File
+import java.nio.CharBuffer
+import java.nio.charset.CodingErrorAction
 import java.util.concurrent.TimeUnit
 
 import net.dv8tion.jda.core.MessageBuilder
@@ -17,11 +19,13 @@ import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
+import scala.io.Codec
 
 class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".split(" ")
   private val DICT_FILE = new File("extra_words")
+  private implicit val CODEC = Codec("EUC-JP").onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE)
   private val WHITESPACE = "\\s".r
   private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
 
@@ -97,17 +101,17 @@ class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messa
       val kakasi = Runtime.getRuntime.exec(withDict)
       val os = kakasi.getOutputStream
       async(blocking {
-        os.write(text.getBytes("EUC-JP"))
+        os.write(CODEC.encoder.encode(CharBuffer.wrap(text)).array())
         os.flush()
         os.close()
       })
 
       val stdout = async(blocking {
-        io.Source.fromInputStream(kakasi.getInputStream, "EUC-JP").mkString
+        io.Source.fromInputStream(kakasi.getInputStream).mkString
       })
 
       val stderr = async(blocking {
-        io.Source.fromInputStream(kakasi.getErrorStream, "EUC-JP").mkString
+        io.Source.fromInputStream(kakasi.getErrorStream).mkString
       })
 
       val exitCode = blocking(kakasi.waitFor())
