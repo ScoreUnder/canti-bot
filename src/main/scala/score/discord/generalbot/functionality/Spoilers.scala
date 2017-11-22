@@ -24,7 +24,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
 
     override val aliases = List("sp", "spoil", "hide")
 
-    override def description = "Hides a spoiler"
+    override def description = "Hide a spoiler"
 
     override val longDescription =
       s"""Deletes your message and then replaces it with a short message not revealing its contents.

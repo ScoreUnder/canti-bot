@@ -9,7 +9,7 @@ class StopCommand(bot: GeneralBot, val userId: ID[User]) extends Command.OneUser
 
   override def aliases = List("shutdown")
 
-  override def description = "Shut the bot down."
+  override def description = "Shut the bot down"
 
   override def execute(message: Message, args: String) {
     message.addReaction("👌").queue()

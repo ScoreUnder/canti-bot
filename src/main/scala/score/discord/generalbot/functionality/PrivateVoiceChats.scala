@@ -43,7 +43,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
       override def aliases = List("acc")
 
-      override def description = "Accepts another user's invitation to join a voice channel."
+      override def description = "Accept another user's invitation to join a voice channel"
 
       override def execute(message: Message, args: String): Unit = {
         val channel = message.getChannel
@@ -91,7 +91,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
       override val aliases = List("inv")
 
-      override def description = "Asks another user to join your current voice channel"
+      override def description = "Ask another user to join your current voice channel"
 
       override def execute(message: Message, args: String): Unit = {
         val response = (for {
@@ -130,7 +130,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
       override val aliases = List("prv", "privatevoice", "privatechat", "prvoice")
 
-      override def description = "Creates a private voice chat channel"
+      override def description = "Create a private voice chat channel"
 
       override val longDescription =
         s"""This command creates a semi-private voice channel.

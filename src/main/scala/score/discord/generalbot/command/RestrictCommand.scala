@@ -18,7 +18,7 @@ class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
   override def aliases = Nil
 
-  override def description = "Restrict a command to a certain role."
+  override def description = "Restrict a command to a certain role"
 
   override def longDescription =
     s"""Allow only a single role to execute a given command.
