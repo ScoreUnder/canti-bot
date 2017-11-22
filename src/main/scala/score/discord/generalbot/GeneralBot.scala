@@ -66,6 +66,7 @@ class GeneralBot {
         commands register new BotInviteCommand
         commands register new FuriganaCommand(commands)
         commands register new BlameCommand(commands)
+        commands register new BotInfoCommand(userId = config.owner)
         val readCommand = new ReadCommand(commands, messageCache)
         if (readCommand.available) commands register readCommand
 
