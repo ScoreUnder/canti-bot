@@ -45,6 +45,7 @@ class GeneralBot {
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
         implicit val messageOwnership = new DatabaseMessageOwnership(dbConfig, LruCache.empty(20000))
+        val messageCache = new MessageCache
 
         bot.setToken(config.token)
 
@@ -55,6 +56,7 @@ class GeneralBot {
         bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands)
         bot addEventListener new DeleteOwnedMessages
         bot addEventListener new Spoilers(new StringByMessage(dbConfig, LruCache.empty(100), "spoilers_by_message"), commands)
+        bot addEventListener messageCache
 
         val helpCommand = new HelpCommand(commands)
         commands register helpCommand
@@ -64,7 +66,7 @@ class GeneralBot {
         commands register new BotInviteCommand
         commands register new FuriganaCommand(commands)
         commands register new BlameCommand(commands)
-        val readCommand = new ReadCommand(commands)
+        val readCommand = new ReadCommand(commands, messageCache)
         if (readCommand.available) commands register readCommand
 
         bot addEventListener new EventListener {

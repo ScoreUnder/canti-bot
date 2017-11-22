@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.Furigana
+import score.discord.generalbot.collections.MessageCache
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -13,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
 
-class ReadCommand(commands: Commands) extends Command.Anyone {
+class ReadCommand(commands: Commands, messageCache: MessageCache) extends Command.Anyone {
   private val KAKASI_FURIGANA = "kakasi -s -f -iutf8 -outf8 -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -iutf8 -outf8 -Ja -Ka -Ha -Ea".split(" ")
   private val WHITESPACE = "\\s".r
@@ -31,8 +32,12 @@ class ReadCommand(commands: Commands) extends Command.Anyone {
     """.stripMargin
 
   override def execute(message: Message, args: String): Unit = {
+    val rawInput = args.trim match {
+      case "" => messageCache.lastInChannelExcludingAuthor(message.getChannel, message.getAuthor)
+      case text => text
+    }
     async {
-      val input = CommandHelper(message).mentionsToPlaintext(args).trim
+      val input = CommandHelper(message).mentionsToPlaintext(rawInput)
       if (input.isEmpty) {
         await(message.getChannel ! BotMessages.error("You need to enter some text first"))
       } else {

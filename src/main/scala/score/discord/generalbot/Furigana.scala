@@ -109,7 +109,7 @@ object Furigana {
     for (PositionedFurigana(x, y, tw, fw, text, _) <- positionedFuri)
       graphics.drawString(text, x + ((tw max fw) - tw) / 2, y + furiHeight + mainAscent)
 
-    val outputStream = new ByteArrayOutputStream(4096)
+    val outputStream = new ByteArrayOutputStream(32768)
 
     ImageIO.write(image, "PNG", outputStream)
     graphics.dispose()
