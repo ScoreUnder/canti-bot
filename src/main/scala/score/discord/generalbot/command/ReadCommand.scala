@@ -25,7 +25,7 @@ class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messa
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".split(" ")
   private val DICT_FILE = new File("extra_words")
-  private implicit val CODEC = Codec("EUC-JP").onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE)
+  private implicit val CODEC = Codec("EUC-JP").onMalformedInput(CodingErrorAction.IGNORE).onUnmappableCharacter(CodingErrorAction.IGNORE)
   private val WHITESPACE = "\\s".r
   private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
 
