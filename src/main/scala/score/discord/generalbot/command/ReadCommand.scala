@@ -101,7 +101,10 @@ class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messa
       val kakasi = Runtime.getRuntime.exec(withDict)
       val os = kakasi.getOutputStream
       async(blocking {
-        os.write(CODEC.encoder.encode(CharBuffer.wrap(text)).array())
+        val encoded = CODEC.encoder.encode(CharBuffer.wrap(text))
+        val encodedArr = new Array[Byte](encoded.remaining())
+        encoded.get(encodedArr)
+        os.write(encodedArr)
         os.flush()
         os.close()
       })
