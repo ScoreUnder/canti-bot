@@ -1,5 +1,6 @@
 package score.discord.generalbot.command
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import net.dv8tion.jda.core.MessageBuilder
@@ -19,6 +20,7 @@ import scala.concurrent.{Await, Future, TimeoutException, blocking}
 class ReadCommand(commands: Commands, messageCache: MessageCache) extends Command.Anyone {
   private val KAKASI_FURIGANA = "kakasi -s -f -iutf8 -outf8 -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -iutf8 -outf8 -Ja -Ka -Ha -Ea".split(" ")
+  private val DICT_FILE = new File("extra_words")
   private val WHITESPACE = "\\s".r
   private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
 
@@ -87,7 +89,10 @@ class ReadCommand(commands: Commands, messageCache: MessageCache) extends Comman
 
   private def queryKakasi(cmd: Array[String], text: String): Future[String] = {
     async {
-      val kakasi = Runtime.getRuntime.exec(cmd)
+      val withDict =
+        if (DICT_FILE.exists()) cmd ++ Array(DICT_FILE.getPath)
+        else cmd
+      val kakasi = Runtime.getRuntime.exec(withDict)
       val os = kakasi.getOutputStream
       async(blocking {
         os.write(text.getBytes("utf-8"))
