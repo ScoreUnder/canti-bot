@@ -18,6 +18,7 @@ class ReadCommand(commands: Commands, messageCache: MessageCache) extends Comman
   private val KAKASI_FURIGANA = "kakasi -s -f -iutf8 -outf8 -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -iutf8 -outf8 -Ja -Ka -Ha -Ea".split(" ")
   private val WHITESPACE = "\\s".r
+  private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
 
   override def name = "reading"
 
@@ -32,11 +33,16 @@ class ReadCommand(commands: Commands, messageCache: MessageCache) extends Comman
     """.stripMargin
 
   override def execute(message: Message, args: String): Unit = {
-    val rawInput = args.trim match {
-      case "" => messageCache.lastInChannelExcludingAuthor(message.getChannel, message.getAuthor)
-      case text => text
-    }
     async {
+      val rawInput = args.trim match {
+        case "" =>
+          val chanId = message.getChannel.id
+          messageCache
+            .find(d => d.chanId == chanId && JAPANESE.findFirstMatchIn(d.text).isDefined)
+            .map(_.text)
+            .getOrElse("")
+        case text => text
+      }
       val input = CommandHelper(message).mentionsToPlaintext(rawInput)
       if (input.isEmpty) {
         await(message.getChannel ! BotMessages.error("You need to enter some text first"))

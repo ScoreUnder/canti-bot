@@ -9,7 +9,7 @@ import score.discord.generalbot.wrappers.jda.ID
 
 class MessageCache extends EventListener {
 
-  private final case class MessageData(
+  final case class MessageData(
     chanId: ID[MessageChannel],
     senderId: ID[User],
     text: String
@@ -17,14 +17,9 @@ class MessageCache extends EventListener {
 
   private val messages = new LogBuffer[MessageData](2000)
 
-  def lastInChannelExcludingAuthor(channel: ID[MessageChannel], user: ID[User]): String = messages.synchronized {
-    messages.view.filter(m => m.chanId == channel && m.senderId != user)
-      .map(_.text)
-      .find(_.nonEmpty)
-      .getOrElse("")
+  def find(pred: (MessageData) => Boolean): Option[MessageData] = messages.synchronized {
+    messages find pred
   }
-
-  def lastInChannelExcludingAuthor(channel: MessageChannel, user: User): String = lastInChannelExcludingAuthor(channel.id, user.id)
 
   override def onEvent(event: Event): Unit = {
     event match {
