@@ -30,9 +30,9 @@ class LogBuffer[T](capacity: Int) extends AbstractIterable[T] {
 
   override def iterator: Iterator[T] = new Iterator[T] {
     private[this] var myPos = writePos
-    private[this] var iterated = false
+    private[this] var iterated = LogBuffer.this.isEmpty
 
-    override def hasNext: Boolean = (myPos != readPos || !iterated) && !LogBuffer.this.isEmpty
+    override def hasNext: Boolean = myPos != readPos || !iterated
 
     override def next(): T = {
       val pos = myPos
