@@ -19,7 +19,7 @@ import scala.concurrent.{Await, Future, TimeoutException, blocking}
 
 class ReadCommand(commands: Commands, messageCache: MessageCache) extends Command.Anyone {
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
-  private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea".split(" ")
+  private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".split(" ")
   private val DICT_FILE = new File("extra_words")
   private val WHITESPACE = "\\s".r
   private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
