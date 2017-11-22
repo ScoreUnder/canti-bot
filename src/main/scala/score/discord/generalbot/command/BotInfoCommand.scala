@@ -1,6 +1,7 @@
 package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.entities.{Message, User}
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -8,7 +9,7 @@ import score.discord.generalbot.wrappers.jda.Conversions._
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class BotInfoCommand(override val userId: ID[User]) extends Command.OneUserOnly {
+class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: MessageOwnership) extends Command.OneUserOnly {
   override def name = "botinfo"
 
   override def aliases = Nil
@@ -25,11 +26,12 @@ class BotInfoCommand(override val userId: ID[User]) extends Command.OneUserOnly 
         s"${guild.getName} ($memberCount users; owner: ${owner.name}#${owner.discriminator})"
       }
       val me = await(jda.asBot().getApplicationInfo.queueFuture())
-      await(message.getChannel ! BotMessages.plain("Some basic bot info")
+      await(message.getChannel.sendOwned(BotMessages.plain("Some basic bot info")
         .addField("Owner", s"<@$userId>", true)
         .addField("Servers", s"${allGuilds.size}", true)
         .addField("Top servers", topGuilds.mkString("\n"), false)
-        .setThumbnail(me.getIconUrl))
+        .setThumbnail(me.getIconUrl),
+        message.getAuthor))
     }.failed.foreach(APIHelper.loudFailure("getting bot info", message.getChannel))
   }
 }

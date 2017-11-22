@@ -9,6 +9,7 @@ import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.Furigana
 import score.discord.generalbot.collections.MessageCache
 import score.discord.generalbot.functionality.Commands
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
@@ -17,7 +18,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
 
-class ReadCommand(commands: Commands, messageCache: MessageCache) extends Command.Anyone {
+class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".split(" ")
   private val DICT_FILE = new File("extra_words")
@@ -49,7 +50,7 @@ class ReadCommand(commands: Commands, messageCache: MessageCache) extends Comman
       }
       val input = CommandHelper(message).mentionsToPlaintext(rawInput)
       if (input.isEmpty) {
-        await(message.getChannel ! BotMessages.error("You need to enter some text first"))
+        await(message.getChannel.sendOwned(BotMessages.error("You need to enter some text first"), message.getAuthor))
       } else {
         val furiganaFuture = queryKakasi(KAKASI_FURIGANA, input)
         val romajiFuture = queryKakasi(KAKASI_ROMAJI, input)
@@ -64,7 +65,8 @@ class ReadCommand(commands: Commands, messageCache: MessageCache) extends Comman
             .stripMentions(message.getJDA, MentionType.EVERYONE, MentionType.HERE)
             .build()
 
-        await(message.getChannel.sendFile(image, "furigana.png", romajiMessage).queueFuture())
+        val finalMessage = await(message.getChannel.sendFile(image, "furigana.png", romajiMessage).queueFuture())
+        messageOwnership(finalMessage) = message.getAuthor
       }
     }.failed.foreach(APIHelper.loudFailure("displaying kakasi reading", message.getChannel))
   }
