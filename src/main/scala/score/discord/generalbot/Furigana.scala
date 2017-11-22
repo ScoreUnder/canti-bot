@@ -26,7 +26,7 @@ object Furigana {
     */
   def renderPNG(furiText: Traversable[(String, String)]): Array[Byte] = {
     val imageMaxWidth = 1000
-    val furiYAdjust = 10
+    val furiYAdjust = 0
     val lineGap = 10
 
     val mainMetrics = dummyGraphics.getFontMetrics(mainFont)
