@@ -26,6 +26,29 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
        |This will then be rendered into an image, with the furigana text on top of the corresponding kanji.
     """.stripMargin
 
+  def parseInput(args: String): Seq[(String, String)] = {
+    var input = args.trim
+    val arr = mutable.ArrayBuffer.empty[(String, String)]
+    while (!input.isEmpty) {
+      {
+        val plain = input.takeWhile(!"{｛".contains(_))
+        input = input drop (plain.length + 1)
+        if (!plain.isEmpty)
+          arr ++= plain.split("\n", -1).view.flatMap(line => List(("\n", ""), (line, ""))).tail
+      }
+
+      {
+        val literal = input.takeWhile(!":：".contains(_))
+        input = input drop (literal.length + 1)
+        val phonetic = input.takeWhile(!"}｝".contains(_))
+        input = input drop (phonetic.length + 1)
+        if (!literal.isEmpty || !phonetic.isEmpty)
+          arr += ((literal, phonetic))
+      }
+    }
+    arr
+  }
+
   override def execute(message: Message, args: String) {
     if (args.isEmpty) {
       message.getChannel.sendOwned(
@@ -33,29 +56,6 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
         owner = message.getAuthor
       )
       return
-    }
-
-    def parseInput() = {
-      var input = args.trim
-      val arr = mutable.ArrayBuffer.empty[(String, String)]
-      while (!input.isEmpty) {
-        {
-          val plain = input.takeWhile(!"{｛".contains(_))
-          input = input drop (plain.length + 1)
-          if (!plain.isEmpty)
-            arr ++= plain.split("\n", -1).view.flatMap(line => List(("\n", ""), (line, ""))).tail
-        }
-
-        {
-          val literal = input.takeWhile(!":：".contains(_))
-          input = input drop (literal.length + 1)
-          val phonetic = input.takeWhile(!"}｝".contains(_))
-          input = input drop (phonetic.length + 1)
-          if (!literal.isEmpty || !phonetic.isEmpty)
-            arr += ((literal, phonetic))
-        }
-      }
-      arr
     }
 
     val maybeGuild = Option(message.getGuild)
@@ -66,7 +66,7 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
       val commandHelper = CommandHelper(message)
 
       val (origWithoutFuri, furiText) = {
-        val orig = parseInput()
+        val orig = parseInput(args)
         (orig.map(_._1).mkString, orig.map(t => (
           commandHelper.mentionsToPlaintext(t._1),
           commandHelper.mentionsToPlaintext(t._2))))
