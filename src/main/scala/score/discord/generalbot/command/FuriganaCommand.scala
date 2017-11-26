@@ -20,7 +20,7 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
   override def description = "Render text with furigana as an image"
 
-  override def longDescription =
+  override val longDescription: String =
     s"""Mix text and furigana:
        |`${commands.prefix}$name {郵便局:ゆうびんきょく}に{行:い}きました`
        |This will then be rendered into an image, with the furigana text on top of the corresponding kanji.
