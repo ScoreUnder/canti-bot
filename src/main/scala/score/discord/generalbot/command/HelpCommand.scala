@@ -68,7 +68,7 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler, messageOwnership
           s"**Commands (page $page of $numPages):**\n")
 
         for (command <- helpList) {
-          embed appendDescription s"`${command.name}`: ${command.description}\n"
+          embed appendDescription s"`${commands.prefix}${command.name}`: ${command.description}\n"
         }
 
         Right(embed)
