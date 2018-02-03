@@ -128,7 +128,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
     commands register new Command.ServerAdminDiscretion {
       override def name = "private"
 
-      override val aliases = List("prv", "privatevoice", "privatechat", "prvoice")
+      override val aliases = List("prv", "pv", "voice")
 
       override def description = "Create a private voice chat channel"
 
