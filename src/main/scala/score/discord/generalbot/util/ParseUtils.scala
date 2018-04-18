@@ -9,6 +9,9 @@ import scala.collection.JavaConverters._
 
 object ParseUtils {
   def searchRoles(guild: Guild, roleName: String): Seq[Role] =
+    if (roleName.isEmpty)
+      Nil
+    else
       Try(roleName.toLong)
         .map(id => List(guild.getRoleById(id)))
         .getOrElse(guild.getRolesByName(roleName, true).asScala)

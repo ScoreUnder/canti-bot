@@ -29,11 +29,14 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
     override def description = "Set the role automatically assigned to voice chat users"
 
     override def execute(message: Message, args: String) {
-      message.getChannel.sendOwned(findRole(message.getGuild, args.trim).fold(
-        identity, { role =>
-          roleByGuild(message.getGuild) = role
-          BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
-        }).addField("Requested by", message.getAuthor.mention, true),
+      message.getChannel.sendOwned(
+        if (args.isEmpty) BotMessages.error("Please provide a role name to use as the voice role")
+        else
+          findRole(message.getGuild, args.trim).fold(
+            identity, { role =>
+              roleByGuild(message.getGuild) = role
+              BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
+            }).addField("Requested by", message.getAuthor.mention, true),
         owner = message.getAuthor
       )
     }
