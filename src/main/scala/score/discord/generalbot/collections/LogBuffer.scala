@@ -16,7 +16,7 @@ class LogBuffer[T](capacity: Int) extends AbstractIterable[T] {
 
   override def isEmpty: Boolean = isEmpty_
 
-  def ::=(elem: T) = this synchronized {
+  def ::=(elem: T): Unit = this synchronized {
     val nextWrite = writePos match {
       case 0 => buffer.length - 1
       case x => x - 1

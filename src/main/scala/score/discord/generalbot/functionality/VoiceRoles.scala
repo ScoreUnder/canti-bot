@@ -46,7 +46,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
 
     override def description = "Check the voice chat role"
 
-    override def execute(message: Message, args: String) = {
+    override def execute(message: Message, args: String) {
       async {
         message.getChannel.sendOwned(
           (CommandHelper(message).guild match {
@@ -70,11 +70,12 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
 
     override def description = "Clear the voice chat role (i.e. stops tagging voice chat users)"
 
-    override def execute(message: Message, args: String) =
+    override def execute(message: Message, args: String) {
       async {
         blocking(roleByGuild remove message.getGuild)
         message.addReaction("👌").queue()
       }
+    }
   }
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean) {
@@ -106,13 +107,13 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
     async {
       val memberId = GuildUserId(member)
 
-      def updateRole(role: Role) = {
+      def updateRole(role: Role) {
         pendingRoleUpdates remove memberId
         // TODO: No thread-safe way to do this
         setRole(member, role, shouldHaveRole(member.getVoiceState))
       }
 
-      def queueUpdate(role: Role) = {
+      def queueUpdate(role: Role) {
         // Delay to ensure that rapid switching of deafen doesn't run our
         // rate limits out.
         val newFuture = scheduler.schedule((200 + rng.nextInt(300)) milliseconds) {
@@ -132,7 +133,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
     }
   }
 
-  override def onEvent(event: Event) = {
+  override def onEvent(event: Event) {
     event match {
       case ev: ReadyEvent =>
         val jda = ev.getJDA
