@@ -32,7 +32,7 @@ class BlameCommand(commands: Commands)(implicit messageOwnership: MessageOwnersh
           Try(ID fromString args).fold(_ => Left("Expecting a message ID; got something else"), Right(_))
         ).flatView
         owner <- messageOwnership(message.getJDA, id).map(_.toRight("No ownership info available for that message")).flatView
-      } yield s"That message is owned by ${owner.mention} (${owner.name}).")
+      } yield s"That message is owned by ${owner.mentionWithName}.")
       message.getChannel.sendOwned(
         resultText.fold(BotMessages.error, BotMessages.plain),
         owner = message.getAuthor)

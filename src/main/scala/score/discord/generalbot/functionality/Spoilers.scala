@@ -61,7 +61,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
         })
 
         message.getChannel.sendOwned(
-          BotMessages okay s"**Click the magnifying glass** to see ${hintText.trim} (from ${message.getAuthor.mention})",
+          BotMessages okay s"**Click the magnifying glass** to see ${hintText.trim} (from ${message.getAuthor.mentionWithName})",
           message.getAuthor
         ).foreach { spoilerMessage =>
           spoilerTexts(spoilerMessage.id) = spoilerText.trim

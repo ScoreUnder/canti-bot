@@ -36,7 +36,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
             identity, { role =>
               roleByGuild(message.getGuild) = role
               BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
-            }).addField("Requested by", message.getAuthor.mention, true),
+            }).addField("Requested by", message.getAuthor.mentionWithName, true),
         owner = message.getAuthor
       )
     }
