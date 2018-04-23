@@ -6,8 +6,10 @@ import java.util.concurrent.{Executors, ScheduledExecutorService}
 
 import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.core.entities.Game
+import net.dv8tion.jda.core.events.guild.member.GuildMemberNickChangeEvent
 import net.dv8tion.jda.core.events.guild.voice.{GuildVoiceJoinEvent, GuildVoiceLeaveEvent, GuildVoiceMoveEvent}
 import net.dv8tion.jda.core.events.message.guild.GenericGuildMessageEvent
+import net.dv8tion.jda.core.events.message.react.{MessageReactionAddEvent, MessageReactionRemoveAllEvent, MessageReactionRemoveEvent}
 import net.dv8tion.jda.core.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
 import net.dv8tion.jda.core.events.user.GenericUserEvent
 import net.dv8tion.jda.core.events.{DisconnectEvent, Event, ReadyEvent, StatusChangeEvent}
@@ -102,6 +104,15 @@ class GeneralBot {
             case ev: GuildVoiceMoveEvent =>
               log(s"VOICE MOVE: ${ev.getMember.getUser.unambiguousString} from " +
                 s"${ev.getChannelLeft.unambiguousString} to ${ev.getChannelJoined.unambiguousString}")
+            case ev: GuildMemberNickChangeEvent =>
+              log(s"NICK CHANGE: ${ev.getGuild.unambiguousString} ${ev.getMember.getUser.unambiguousString} " +
+                s"from ${ev.getPrevNick} to ${ev.getNewNick}")
+            case ev: MessageReactionAddEvent =>
+              log(s"REACT: ${ev.getUser.unambiguousString} ${ev.getReaction}")
+            case ev: MessageReactionRemoveEvent =>
+              log(s"UNREACT: ${ev.getUser.unambiguousString} ${ev.getReaction}")
+            case ev: MessageReactionRemoveAllEvent =>
+              log(s"CLEAR REACT: ${ev.getMessageId}")
             case _: GenericUserEvent | _: GenericGuildMessageEvent =>
             // Ignored (they're pretty boring)
             case ev =>
