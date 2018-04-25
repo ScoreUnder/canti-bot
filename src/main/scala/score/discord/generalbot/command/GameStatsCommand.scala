@@ -61,6 +61,6 @@ class GameStatsCommand(implicit mo: MessageOwnership) extends Command.Anyone {
       }
 
       message reply result.fold(BotMessages.error, BotMessages.plain)
-    }.failed.map(APIHelper.loudFailure("finding channel game statistics", message.getChannel))
+    }.failed.foreach(APIHelper.loudFailure("finding channel game statistics", message.getChannel))
   }
 }

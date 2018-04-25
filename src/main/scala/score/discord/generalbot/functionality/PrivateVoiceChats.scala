@@ -169,7 +169,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
                 guild.getController.moveVoiceMember(member, newVoiceChannel.asInstanceOf[VoiceChannel]),
                 onFail = sendChannelMoveError(channel)
               )
-            }.failed.map(APIHelper.loudFailure("creating private channel", channel))
+            }.failed.foreach(APIHelper.loudFailure("creating private channel", channel))
           }
 
         for (err <- result.left)
