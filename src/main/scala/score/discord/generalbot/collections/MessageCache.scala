@@ -25,7 +25,7 @@ class MessageCache(capacity: Int = 2000) extends EventListener {
     event match {
       case ev: MessageReceivedEvent =>
         val m = ev.getMessage
-        messages ::= MessageData(m.getChannel.id, m.getAuthor.id, m.getRawContent)
+        messages ::= MessageData(m.getChannel.id, m.getAuthor.id, m.getContentRaw)
       case _ =>
     }
   }

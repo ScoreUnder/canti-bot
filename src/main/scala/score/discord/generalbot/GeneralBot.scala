@@ -6,6 +6,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService}
 
 import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.core.entities.Game
+import net.dv8tion.jda.core.entities.Game.GameType
 import net.dv8tion.jda.core.events.guild.member.GuildMemberNickChangeEvent
 import net.dv8tion.jda.core.events.guild.voice.{GuildVoiceJoinEvent, GuildVoiceLeaveEvent, GuildVoiceMoveEvent}
 import net.dv8tion.jda.core.events.message.guild.GenericGuildMessageEvent
@@ -81,7 +82,7 @@ class GeneralBot {
           override def onEvent(event: Event) = event match {
             case ev: ReadyEvent =>
               // TODO: Make configurable?
-              ev.getJDA.getPresence.setGame(Game of s"Usage: ${commands.prefix}${helpCommand.name}")
+              ev.getJDA.getPresence.setGame(Game.of(GameType.DEFAULT, s"Usage: ${commands.prefix}${helpCommand.name}"))
               log("Bot is ready.")
             case ev: StatusChangeEvent =>
               log(s"Bot status changed to ${ev.getStatus}")
@@ -92,12 +93,12 @@ class GeneralBot {
               }
             case ev: MessageReceivedEvent =>
               log(s"MESSAGE: ${ev.getMessage.rawId} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-                ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
+                ev.getMessage.getContentRaw.split('\n').map("\t" + _).mkString("\n"))
             case ev: MessageDeleteEvent =>
               log(s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}")
             case ev: MessageUpdateEvent =>
               log(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-                ev.getMessage.getRawContent.split('\n').map("\t" + _).mkString("\n"))
+                ev.getMessage.getContentRaw.split('\n').map("\t" + _).mkString("\n"))
             case ev: GuildVoiceJoinEvent =>
               log(s"VOICE JOIN: ${ev.getMember.getUser.unambiguousString} in ${ev.getChannelJoined.unambiguousString}")
             case ev: GuildVoiceLeaveEvent =>

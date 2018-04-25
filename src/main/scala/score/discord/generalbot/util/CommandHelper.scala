@@ -15,8 +15,8 @@ object CommandHelper {
           .toRight("Internal error: Can't find your server membership. This might be a temporary problem.")
       }
 
-    def mentionsToPlaintext(input: String = _me.getRawContent): String = {
-      import net.dv8tion.jda.core.MessageBuilder.MentionType._
+    def mentionsToPlaintext(input: String = _me.getContentRaw): String = {
+      import net.dv8tion.jda.core.entities.Message.MentionType._
       val builder = new MessageBuilder().append(input)
       guild match {
         case Right(guild) =>

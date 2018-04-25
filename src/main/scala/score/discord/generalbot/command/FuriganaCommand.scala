@@ -74,7 +74,7 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
       val imageBytes = Furigana.renderPNG(furiText)
 
-      import net.dv8tion.jda.core.MessageBuilder.MentionType._
+      import net.dv8tion.jda.core.entities.Message.MentionType._
       val newMessage = new MessageBuilder()
         .append(origWithoutFuri)
       maybeGuild match {

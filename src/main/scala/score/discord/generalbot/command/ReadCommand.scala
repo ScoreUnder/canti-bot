@@ -6,8 +6,8 @@ import java.nio.charset.CodingErrorAction
 import java.util.concurrent.TimeUnit
 
 import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.MessageBuilder.MentionType
 import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.core.entities.Message.MentionType
 import score.discord.generalbot.Furigana
 import score.discord.generalbot.collections.MessageCache
 import score.discord.generalbot.functionality.Commands

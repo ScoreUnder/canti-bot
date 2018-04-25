@@ -67,7 +67,7 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
     }
 
   def splitCommand(message: Message, requirePrefix: Boolean = true): Option[(String, String)] = {
-    val messageRaw = message.getRawContent
+    val messageRaw = message.getContentRaw
     val hasPrefix = messageRaw.startsWith(prefix)
     if (requirePrefix && !hasPrefix)
       None

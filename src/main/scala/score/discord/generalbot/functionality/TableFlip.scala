@@ -16,7 +16,7 @@ class TableFlip(implicit messageOwnership: MessageOwnership) extends EventListen
         val message = ev.getMessage
         if (message.getAuthor.isBot) return
 
-        val text = message.getRawContent
+        val text = message.getContentRaw
         if (text contains flip) {
           message.getChannel.sendOwned(unflip, ev.getAuthor)
         } else if (text contains unflip) {
