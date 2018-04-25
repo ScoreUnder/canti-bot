@@ -21,8 +21,6 @@ class GameStatsCommand(implicit mo: MessageOwnership) extends Command.Anyone {
 
   override def description: String = "Lists out the most popular games in the given channel at this point in time"
 
-  override def longDescription: String = super.longDescription
-
   override def execute(message: Message, args: String): Unit = {
     Future {
       val channel: Option[TextChannel] = args match {
