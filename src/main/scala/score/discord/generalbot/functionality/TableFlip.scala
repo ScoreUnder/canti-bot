@@ -18,9 +18,9 @@ class TableFlip(implicit messageOwnership: MessageOwnership) extends EventListen
 
         val text = message.getContentRaw
         if (text contains flip) {
-          message.getChannel.sendOwned(unflip, ev.getAuthor)
+          message reply unflip
         } else if (text contains unflip) {
-          message.getChannel.sendOwned(flip, ev.getAuthor)
+          message reply flip
         }
 
       case _ =>

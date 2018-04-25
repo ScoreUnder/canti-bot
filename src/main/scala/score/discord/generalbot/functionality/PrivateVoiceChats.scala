@@ -119,7 +119,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
               )
           }
         } yield success).fold(BotMessages.error(_): MessageFromX, x => x: MessageFromX)
-        message.getChannel.sendOwned(response, message.getAuthor)
+        message reply response
       }
     }
 
@@ -173,7 +173,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
           }
 
         for (err <- result.left)
-          message.getChannel.sendOwned(BotMessages.error(err), message.getAuthor)
+          message reply BotMessages.error(err)
       }
 
       private def addChannelPermissions(channelReq: ChannelAction, member: Member, limit: Int) = {

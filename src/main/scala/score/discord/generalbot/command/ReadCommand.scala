@@ -54,7 +54,7 @@ class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messa
       }
       val input = CommandHelper(message).mentionsToPlaintext(rawInput)
       if (input.isEmpty) {
-        await(message.getChannel.sendOwned(BotMessages.error("You need to enter some text first"), message.getAuthor))
+        await(message reply BotMessages.error("You need to enter some text first"))
       } else {
         val furiganaFuture = queryKakasi(KAKASI_FURIGANA, input)
         val romajiFuture = queryKakasi(KAKASI_ROMAJI, input)

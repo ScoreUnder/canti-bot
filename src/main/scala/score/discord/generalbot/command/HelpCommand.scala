@@ -31,7 +31,7 @@ class HelpCommand(commands: Commands)(implicit exec: Scheduler, messageOwnership
         case Some(page) => await(showHelpPage(message, page))
         case None => showCommandHelp(args)
       }).fold(BotMessages.error, identity)
-      message.getChannel.sendOwned(response, message.getAuthor)
+      message reply response
     }.failed foreach APIHelper.loudFailure("running help command", message.getChannel)
   }
 

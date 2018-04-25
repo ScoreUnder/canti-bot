@@ -81,10 +81,10 @@ class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
     result onComplete {
       case Success(x) =>
-        message.getChannel.sendOwned(x.fold(identity, identity).toMessage, message.getAuthor)
+        message reply x.fold(identity, identity).toMessage
       case Failure(x) =>
         x.printStackTrace()
-        message.getChannel.sendOwned(BotMessages.error("An unknown error occurred"), message.getAuthor)
+        message reply BotMessages.error("An unknown error occurred")
     }
   }
 }

@@ -15,8 +15,8 @@ class BotInviteCommand(implicit messageOwnership: MessageOwnership) extends Comm
 
   override def execute(message: Message, args: String) = {
     import Permission._
-    message.getChannel.sendOwned(BotMessages.plain(message.getJDA.asBot.getInviteUrl(
+    message reply BotMessages.plain(message.getJDA.asBot.getInviteUrl(
       MANAGE_ROLES, MANAGE_CHANNEL, MESSAGE_MANAGE, VOICE_MOVE_OTHERS
-    )), owner = message.getAuthor)
+    ))
   }
 }

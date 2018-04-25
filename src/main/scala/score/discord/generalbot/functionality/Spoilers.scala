@@ -53,16 +53,15 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
 
         APIHelper.tryRequest(message.delete(), {
           case _: PermissionException =>
-            message.getChannel.sendOwned(BotMessages error "I don't have permission to delete messages here,", message.getAuthor)
+            message reply BotMessages.error("I don't have permission to delete messages here.")
           case e: ErrorResponseException =>
-            message.getChannel.sendOwned(BotMessages error s"Error deleting your message. ${e.getMeaning}.", message.getAuthor)
+            message reply BotMessages.error(s"Error deleting your message. ${e.getMeaning}.")
           case e =>
             APIHelper.loudFailure("deleting a message", message.getChannel)(e)
         })
 
-        message.getChannel.sendOwned(
-          BotMessages okay s"**Click the magnifying glass** to see ${hintText.trim} (from ${message.getAuthor.mentionWithName})",
-          message.getAuthor
+        message.reply(
+          BotMessages okay s"**Click the magnifying glass** to see ${hintText.trim} (from ${message.getAuthor.mentionWithName})"
         ).foreach { spoilerMessage =>
           spoilerTexts(spoilerMessage.id) = spoilerText.trim
           spoilerMessage.addReaction(spoilerEmote).queue()

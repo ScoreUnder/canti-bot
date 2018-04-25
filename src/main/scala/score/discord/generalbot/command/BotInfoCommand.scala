@@ -26,12 +26,11 @@ class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: M
         s"${guild.getName} ($memberCount users; owner: ${owner.name}#${owner.discriminator})"
       }
       val me = await(jda.asBot().getApplicationInfo.queueFuture())
-      await(message.getChannel.sendOwned(BotMessages.plain("Some basic bot info")
+      await(message reply BotMessages.plain("Some basic bot info")
         .addField("Owner", s"<@$userId>", true)
         .addField("Servers", s"${allGuilds.size}", true)
         .addField("Top servers", topGuilds.mkString("\n"), false)
-        .setThumbnail(me.getIconUrl),
-        message.getAuthor))
+        .setThumbnail(me.getIconUrl))
     }.failed.foreach(APIHelper.loudFailure("getting bot info", message.getChannel))
   }
 }

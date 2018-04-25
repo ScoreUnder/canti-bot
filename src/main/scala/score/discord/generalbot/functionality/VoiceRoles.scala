@@ -29,15 +29,14 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
     override def description = "Set the role automatically assigned to voice chat users"
 
     override def execute(message: Message, args: String) {
-      message.getChannel.sendOwned(
+      message.reply(
         if (args.isEmpty) BotMessages.error("Please provide a role name to use as the voice role")
         else
           findRole(message.getGuild, args.trim).fold(
             identity, { role =>
               roleByGuild(message.getGuild) = role
               BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
-            }).addField("Requested by", message.getAuthor.mentionWithName, true),
-        owner = message.getAuthor
+            }).addField("Requested by", message.getAuthor.mentionWithName, true)
       )
     }
   }
@@ -51,7 +50,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
 
     override def execute(message: Message, args: String) {
       async {
-        message.getChannel.sendOwned(
+        message.reply(
           (CommandHelper(message).guild match {
             case Left(err) => BotMessages error err
             case Right(guild) =>
@@ -59,8 +58,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
                 .toRight(BotMessages.plain("There is currently no voice chat role set."))
                 .map(role => BotMessages okay s"The voice chat role is currently set to ${role.mention}.")
                 .fold(identity, identity)
-          }).toMessage,
-          owner = message.getAuthor
+          }).toMessage
         )
       }
     }

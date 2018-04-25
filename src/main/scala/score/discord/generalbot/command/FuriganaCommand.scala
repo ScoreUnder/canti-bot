@@ -51,10 +51,7 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
   override def execute(message: Message, args: String) {
     if (args.isEmpty) {
-      message.getChannel.sendOwned(
-        BotMessages error "Please provide the text to render as part of the command.",
-        owner = message.getAuthor
-      )
+      message.reply(BotMessages error "Please provide the text to render as part of the command.")
       return
     }
 
