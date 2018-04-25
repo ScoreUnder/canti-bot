@@ -42,8 +42,8 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
 
     override def execute(message: Message, args: String) {
       async {
+        // Must be lowercase (to allow case insensitive string comparison)
         val hintPrefix = "hint:"
-        // Must be lowercase
         val Array(hintText, spoilerText) =
           if (args.take(hintPrefix.length).toLowerCase == hintPrefix) {
             (args drop hintPrefix.length).split("\n", 2)
