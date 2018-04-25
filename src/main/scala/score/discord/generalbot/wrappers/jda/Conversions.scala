@@ -11,6 +11,8 @@ object Conversions {
 
   implicit final def toRichMessageChannel(channel: MessageChannel): RichMessageChannel = new RichMessageChannel(channel)
 
+  implicit final def toRichMessage(message: Message): RichMessage = new RichMessage(message)
+
   implicit final def toRichMember(member: Member): RichMember = new RichMember(member)
 
   implicit final def toRichJDA(jDA: JDA): RichJDA = new RichJDA(jDA)
@@ -48,4 +50,5 @@ object Conversions {
   implicit class MessageFromMessage(me: Message) extends MessageFromX {
     def toMessage = me
   }
+
 }
