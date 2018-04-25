@@ -60,12 +60,12 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
             APIHelper.loudFailure("deleting a message", message.getChannel)(e)
         })
 
-        message.reply(
-          BotMessages okay s"**Click the magnifying glass** to see ${hintText.trim} (from ${message.getAuthor.mentionWithName})"
-        ).foreach { spoilerMessage =>
-          spoilerTexts(spoilerMessage.id) = spoilerText.trim
-          spoilerMessage.addReaction(spoilerEmote).queue()
-        }
+        val spoilerMessage = await(message.reply(BotMessages.okay(
+          s"**Click the magnifying glass** to see ${hintText.trim} (from ${message.getAuthor.mentionWithName})"
+        )))
+
+        spoilerTexts(spoilerMessage.id) = spoilerText.trim
+        spoilerMessage.addReaction(spoilerEmote).queue()
       }.failed.foreach(APIHelper.loudFailure("running spoiler command", message.getChannel))
     }
 
@@ -77,7 +77,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
       if (ev.getUser.isBot) return
 
       ev.getReactionEmote.getName match {
-        case char if char == spoilerEmote =>
+        case `spoilerEmote` =>
           val channelName = ev.getChannel match {
             case ch: TextChannel => ch.getAsMention
             case ch => Option(ch.getName).getOrElse("unnamed group chat")
