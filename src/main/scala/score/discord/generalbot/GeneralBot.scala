@@ -85,7 +85,7 @@ class GeneralBot {
               ev.getJDA.getPresence.setGame(Game.of(GameType.DEFAULT, s"Usage: ${commands.prefix}${helpCommand.name}"))
               log("Bot is ready.")
             case ev: StatusChangeEvent =>
-              log(s"Bot status changed to ${ev.getStatus}")
+              log(s"Bot status changed to ${ev.getNewStatus}")
             case ev: DisconnectEvent =>
               ev.getCloseCode match {
                 case null => log("Disconnected, no reason provided.")
