@@ -29,7 +29,7 @@ class GameStatsCommand(implicit mo: MessageOwnership) extends Command.Anyone {
         case "" =>
           Option(message.getTextChannel)
         case str =>
-          val argsTrim = args.trim
+          val argsTrim = str.trim
           if (argsTrim.isEmpty) None
           else Option(message.getGuild).flatMap(_.getTextChannelsByName(argsTrim, true).asScala.headOption)
       }
