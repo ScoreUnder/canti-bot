@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 
-class HelpCommand(commands: Commands)(implicit exec: Scheduler, messageOwnership: MessageOwnership) extends Command.Anyone {
+class HelpCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   val pageSize = 10
 
   override def name = "help"
