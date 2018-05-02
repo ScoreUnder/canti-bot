@@ -64,6 +64,8 @@ class FindCommand(implicit messageOwnership: MessageOwnership) extends Command.A
         val header =
           if (results.size > maxResults)
             s"__First $maxResults results for ``$searchTermSanitised``__"
+          else if (results.size == 1)
+            s"__Got one result for ``$searchTermSanitised``__"
           else
             s"__Got ${results.size} results for ``$searchTermSanitised``__"
 
