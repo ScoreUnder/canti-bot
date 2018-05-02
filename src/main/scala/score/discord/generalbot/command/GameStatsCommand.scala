@@ -41,6 +41,7 @@ class GameStatsCommand(implicit mo: MessageOwnership) extends Command.Anyone {
         case Some(ch) =>
           val games = (for {
             member <- ch.getMembers.asScala
+            if !member.getUser.isBot
             game = member.getGame
             if game ne null
             if game.getType == GameType.DEFAULT
@@ -49,7 +50,7 @@ class GameStatsCommand(implicit mo: MessageOwnership) extends Command.Anyone {
             new MessageBuilder()
               .append(games.toVector
                 .sortWith((a, b) => a._2 > b._2)
-                .take(3)
+                .take(5)
                 .map { case (game, count) => s"$game ($count users)" }
                 .mkString("\n"))
               .stripMentions(message.getGuild)
