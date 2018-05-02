@@ -11,4 +11,7 @@ object MessageUtils {
 
   def sanitise(message: String): String =
     escapeFormatting(blockMentionsNaive(message))
+
+  def sanitiseCode(message: String): String =
+    message.replace("`", "`\u200C")
 }

@@ -56,10 +56,10 @@ class FindCommand(implicit messageOwnership: MessageOwnership) extends Command.A
             }
       }
       val maxResults = 5
-      val searchTermSanitised = MessageUtils.sanitise(origSearchTerm)
+      val searchTermSanitised = MessageUtils.sanitiseCode(origSearchTerm)
       results = results.take(maxResults + 1).toVector
       if (results.isEmpty) {
-        message reply BotMessages.plain(s"No results found for `$searchTermSanitised`")
+        message reply BotMessages.plain(s"No results found for ``$searchTermSanitised``")
       } else {
         val header =
           if (results.size > maxResults)
