@@ -13,7 +13,7 @@ class RichUser(val me: User) extends AnyVal {
   def mention = me.getAsMention
 
   def mentionWithName = {
-    val fullName = MessageUtils.blockMentionsNaive(s"@${me.getName}#${me.getDiscriminator}")
+    val fullName = MessageUtils.sanitise(s"@${me.getName}#${me.getDiscriminator}")
     s"$mention ($fullName)"
   }
 

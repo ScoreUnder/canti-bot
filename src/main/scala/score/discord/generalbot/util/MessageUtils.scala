@@ -8,4 +8,7 @@ object MessageUtils {
 
   def escapeFormatting(message: String): String =
     FORMAT_MATCHER.replaceAllIn(message, "\\\\$1")
+
+  def sanitise(message: String): String =
+    escapeFormatting(blockMentionsNaive(message))
 }
