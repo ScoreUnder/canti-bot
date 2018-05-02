@@ -17,7 +17,7 @@ class GameStatsCommand(implicit mo: MessageOwnership) extends Command.Anyone {
 
   override def name: String = "gamestats"
 
-  override def aliases: GenIterable[String] = Nil
+  override def aliases: GenIterable[String] = List("gs")
 
   override def description: String = "Lists out the most popular games in the given channel at this point in time"
 
