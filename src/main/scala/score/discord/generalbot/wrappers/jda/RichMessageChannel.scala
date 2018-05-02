@@ -1,10 +1,12 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.core.entities.{Message, MessageChannel, User}
+import net.dv8tion.jda.client.entities.Group
+import net.dv8tion.jda.core.entities._
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -29,4 +31,13 @@ class RichMessageChannel(val channel: MessageChannel) extends AnyVal {
         message.delete().queue()
       }
     })
+
+  def participants: Seq[User] = channel match {
+    case guildChannel: Channel =>
+      guildChannel.getMembers.asScala.view.map(_.getUser)
+    case privateChannel: PrivateChannel =>
+      List(channel.getJDA.getSelfUser, privateChannel.getUser)
+    case groupChannel: Group =>
+      groupChannel.getUsers.asScala
+  }
 }
