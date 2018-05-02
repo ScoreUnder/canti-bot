@@ -20,7 +20,7 @@ import scala.concurrent.blocking
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit messageOwnership: MessageOwnership) extends EventListener {
+class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
   commands register new Command.ServerAdminOnly {
     override def name = "setvoicerole"
 
