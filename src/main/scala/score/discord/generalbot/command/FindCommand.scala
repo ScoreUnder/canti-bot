@@ -63,9 +63,9 @@ class FindCommand(implicit messageOwnership: MessageOwnership) extends Command.A
       } else {
         val header =
           if (results.size > maxResults)
-            s"__First $maxResults results for `$searchTermSanitised`__"
+            s"__First $maxResults results for ``$searchTermSanitised``__"
           else
-            s"__Got ${results.size} results for `$searchTermSanitised`__"
+            s"__Got ${results.size} results for ``$searchTermSanitised``__"
 
         message reply BotMessages.okay(s"$header\n${results take 5 mkString "\n"}")
       }
