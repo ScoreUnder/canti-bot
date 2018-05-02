@@ -4,7 +4,7 @@ import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Game.GameType
 import net.dv8tion.jda.core.entities.{Message, TextChannel}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.{APIHelper, BotMessages}
+import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.collection.GenIterable
@@ -46,12 +46,17 @@ class GameStatsCommand(implicit mo: MessageOwnership) extends Command.Anyone {
             if game ne null
             if game.getType == GameType.DEFAULT
           } yield game.getName).groupBy(identity).mapValues(_.size)
+
+          val rows = games.size min 5
           Right(
             new MessageBuilder()
+              .append(s"__Top $rows most popular games in ${ch.getAsMention}__\n")
               .append(games.toVector
                 .sortWith((a, b) => a._2 > b._2)
-                .take(5)
-                .map { case (game, count) => s"$game ($count users)" }
+                .take(rows)
+                .map { case (unescapedGame, count) =>
+                  val game = MessageUtils.escapeFormatting(unescapedGame)
+                  s"**$game** ($count users)" }
                 .mkString("\n"))
               .stripMentions(message.getGuild)
               .getStringBuilder
