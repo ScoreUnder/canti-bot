@@ -1,13 +1,13 @@
 package score.discord.generalbot.collections
 
-import scala.collection.AbstractIterable
+import scala.collection.mutable
 
-class LogBuffer[T](capacity: Int) extends AbstractIterable[T] {
+class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T] {
   private[this] val buffer = new Array[Any](capacity)
   private var readPos, writePos = 0
   private[this] var isEmpty_ = true
 
-  override def size: Int =
+  override def length: Int =
     if (isEmpty_) 0
     else readPos - writePos match {
       case x if x > 0 => x
@@ -27,6 +27,12 @@ class LogBuffer[T](capacity: Int) extends AbstractIterable[T] {
     writePos = nextWrite
     isEmpty_ = false
   }
+
+  override def apply(idx: Int) =
+    buffer((idx + writePos) % buffer.length).asInstanceOf[T]
+
+  override def update(idx: Int, elem: T): Unit =
+    buffer((idx + writePos) % buffer.length) = elem
 
   override def iterator: Iterator[T] = new Iterator[T] {
     private[this] var myPos = writePos
