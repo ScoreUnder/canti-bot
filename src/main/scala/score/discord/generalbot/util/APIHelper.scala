@@ -1,7 +1,8 @@
 package score.discord.generalbot.util
 
 import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.requests.RestAction
+import net.dv8tion.jda.core.exceptions.ErrorResponseException
+import net.dv8tion.jda.core.requests.{ErrorResponse, RestAction}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -38,9 +39,22 @@ object APIHelper {
     * @tparam T type of object returned by API call
     * @return Future corresponding to the success/failure of the API call
     */
-  def tryRequest[T](apiCall: => RestAction[T], onFail: (Throwable) => Unit) = {
-    val future = Try(apiCall).fold(Future.failed, _.queueFuture())
+  def tryRequest[T](apiCall: => RestAction[T], onFail: (Throwable) => Unit): Future[T] = {
+    val future = tryRequest(apiCall)
     future.failed.foreach(onFail)
     future
+  }
+
+  /** Tries to run apiCall, then queues the result if successful.
+    *
+    * @param apiCall API call to queue, by name (exceptions are caught)
+    * @tparam T type of object returned by API call
+    * @return Future corresponding to the success/failure of the API call
+    */
+  def tryRequest[T](apiCall: => RestAction[T]): Future[T] =
+    Try(apiCall).fold(Future.failed, _.queueFuture())
+
+  object Error {
+    def unapply(arg: ErrorResponseException): Option[ErrorResponse] = Option(arg.getErrorResponse)
   }
 }

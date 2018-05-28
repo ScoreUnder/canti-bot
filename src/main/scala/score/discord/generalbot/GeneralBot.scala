@@ -51,6 +51,7 @@ class GeneralBot {
         val messageCache = new MessageCache(capacity = 2000)
 
         bot.setToken(config.token)
+        val quoteCommand = new QuoteCommand(messageCache)
 
         val commands = new Commands(new CommandPermissionLookup(dbConfig, LruCache.empty(2000), "command_perms"))
         bot addEventListener commands
@@ -59,6 +60,7 @@ class GeneralBot {
         bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands)
         bot addEventListener new DeleteOwnedMessages
         bot addEventListener new Spoilers(new StringByMessage(dbConfig, LruCache.empty(100), "spoilers_by_message"), commands)
+        bot addEventListener new quoteCommand.GreentextListener
         bot addEventListener messageCache
 
         val helpCommand = new HelpCommand(commands)
@@ -72,6 +74,7 @@ class GeneralBot {
         commands register new BotInfoCommand(userId = config.owner)
         commands register new GameStatsCommand
         commands register new FindCommand
+        commands register quoteCommand
         val readCommand = new ReadCommand(commands, messageCache)
         if (readCommand.available) commands register readCommand
 

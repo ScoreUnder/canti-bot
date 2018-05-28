@@ -1,5 +1,6 @@
 package score.discord.generalbot.wrappers.jda
 
+import net.dv8tion.jda.client.entities.Group
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.{Channel, User}
 import score.discord.generalbot.util.MessageUtils
@@ -12,8 +13,10 @@ class RichUser(val me: User) extends AnyVal {
 
   def mention = me.getAsMention
 
+  def mentionAsText = s"@${me.getName}#${me.getDiscriminator}"
+
   def mentionWithName = {
-    val fullName = MessageUtils.sanitise(s"@${me.getName}#${me.getDiscriminator}")
+    val fullName = MessageUtils.sanitise(mentionAsText)
     s"$mention ($fullName)"
   }
 
@@ -22,4 +25,7 @@ class RichUser(val me: User) extends AnyVal {
   def canSee(channel: Channel): Boolean =
     Option(channel.getGuild.getMember(me))
       .exists(_.hasPermission(channel, Permission.MESSAGE_READ))
+
+  def canSee(group: Group): Boolean =
+    group.getUserCache.getElementById(me.getIdLong) ne null
 }
