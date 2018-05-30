@@ -112,5 +112,7 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
 
 object QuoteCommand {
   private val CHANNEL_REGEX = "\\s*<#(\\d+)>".r
-  private val GREENTEXT_REGEX = ">>(?=\\d)".r
+  // To avoid false positives, trigger on 9+ digits
+  // 1 second past discord epoch is already 10 digits in their snowflake format.
+  private val GREENTEXT_REGEX = ">>(?=\\d{9,})".r
 }
