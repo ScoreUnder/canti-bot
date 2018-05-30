@@ -13,7 +13,7 @@ class RichMember(val member: Member) extends AnyVal {
 }
 
 class MemberRolesShim(val member: Member) extends AnyVal {
-  def +=(role: Role) = member.getGuild.getController.addRolesToMember(member, role).queue()
+  def +=(roleReason: (Role, String)) = member.getGuild.getController.addRolesToMember(member, roleReason._1).reason(roleReason._2).queue()
 
-  def -=(role: Role) = member.getGuild.getController.removeRolesFromMember(member, role).queue()
+  def -=(roleReason: (Role, String)) = member.getGuild.getController.removeRolesFromMember(member, roleReason._1).reason(roleReason._2).queue()
 }

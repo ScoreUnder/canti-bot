@@ -82,9 +82,9 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean) {
     if (shouldHaveRole != (member has role)) {
       if (shouldHaveRole)
-        member.roles += role
+        member.roles += role -> "voice state change"
       else
-        member.roles -= role
+        member.roles -= role -> "voice state change"
     }
   }
 
