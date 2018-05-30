@@ -2,7 +2,6 @@ package score.discord.generalbot.command
 import net.dv8tion.jda.client.entities.Group
 import net.dv8tion.jda.core.entities.{Channel, Message, MessageChannel, PrivateChannel}
 import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.requests.ErrorResponse
@@ -11,6 +10,7 @@ import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
+import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
 
 import scala.async.Async._
 import scala.collection.GenIterable
@@ -90,8 +90,7 @@ class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: Messag
 
   class GreentextListener extends EventListener {
     override def onEvent(event: Event): Unit = event match {
-      case ev: MessageReceivedEvent if !ev.getAuthor.isBot =>
-        val message = ev.getMessage
+      case NonBotMessage(message) =>
         QuoteCommand.GREENTEXT_REGEX
           .findPrefixMatchOf(message.getContentRaw)
           .foreach(m => QuoteCommand.this.execute(message, m.after.toString))

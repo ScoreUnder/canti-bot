@@ -2,7 +2,6 @@ package score.discord.generalbot.functionality
 
 import net.dv8tion.jda.core.entities.{Message, Role}
 import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.collections.CommandPermissionLookup
 import score.discord.generalbot.command.Command
@@ -10,6 +9,7 @@ import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.wrappers.FutureOption._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -84,17 +84,14 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
 
   override def onEvent(event: Event) {
     event match {
-      case ev: MessageReceivedEvent =>
-        if (ev.getAuthor.isBot) return
-
-        val message = ev.getMessage
+      case NonBotMessage(message) =>
         for {
           (cmdName, cmdExtra) <- splitCommand(message)
           cmd <- commands.get(cmdName)
         } {
           canRunCommand(cmd, message) onComplete {
             case Success(Right(_)) => cmd.execute(message, cmdExtra)
-            case Success(Left(err)) => ev.getChannel sendTemporary BotMessages.error(err)
+            case Success(Left(err)) => message.getChannel sendTemporary BotMessages.error(err)
             case Failure(ex) => ex.printStackTrace()
           }
         }
