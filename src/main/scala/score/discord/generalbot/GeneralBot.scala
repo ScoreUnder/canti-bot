@@ -43,9 +43,9 @@ class GeneralBot {
         val messageCache = new MessageCache(capacity = 2000)
 
         bot.setToken(config.token)
-        val quoteCommand = new QuoteCommand(messageCache)
 
         val commands = new Commands(new CommandPermissionLookup(dbConfig, LruCache.empty(2000), "command_perms"))
+        val quoteCommand = new QuoteCommand(commands, messageCache)
         bot addEventListener commands
         bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands)
         bot addEventListener new TableFlip
@@ -65,7 +65,7 @@ class GeneralBot {
         commands register new BlameCommand(commands)
         commands register new BotInfoCommand(userId = config.owner)
         commands register new GameStatsCommand
-        commands register new FindCommand
+        commands register new FindCommand(commands)
         commands register quoteCommand
         val readCommand = new ReadCommand(commands, messageCache)
         if (readCommand.available) commands register readCommand

@@ -6,6 +6,7 @@ import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.requests.ErrorResponse
 import score.discord.generalbot.collections.MessageCache
+import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -17,12 +18,22 @@ import scala.collection.GenIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   override def name: String = "quote"
 
-  override val aliases: GenIterable[String] = List("quote")
+  override val aliases: GenIterable[String] = List("q")
 
   override def description: String = "Embed a message as a quote"
+
+  override def longDescription =
+    s"""Usage:
+       |`${commands.prefix}$name 12341234`
+       |If 12341234 is a message ID, the corresponding message will be embedded as a quote.
+       |As Discord provides no way to look up a message by ID alone, you may need to specify the channel too:
+       |`${commands.prefix}$name 12341234 #general`
+       |This command may also be invoked with 4chan-style post ID quotes:
+       |`>>12341234`
+    """.stripMargin
 
   override def execute(cmdMessage: Message, args: String): Unit = {
     def replyFromChannel(ch: MessageChannel, specifiedChannel: Option[_], quoteId: ID[Message]): Future[Message] = {

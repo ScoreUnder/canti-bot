@@ -1,6 +1,7 @@
 package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.entities.Message
+import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -10,12 +11,26 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class FindCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class FindCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   override def name: String = "find"
 
   override val aliases: GenIterable[String] = List("id")
 
   override def description: String = "Finds a role, user or emoji by name"
+
+  override val longDescription =
+    s"""Usage:
+       |`${commands.prefix}$name mod`
+       |This might find the moderator roles on the server.
+       |`${commands.prefix}$name score`
+       |This might find users called score in the server.
+       |`${commands.prefix}$name blob`
+       |This might find blob emotes on the server.
+       |`${commands.prefix}$name fortnite`
+       |This might find users playing fortnite on the server.
+       |
+       |So far, this searches roles, emotes, users, and games.
+    """.stripMargin
 
   override def execute(message: Message, args: String): Unit = {
     Future {
