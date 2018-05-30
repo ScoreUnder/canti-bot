@@ -6,8 +6,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService}
 
 import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.core.entities.Game
-import net.dv8tion.jda.core.entities.Game.GameType
-import net.dv8tion.jda.core.events.{Event, ReadyEvent}
+import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder}
 import score.discord.generalbot.collections._
@@ -71,14 +70,12 @@ class GeneralBot {
         val readCommand = new ReadCommand(commands, messageCache)
         if (readCommand.available) commands register readCommand
 
-        bot addEventListener new EventListener {
-          override def onEvent(event: Event) = event match {
-            case ev: ReadyEvent =>
-              // TODO: Make configurable?
-              ev.getJDA.getPresence.setGame(Game.of(GameType.DEFAULT, s"Usage: ${commands.prefix}${helpCommand.name}"))
-            case _ =>
-          }
-        }
+        bot addEventListener ({
+          case ev: ReadyEvent =>
+            // TODO: Make configurable?
+            ev.getJDA.getPresence.setGame(Game playing s"Usage: ${commands.prefix}${helpCommand.name}")
+          case _ =>
+        }: EventListener)
 
         // The discord bot spawns off new threads and its event handlers expect
         // everything to have been set up, so this must come last.

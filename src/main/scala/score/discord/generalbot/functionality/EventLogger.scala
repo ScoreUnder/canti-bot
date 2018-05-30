@@ -1,5 +1,6 @@
 package score.discord.generalbot.functionality
 
+import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events._
 import net.dv8tion.jda.core.events.guild.member.GuildMemberNickChangeEvent
 import net.dv8tion.jda.core.events.guild.voice._
@@ -16,6 +17,9 @@ class EventLogger extends EventListener {
 
   def log(msg: String): Unit = println(s"${format format System.currentTimeMillis} $msg")
 
+  private def formatMessage(message: Message) =
+    message.getContentRaw.split('\n').map("\t" + _).mkString("\n")
+
   override def onEvent(event: Event): Unit = event match {
     case _: ReadyEvent =>
       log("Bot is ready.")
@@ -28,12 +32,12 @@ class EventLogger extends EventListener {
       }
     case ev: MessageReceivedEvent =>
       log(s"MESSAGE: ${ev.getMessage.rawId} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-        ev.getMessage.getContentRaw.split('\n').map("\t" + _).mkString("\n"))
+        formatMessage(ev.getMessage))
     case ev: MessageDeleteEvent =>
       log(s"DELETED: ${ev.getChannel.unambiguousString} id=${ev.getMessageIdLong}")
     case ev: MessageUpdateEvent =>
       log(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
-        ev.getMessage.getContentRaw.split('\n').map("\t" + _).mkString("\n"))
+        formatMessage(ev.getMessage))
     case ev: GuildVoiceJoinEvent =>
       log(s"VOICE JOIN: ${ev.getMember.getUser.unambiguousString} in ${ev.getChannelJoined.unambiguousString}")
     case ev: GuildVoiceLeaveEvent =>
