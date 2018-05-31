@@ -76,6 +76,7 @@ class GeneralBot {
             ev.getJDA.getPresence.setGame(Game playing s"Usage: ${commands.prefix}${helpCommand.name}")
           case _ =>
         }: EventListener)
+        bot addEventListener new EventLogger
 
         // The discord bot spawns off new threads and its event handlers expect
         // everything to have been set up, so this must come last.
