@@ -84,7 +84,7 @@ class FindCommand(commands: Commands)(implicit messageOwnership: MessageOwnershi
           else
             s"__Got ${results.size} results for ``$searchTermSanitised``__"
 
-        message reply BotMessages.okay(s"$header\n${results take 5 mkString "\n"}")
+        message reply BotMessages.okay(s"$header\n${results take maxResults mkString "\n"}")
       }
     }.failed.foreach(APIHelper.loudFailure("searching for entities", message.getChannel))
   }
