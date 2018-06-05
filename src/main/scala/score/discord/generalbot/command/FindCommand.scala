@@ -70,7 +70,7 @@ class FindCommand(commands: Commands)(implicit messageOwnership: MessageOwnershi
               s"**Game** ${m.getUser.mentionWithName} playing $game"
             }
       }
-      val maxResults = 5
+      val maxResults = 10
       val searchTermSanitised = MessageUtils.sanitiseCode(origSearchTerm)
       results = results.take(maxResults + 1).toVector
       if (results.isEmpty) {
