@@ -30,7 +30,11 @@ object APIHelper {
     */
   def loudFailure(whatFailed: String, channel: MessageChannel)(exception: Throwable) {
     failure(whatFailed)(exception)
-    channel ! BotMessages.error(s"Unknown error occurred when $whatFailed")
+    channel ! BotMessages.error(
+      exception match {
+        case Error(x) => s"Error when $whatFailed: ${x.getMeaning}"
+        case _ => s"Unknown error occurred when $whatFailed"
+      })
   }
 
   /** Tries to run apiCall, then queues the result if successful.
