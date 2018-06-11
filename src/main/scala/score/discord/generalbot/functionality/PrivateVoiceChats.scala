@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities._
-import net.dv8tion.jda.core.events.guild.voice.{GuildVoiceLeaveEvent, GuildVoiceMoveEvent}
+import net.dv8tion.jda.core.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
@@ -276,12 +276,8 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
           userByChannel.remove(guildId, channelId)
       }
 
-    case _: GuildVoiceLeaveEvent | _: GuildVoiceMoveEvent =>
-      // TODO: Fix your shit JDA
-      val channel = event match {
-        case ev: GuildVoiceLeaveEvent => ev.getChannelLeft
-        case ev: GuildVoiceMoveEvent => ev.getChannelLeft
-      }
+    case ev: GuildVoiceUpdateEvent =>
+      val channel = ev.getChannelLeft
 
       if (channel.getMembers.isEmpty)
         async {
