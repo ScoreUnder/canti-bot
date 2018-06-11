@@ -23,7 +23,7 @@ import scala.async.Async._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.blocking
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
@@ -156,10 +156,12 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
               val newVoiceChannel = await(channelReq.queueFuture())
 
-              blocking {
-                userByChannel.synchronized {
-                  userByChannel(newVoiceChannel) = message.getAuthor
-                }
+              userByChannel.synchronized {
+                userByChannel(newVoiceChannel) = message.getAuthor
+              }.failed.foreach { ex =>
+                APIHelper.failure("saving private channel")(ex)
+                newVoiceChannel.delete().queueFuture().failed.foreach(APIHelper.failure("deleting private channel after database error"))
+                userByChannel remove newVoiceChannel
               }
 
               channel sendTemporary BotMessages.okay("Your channel has been created.").setTitle("Success", null)
@@ -266,25 +268,30 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
             case Some(channel) if channel.getMembers.isEmpty =>
               async {
                 await(channel.delete.queueFuture())
-                blocking(userByChannel remove channel)
+                // Note: Sequenced rather than parallel because the channel
+                // might not be deleted due to permissions or other reasons.
+                await(userByChannel remove channel)
               }.failed.foreach(APIHelper.failure("deleting unused private channel"))
             case _ =>
           }
         }
 
-        for ((guildId, channelId) <- toRemove)
-          userByChannel.remove(guildId, channelId)
-      }
+        val removed = Future.sequence {
+          for ((guildId, channelId) <- toRemove)
+            yield userByChannel.remove(guildId, channelId)
+        }
+        await(removed)  // Propagate exceptions
+      }.failed.foreach(APIHelper.failure("processing initial private voice chat state"))
 
     case ev: GuildVoiceUpdateEvent =>
       val channel = ev.getChannelLeft
 
       if (channel.getMembers.isEmpty)
         async {
-          val user = await(blocking(userByChannel(channel)))
+          val user = await(userByChannel(channel))
           if (user.isDefined) {
             await(channel.delete.queueFuture())
-            blocking(userByChannel.remove(channel))
+            await(userByChannel remove channel)
           }
         }.failed.foreach(APIHelper.failure("deleting unused private channel"))
 

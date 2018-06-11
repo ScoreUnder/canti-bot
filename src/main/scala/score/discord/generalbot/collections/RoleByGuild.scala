@@ -45,9 +45,9 @@ class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile],
     database.run(roleByGuildTable.insertOrUpdate(guild.id, role.id))
   }
 
-  def remove(guild: Guild): Unit = remove(guild.id)
+  def remove(guild: Guild): Future[Int] = remove(guild.id)
 
-  def remove(guild: ID[Guild]) {
+  def remove(guild: ID[Guild]): Future[Int] = {
     cache.updateById(guild, None)
     database.run(lookupQuery(guild).delete)
   }

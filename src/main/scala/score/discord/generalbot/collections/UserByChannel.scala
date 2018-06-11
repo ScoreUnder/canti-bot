@@ -44,17 +44,17 @@ class UserByChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
     cache(channel).map(_.flatMap(jda.findUser))
   }
 
-  def update(channel: Channel, user: User) {
+  def update(channel: Channel, user: User): Future[Int] = {
     cache(channel) = Some(user.id)
     dbConfig.db.run(userByChannelTable.insertOrUpdate(channel.getGuild.id, channel.id, user.id))
   }
 
-  def remove(channel: Channel): Unit = {
+  def remove(channel: Channel): Future[Int] = {
     cache(channel) = None
     dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).delete)
   }
 
-  def remove(guild: ID[Guild], channel: ID[Channel]) {
+  def remove(guild: ID[Guild], channel: ID[Channel]): Future[Int] = {
     cache.updateById(channel, None)
     dbConfig.db.run(lookupQuery(guild, channel).delete)
   }

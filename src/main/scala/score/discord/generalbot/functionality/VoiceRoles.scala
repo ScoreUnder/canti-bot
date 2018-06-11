@@ -10,13 +10,12 @@ import score.discord.generalbot.collections.RoleByGuild
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.ParseUtils._
-import score.discord.generalbot.util.{BotMessages, CommandHelper, GuildUserId}
+import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper, GuildUserId}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.blocking
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -34,7 +33,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
         else
           findRole(message.getGuild, args.trim).fold(
             identity, { role =>
-              roleByGuild(message.getGuild) = role
+              roleByGuild(message.getGuild) = role  // TODO: Handle exceptions from Future
               BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
             }).addField("Requested by", message.getAuthor.mentionWithName, true)
       )
@@ -54,7 +53,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
           (CommandHelper(message).guild match {
             case Left(err) => BotMessages error err
             case Right(guild) =>
-              await(blocking(roleByGuild(guild)))
+              await(roleByGuild(guild))
                 .toRight(BotMessages.plain("There is currently no voice chat role set."))
                 .map(role => BotMessages okay s"The voice chat role is currently set to ${role.mention}.")
                 .fold(identity, identity)
@@ -73,9 +72,9 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
 
     override def execute(message: Message, args: String) {
       async {
-        blocking(roleByGuild remove message.getGuild)
+        await(roleByGuild remove message.getGuild)
         message.addReaction("👌").queue()
-      }
+      }.failed.foreach(APIHelper.loudFailure("removing voice role", message.getChannel))
     }
   }
 
@@ -127,10 +126,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
         }
       }
 
-      await(blocking(roleByGuild(member.getGuild))) match {
-        case Some(role) => queueUpdate(role)
-        case None =>
-      }
+      await(roleByGuild(member.getGuild)).foreach(queueUpdate)
     }
   }
 

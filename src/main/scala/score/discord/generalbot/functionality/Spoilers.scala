@@ -8,6 +8,7 @@ import score.discord.generalbot.collections.StringByMessage
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
+import score.discord.generalbot.wrappers.Tap._
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.matching.Events.{MessageDelete, NonBotReact}
 import score.discord.generalbot.wrappers.jda.matching.React
@@ -63,8 +64,11 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
           s"**Click the magnifying glass** to see ${hintText.trim} (from ${message.getAuthor.mentionWithName})"
         )))
 
-        spoilerTexts(spoilerMessage.id) = spoilerText.trim
-        spoilerMessage.addReaction(spoilerEmote).queue()
+        val spoilerDbUpdate = {
+          spoilerTexts(spoilerMessage.id) = spoilerText.trim
+        }
+        await(spoilerMessage.addReaction(spoilerEmote).queueFuture())
+        await(spoilerDbUpdate)
       }.failed.foreach(APIHelper.loudFailure("running spoiler command", message.getChannel))
     }
 
@@ -78,14 +82,14 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
         case ch => Option(ch.getName).getOrElse("unnamed group chat")
       }
       for {
-        maybeText <- spoilerTexts(message)
+        maybeText <- spoilerTexts(message).tap(_.failed.foreach(APIHelper.failure("displaying spoiler")))
         text <- maybeText
         privateChannel <- APIHelper.tryRequest(user.openPrivateChannel(),
           onFail = APIHelper.failure(s"opening private channel with ${user.unambiguousString}"))
       } {
         privateChannel.sendMessage(s"**Spoiler contents** from $channelName\n$text").queue()
       }
-    case MessageDelete(id) => spoilerTexts.remove(id)
+    case MessageDelete(id) => spoilerTexts.remove(id).failed.foreach(APIHelper.failure("removing spoiler"))
     case _ =>
   }
 }

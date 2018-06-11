@@ -3,14 +3,14 @@ package score.discord.generalbot.command
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.util.ParseUtils._
+import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.FutureEither._
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, blocking}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.ServerAdminOnly {
@@ -50,12 +50,14 @@ class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwne
           }
         } yield {
           async {
-            val previous = await(blocking(commands.permissionLookup(command, guild))).getOrElse(everyone)
+            val previous = await(commands.permissionLookup(command, guild)).getOrElse(everyone)
 
-            if (role == everyone)
-              commands.permissionLookup.remove(command, guild)
-            else
-              commands.permissionLookup(command, guild) = role
+            await {
+              if (role == everyone)
+                commands.permissionLookup.remove(command, guild)
+              else
+                commands.permissionLookup(command, guild) = role
+            }
 
             BotMessages
               .okay("Command restriction altered")
@@ -83,8 +85,7 @@ class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwne
       case Success(x) =>
         message reply x.fold(identity, identity).toMessage
       case Failure(x) =>
-        x.printStackTrace()
-        message reply BotMessages.error("An unknown error occurred")
+        APIHelper.loudFailure("processing a command", message.getChannel)(x)
     }
   }
 }

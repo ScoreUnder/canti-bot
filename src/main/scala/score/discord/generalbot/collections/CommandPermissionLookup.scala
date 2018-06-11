@@ -42,12 +42,12 @@ class CommandPermissionLookup(dbConfig: DatabaseConfig[_ <: JdbcProfile],
   def apply(command: Command with ISnowflake, guild: Guild, default: Option[Role] = None): Future[Option[Role]] =
     cache((command, guild)).map(_ map guild.findRole getOrElse default)
 
-  def update(command: Command with ISnowflake, guild: Guild, role: Role): Unit = {
+  def update(command: Command with ISnowflake, guild: Guild, role: Role): Future[Int] = {
     cache((command, guild)) = Some(role.id)
     dbConfig.db.run(commandPermissionTable.insertOrUpdate(command.id, guild.id, role.id))
   }
 
-  def remove(command: Command with ISnowflake, guild: Guild) {
+  def remove(command: Command with ISnowflake, guild: Guild): Future[Int] = {
     cache((command, guild)) = None
     dbConfig.db.run(lookupQuery(command.id, guild.id).delete)
   }

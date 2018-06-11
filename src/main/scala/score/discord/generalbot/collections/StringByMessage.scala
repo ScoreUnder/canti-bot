@@ -8,6 +8,7 @@ import slick.jdbc.JdbcProfile
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import score.discord.generalbot.wrappers.Tap._
 
 class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile],
                       cacheBase: Cache[ID[Message], Option[String]],
@@ -39,14 +40,13 @@ class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile],
 
   def apply(messageId: ID[Message]): Future[Option[String]] = cache(messageId)
 
-  def update(messageId: ID[Message], text: String) {
+  def update(messageId: ID[Message], text: String): Future[Int] = {
     cache(messageId) = Some(text)
     database.run(stringByMessage.insertOrUpdate(messageId, text))
   }
 
-  def remove(messageId: ID[Message]) {
-    database.run(lookupQuery(messageId).delete).foreach { _ =>
+  def remove(messageId: ID[Message]): Future[Int] =
+    database.run(lookupQuery(messageId).delete).tap(_.foreach { _ =>
       cache.invalidate(messageId)
-    }
-  }
+    })
 }
