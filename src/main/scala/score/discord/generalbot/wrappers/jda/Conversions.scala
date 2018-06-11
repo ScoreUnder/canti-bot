@@ -21,7 +21,7 @@ object Conversions {
 
   implicit final def toRichUser(user: User): RichUser = new RichUser(user)
 
-  implicit final def toRichSnowflake(snowflake: ISnowflake): RichSnowflake[snowflake.type] = new RichSnowflake[snowflake.type](snowflake)
+  implicit final def toRichSnowflake[T <: ISnowflake](snowflake: T): RichSnowflake[T] = new RichSnowflake[T](snowflake)
 
   implicit final def toRichRole(role: Role): RichRole = new RichRole(role)
 
