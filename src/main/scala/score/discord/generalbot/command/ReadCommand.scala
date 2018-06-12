@@ -102,20 +102,22 @@ class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messa
         else cmd
       val kakasi = Runtime.getRuntime.exec(withDict)
       val os = kakasi.getOutputStream
-      async(blocking {
+      Future {
         val encoded = CODEC.encoder.encode(CharBuffer.wrap(text))
         val encodedArr = new Array[Byte](encoded.remaining())
         encoded.get(encodedArr)
-        os.write(encodedArr)
-        os.flush()
-        os.close()
-      })
+        blocking {
+          os.write(encodedArr)
+          os.flush()
+          os.close()
+        }
+      }
 
-      val stdout = async(blocking {
+      val stdout = Future(blocking {
         io.Source.fromInputStream(kakasi.getInputStream).mkString
       })
 
-      val stderr = async(blocking {
+      val stderr = Future(blocking {
         io.Source.fromInputStream(kakasi.getErrorStream).mkString
       })
 
