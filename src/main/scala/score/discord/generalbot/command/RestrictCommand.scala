@@ -73,7 +73,7 @@ class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwne
       case Array(cmdName) =>
         for {
           command <- Future.successful(searchCommand(cmdName)).flatView
-          role <- Future(commands.permissionLookup(command, message.getGuild)).flatten
+          role <- commands.permissionLookup(command, message.getGuild)
             .map(_.toRight(BotMessages error "That command has not yet been restricted by role."))
             .flatView
         } yield {
