@@ -1,6 +1,6 @@
 package score.discord.generalbot.command
 import net.dv8tion.jda.client.entities.Group
-import net.dv8tion.jda.core.entities.{Channel, Message, MessageChannel, PrivateChannel}
+import net.dv8tion.jda.core.entities._
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
@@ -25,7 +25,7 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
 
   override def description: String = "Embed a message as a quote"
 
-  override def longDescription =
+  override val longDescription =
     s"""Usage:
        |`${commands.prefix}$name 12341234`
        |If 12341234 is a message ID, the corresponding message will be embedded as a quote.
@@ -70,13 +70,11 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
     }
 
     async {
-      val (quoteIdStr, remains) = args.trim.span(Character.isDigit)
-      val quoteId = ID.fromString[Message](quoteIdStr)
-      val specifiedChannel = QuoteCommand.CHANNEL_REGEX.findPrefixMatchOf(remains)
+      val (quoteId, specifiedChannel) = parseQuoteIDs(args)
       val channel =
         specifiedChannel match {
-          case Some(regexMatch) =>
-            Option(cmdMessage.getJDA.getTextChannelById(regexMatch.group(1)))
+          case Some(chanID) =>
+            Option(cmdMessage.getJDA.getTextChannelById(chanID.value))
           case None =>
             messageCache
               .find(_.messageId == quoteId)
@@ -97,6 +95,22 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
           cmdMessage reply BotMessages.error("I do not have access to the specified channel.")
       }
     }.failed.foreach(APIHelper.loudFailure("quoting a message", cmdMessage.getChannel))
+  }
+
+  private def parseQuoteIDs(args: String) = {
+    val (firstIdStr, remains) = args.trim.span(Character.isDigit)
+    val secondIdStr = remains.drop(1).takeWhile(Character.isDigit)
+
+    // If shift+click was used to copy a long ID
+    if (remains.startsWith("-") && secondIdStr.nonEmpty) {
+      (ID.fromString[Message](secondIdStr), Some(ID.fromString[TextChannel](firstIdStr)))
+    } else {
+      val quoteId = ID.fromString[Message](firstIdStr)
+      val specifiedChannel = QuoteCommand.CHANNEL_REGEX
+        .findPrefixMatchOf(remains)
+        .map(m => ID.fromString[TextChannel](m.group(1)))
+      (quoteId, specifiedChannel)
+    }
   }
 
   class GreentextListener extends EventListener {
