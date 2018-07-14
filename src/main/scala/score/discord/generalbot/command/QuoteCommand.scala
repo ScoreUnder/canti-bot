@@ -54,16 +54,8 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
         message <- foundMessage
         reply <- cmdMessage reply {
           message match {
-            case Right(msg) =>
-              val chanName = Option(ch.getName).map("#" + _).getOrElse("Untitled channel")
-              val sender = msg.getAuthor
-              BotMessages
-                .plain(msg.getContentRaw)
-                .setAuthor(sender.getName, null, sender.getAvatarUrl)
-                .setTimestamp(msg.getCreationTime)
-                .setFooter(s"$chanName | Requested by ${cmdMessage.getAuthor.mentionAsText}", null)
-            case Left(err) =>
-              BotMessages.error(err)
+            case Right(msg) => getMessageAsQuote(cmdMessage, ch, msg)
+            case Left(err) => BotMessages.error(err)
           }
         }
       } yield reply
@@ -95,6 +87,16 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
           cmdMessage reply BotMessages.error("I do not have access to the specified channel.")
       }
     }.failed.foreach(APIHelper.loudFailure("quoting a message", cmdMessage.getChannel))
+  }
+
+  private def getMessageAsQuote(cmdMessage: Message, ch: MessageChannel, msg: Message) = {
+    val chanName = Option(ch.getName).map("#" + _).getOrElse("Untitled channel")
+    val sender = msg.getAuthor
+    BotMessages
+      .plain(msg.getContentRaw)
+      .setAuthor(sender.getName, null, sender.getAvatarUrl)
+      .setTimestamp(msg.getCreationTime)
+      .setFooter(s"$chanName | Requested by ${cmdMessage.getAuthor.mentionAsText}", null)
   }
 
   private def parseQuoteIDs(args: String) = {
