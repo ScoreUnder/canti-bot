@@ -63,15 +63,17 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
 
     async {
       val (quoteId, specifiedChannel) = parseQuoteIDs(args)
+      val jda = cmdMessage.getJDA
       val channel =
         specifiedChannel match {
           case Some(chanID) =>
-            Option(cmdMessage.getJDA.getTextChannelById(chanID.value))
+            Option(jda.getTextChannelById(chanID.value))
+              .orElse(Option(jda.getPrivateChannelById(chanID.value)))
           case None =>
             messageCache
               .find(_.messageId == quoteId)
               .map(m => m.chanId)
-              .flatMap(ch => Option(cmdMessage.getJDA.getTextChannelById(ch.value)))
+              .flatMap(ch => Option(jda.getTextChannelById(ch.value)))
               .orElse(Some(cmdMessage.getChannel))
         }
 
