@@ -61,7 +61,7 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
         case Some(_) => Left("You do not have access to the specified channel.")
         case None => Left("I do not have access to the specified channel.")
       }
-      allowedChannel match {
+      val botReply = allowedChannel match {
         case Right(ch) =>
           import APIHelper.Error
           import ErrorResponse._
@@ -88,6 +88,7 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
         case Left(err) =>
           cmdMessage reply BotMessages.error(err)
       }
+      await(botReply)
     }.failed.foreach(APIHelper.loudFailure("quoting a message", cmdMessage.getChannel))
   }
 
