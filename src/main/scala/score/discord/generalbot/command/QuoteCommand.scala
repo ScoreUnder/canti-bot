@@ -36,31 +36,6 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
     """.stripMargin
 
   override def execute(cmdMessage: Message, args: String): Unit = {
-    def replyFromChannel(ch: MessageChannel, specifiedChannel: Option[_], quoteId: ID[Message]): Future[Message] = {
-      import APIHelper.Error
-      import ErrorResponse._
-      val foundMessage = APIHelper.tryRequest(ch getMessageById quoteId.value).map(Right(_)).recover {
-        case Error(UNKNOWN_MESSAGE) if specifiedChannel.isEmpty =>
-          Left("Can't find the channel that message is in. Try specifying it manually.")
-        case Error(UNKNOWN_MESSAGE) =>
-          Left("Can't find that message in the channel specified.")
-        case Error(UNKNOWN_CHANNEL) =>
-          Left("Can't find that channel.")
-        case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) | _: PermissionException =>
-          Left("I don't have permission to read messages in that channel.")
-      }
-
-      for {
-        message <- foundMessage
-        reply <- cmdMessage reply {
-          message match {
-            case Right(msg) => getMessageAsQuote(cmdMessage, ch, msg)
-            case Left(err) => BotMessages.error(err)
-          }
-        }
-      } yield reply
-    }
-
     async {
       val (quoteId, specifiedChannel) = parseQuoteIDs(args)
       val jda = cmdMessage.getJDA
@@ -79,14 +54,39 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
 
 
       val sender = cmdMessage.getAuthor
-      channel match {
-        case Some(ch: Channel) if sender canSee ch => await(replyFromChannel(ch, specifiedChannel, quoteId))
-        case Some(ch: Group) if sender canSee ch => await(replyFromChannel(ch, specifiedChannel, quoteId))
-        case Some(ch: PrivateChannel) if ch.getUser == sender => await(replyFromChannel(ch, specifiedChannel, quoteId))
-        case Some(_) =>
-          cmdMessage reply BotMessages.error("You do not have access to the specified channel.")
-        case None =>
-          cmdMessage reply BotMessages.error("I do not have access to the specified channel.")
+      val allowedChannel = channel match {
+        case Some(ch: Channel) if sender canSee ch => Right(ch)
+        case Some(ch: Group) if sender canSee ch => Right(ch)
+        case Some(ch: PrivateChannel) if ch.getUser == sender => Right(ch)
+        case Some(_) => Left("You do not have access to the specified channel.")
+        case None => Left("I do not have access to the specified channel.")
+      }
+      allowedChannel match {
+        case Right(ch) =>
+          import APIHelper.Error
+          import ErrorResponse._
+          val foundMessage = APIHelper.tryRequest(ch getMessageById quoteId.value).map(Right(_)).recover {
+            case Error(UNKNOWN_MESSAGE) if specifiedChannel.isEmpty =>
+              Left("Can't find the channel that message is in. Try specifying it manually.")
+            case Error(UNKNOWN_MESSAGE) =>
+              Left("Can't find that message in the channel specified.")
+            case Error(UNKNOWN_CHANNEL) =>
+              Left("Can't find that channel.")
+            case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) | _: PermissionException =>
+              Left("I don't have permission to read messages in that channel.")
+          }
+
+          for {
+            message <- foundMessage
+            reply <- cmdMessage reply {
+              message match {
+                case Right(msg) => getMessageAsQuote(cmdMessage, ch, msg)
+                case Left(err) => BotMessages.error(err)
+              }
+            }
+          } yield reply
+        case Left(err) =>
+          cmdMessage reply BotMessages.error(err)
       }
     }.failed.foreach(APIHelper.loudFailure("quoting a message", cmdMessage.getChannel))
   }
