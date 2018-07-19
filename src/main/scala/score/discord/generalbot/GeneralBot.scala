@@ -46,12 +46,14 @@ class GeneralBot {
 
         val commands = new Commands(new CommandPermissionLookup(dbConfig, LruCache.empty(2000), "command_perms"))
         val quoteCommand = new QuoteCommand(commands, messageCache)
+        val conversations = new Conversations
         bot addEventListener commands
         bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands)
         bot addEventListener new TableFlip
         bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands)
         bot addEventListener new DeleteOwnedMessages
-        bot addEventListener new Spoilers(new StringByMessage(dbConfig, LruCache.empty(100), "spoilers_by_message"), commands)
+        bot addEventListener conversations
+        bot addEventListener new Spoilers(new StringByMessage(dbConfig, LruCache.empty(100), "spoilers_by_message"), commands, conversations)
         bot addEventListener new quoteCommand.GreentextListener
         bot addEventListener messageCache
 

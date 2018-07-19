@@ -17,6 +17,8 @@ class RichMessageChannel(val channel: MessageChannel) extends AnyVal {
 
   def unambiguousString = s"MessageChannel(${channel.rawId} /* $name */)"
 
+  def mention = s"<#${channel.rawId}>"
+
   def !(message: MessageFromX): Future[Message] = channel.sendMessage(message.toMessage).queueFuture()
 
   def sendOwned(message: MessageFromX, owner: User)(implicit messageOwnership: MessageOwnership) = {

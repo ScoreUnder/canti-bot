@@ -1,6 +1,6 @@
 package score.discord.generalbot.functionality
 
-import net.dv8tion.jda.core.entities.{Message, TextChannel}
+import net.dv8tion.jda.core.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.exceptions.{ErrorResponseException, PermissionException}
 import net.dv8tion.jda.core.hooks.EventListener
@@ -15,8 +15,9 @@ import score.discord.generalbot.wrappers.jda.matching.React
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messageOwnership: MessageOwnership) extends EventListener {
+class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership) extends EventListener {
   val spoilerEmote = "🔍"
 
   commands register new Command.ServerAdminDiscretion {
@@ -42,15 +43,6 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
 
     override def execute(message: Message, args: String) {
       async {
-        // Must be lowercase (to allow case insensitive string comparison)
-        val hintPrefix = "hint:"
-        val Array(hintText, spoilerText) =
-          if (args.take(hintPrefix.length).toLowerCase == hintPrefix) {
-            (args drop hintPrefix.length).split("\n", 2)
-          } else {
-            Array("spoilers", args)
-          }
-
         APIHelper.tryRequest(message.delete(), {
           case _: PermissionException =>
             message reply BotMessages.error("I don't have permission to delete messages here.")
@@ -60,19 +52,59 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands)(implicit messa
             APIHelper.loudFailure("deleting a message", message.getChannel)(e)
         })
 
-        val spoilerMessage = await(message.reply(BotMessages.okay(
-          s"**Click the magnifying glass** to see ${hintText.trim} (from ${message.getAuthor.mentionWithName})"
-        )))
-
-        val spoilerDbUpdate = {
-          spoilerTexts(spoilerMessage.id) = spoilerText.trim
+        args.trim match {
+          case "" =>
+            await(createSpoilerConversation(message))
+          case trimmed =>
+            await(createSpoiler(message.getChannel, message.getAuthor, trimmed))
         }
-        await(spoilerMessage.addReaction(spoilerEmote).queueFuture())
-        await(spoilerDbUpdate)
       }.failed.foreach(APIHelper.loudFailure("running spoiler command", message.getChannel))
     }
 
+    private def createSpoilerConversation(message: Message) = {
+      val channel = message.getChannel
+      for {
+        privateChannel <- message.getAuthor.openPrivateChannel().queueFuture()
+        myMessage <- privateChannel.sendMessage(
+          s"Please enter your spoiler contents for ${channel.mention}, or reply with 'cancel' to cancel."
+        ).queueFuture()
+      } yield {
+        conversations.start(message.getAuthor, privateChannel) { conversation =>
+          conversation.message.getContentRaw match {
+            case "cancel" =>
+              conversation.message.reply("Did not create a spoiler.")
+            case spoiler =>
+              for (_ <- createSpoiler(channel, conversation.message.getAuthor, spoiler))
+                conversation.message.reply("Created your spoiler.")
+          }
+        }
+      }
+    }
+
     override def getIdLong = -1145591283071885991L
+  }
+
+  private def createSpoiler(spoilerChannel: MessageChannel, author: User, args: String): Future[Unit] = {
+    async {
+      // Must be lowercase (to allow case insensitive string comparison)
+      val hintPrefix = "hint:"
+      val Array(hintText, spoilerText) =
+        if (args.take(hintPrefix.length).toLowerCase == hintPrefix) {
+          (args drop hintPrefix.length).split("\n", 2)
+        } else {
+          Array("spoilers", args)
+        }
+
+      val spoilerMessage = await(spoilerChannel.sendOwned(BotMessages.okay(
+        s"**Click the magnifying glass** to see ${hintText.trim} (from ${author.mentionWithName})"
+      ), owner = author))
+
+      val spoilerDbUpdate = {
+        spoilerTexts(spoilerMessage.id) = spoilerText.trim
+      }
+      await(spoilerMessage.addReaction(spoilerEmote).queueFuture())
+      await(spoilerDbUpdate)
+    }
   }
 
   override def onEvent(event: Event): Unit = event match {
