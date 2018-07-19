@@ -29,7 +29,7 @@ class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit mess
        |`${commands.prefix}$name 12341234`
        |If 12341234 is a message ID, the corresponding message will be embedded as a quote.
        |You may quote from other channels by shift-clicking "Copy ID" in Discord and using that extended message ID.
-       |You can also specify it manually:
+       |You can also specify the channel manually, if you do not use the extended ID:
        |`${commands.prefix}$name 12341234 #general`
        |This command may also be invoked with 4chan-style post ID quotes:
        |`>>12341234`
