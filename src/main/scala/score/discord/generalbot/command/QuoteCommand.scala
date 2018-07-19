@@ -16,7 +16,6 @@ import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
 import scala.async.Async._
 import scala.collection.GenIterable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   override def name: String = "quote"
