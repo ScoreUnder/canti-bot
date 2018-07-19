@@ -1,6 +1,6 @@
 package score.discord.generalbot.command
 
-import java.io.File
+import java.io.{File, IOException}
 import java.nio.CharBuffer
 import java.nio.charset.CodingErrorAction
 import java.util.concurrent.TimeUnit
@@ -131,12 +131,16 @@ class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messa
   }
 
   def available: Boolean = {
-    val result = queryKakasi(KAKASI_ROMAJI, "今テストなう")
     try {
-      Await.result(result, Duration(30, TimeUnit.SECONDS))
-        .trim == "ima tesuto nau"
+      val result = queryKakasi(KAKASI_ROMAJI, "今テストなう")
+      try {
+        Await.result(result, Duration(30, TimeUnit.SECONDS))
+          .trim == "ima tesuto nau"
+      } catch {
+        case _: TimeoutException => false
+      }
     } catch {
-      case _: TimeoutException => false
+      case _: IOException => false
     }
   }
 }
