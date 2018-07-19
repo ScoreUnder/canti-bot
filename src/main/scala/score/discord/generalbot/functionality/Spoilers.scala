@@ -28,13 +28,19 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
     override def description = "Hide a spoiler"
 
     override val longDescription =
-      s"""Deletes your message and then replaces it with a short message not revealing its contents.
+      s"""Hides your message with a short bot message not revealing its contents.
          |Others can click the magnifying glass on the message to see its contents.
          |example usage:
          |```
+         |${commands.prefix}$name
+         |```
+         |This will prompt you for the contents in DM.
+         |
+         |You can also give the spoiler inline (though someone might see it before it gets deleted):
+         |```
          |${commands.prefix}$name The rabbit hole goes even deeper
          |```
-         |Or, you can give a short preview by starting the spoiler with "Hint:". This ends at the end of the line.
+         |You can add a short preview by starting the spoiler with "Hint:". This ends at the end of the line. It works in DM and inline.
          |```
          |${commands.prefix}$name Hint: Star Wars spoilers
          |Use the force, Luke!
