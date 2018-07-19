@@ -30,7 +30,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
     override val longDescription =
       s"""Hides your message with a short bot message not revealing its contents.
          |Others can click the magnifying glass on the message to see its contents.
-         |example usage:
+         |Example usage:
          |```
          |${commands.prefix}$name
          |```
