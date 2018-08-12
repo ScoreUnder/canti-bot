@@ -30,8 +30,7 @@ class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.A
         times += s"Time from queueing until received by server: ${diff(timeSent, timeOnServer)}"
     }
     times += s"Time from reception on server until received by bot: ${diff(timeOnServer, timeReceived)}"
-    timeReallySent match {
-      case Some(time) =>
+    for (time <- timeReallySent) {
         times += s"Total time (excl. rate limiting): ${diff(time, timeReceived)}"
     }
     times += s"Total time: ${diff(timeSent, timeReceived)}"
