@@ -20,15 +20,15 @@ class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
   override def description = "Restrict a command to a certain role"
 
-  override def longDescription =
+  override def longDescription(invocation: String) =
     s"""Allow only a single role to execute a given command.
        |Administrative roles will always be allowed to execute that command.
        |If you want to disable a command for normal users, set the required role to an administrator role.
        |If you want to enable a command for all users, set the role to everyone.
        |Usage:
-       |`${commands.prefix}$name cmd everyone` - Allow everyone access to `${commands.prefix}cmd`
-       |`${commands.prefix}$name cmd moderator` - Allow only the `moderator` group to access `${commands.prefix}cmd`
-       |`${commands.prefix}$name cmd` - Display the restrictions present on `${commands.prefix}cmd`
+       |`$invocation cmd everyone` - Allow everyone access to `${commands.prefix}cmd`
+       |`$invocation cmd moderator` - Allow only the `moderator` group to access `${commands.prefix}cmd`
+       |`$invocation cmd` - Display the restrictions present on `${commands.prefix}cmd`
     """.stripMargin
 
   override def execute(message: Message, args: String) {

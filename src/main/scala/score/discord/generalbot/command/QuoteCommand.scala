@@ -17,20 +17,20 @@ import scala.async.Async._
 import scala.collection.GenIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class QuoteCommand(commands: Commands, messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   override def name: String = "quote"
 
   override val aliases: GenIterable[String] = List("q")
 
   override def description: String = "Embed a message as a quote"
 
-  override val longDescription =
+  override def longDescription(invocation: String) =
     s"""Usage:
-       |`${commands.prefix}$name 12341234`
+       |`$invocation 12341234`
        |If 12341234 is a message ID, the corresponding message will be embedded as a quote.
        |You may quote from other channels by shift-clicking "Copy ID" in Discord and using that extended message ID.
        |You can also specify the channel manually, if you do not use the extended ID:
-       |`${commands.prefix}$name 12341234 #general`
+       |`$invocation 12341234 #general`
        |This command may also be invoked with 4chan-style post ID quotes:
        |`>>12341234`
     """.stripMargin

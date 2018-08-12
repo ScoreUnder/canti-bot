@@ -35,15 +35,17 @@ class HelpCommand(commands: Commands)(implicit messageOwnership: MessageOwnershi
     }.failed foreach APIHelper.loudFailure("running help command", message.getChannel)
   }
 
-  private def showCommandHelp(command: String) =
-    commands.get(command.stripPrefix(commands.prefix))
+  private def showCommandHelp(command: String) = {
+    val unprefixed = command.stripPrefix(commands.prefix)
+    commands.get(unprefixed)
       .toRight("Expected a page number or command name, but got something else.")
       .map(command => BotMessages plain
         s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
            |**Restrictions:** ${command.permissionMessage}
            |${command.description}
            |
-           |${command.longDescription}""".stripMargin.trim)
+           |${command.longDescription(commands.prefix + unprefixed)}""".stripMargin.trim)
+  }
 
   private def showHelpPage(message: Message, page: Int) = {
     async {

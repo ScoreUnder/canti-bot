@@ -21,7 +21,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
 import scala.io.Codec
 
-class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".split(" ")
   private val DICT_FILE = new File("extra_words")
@@ -35,10 +35,10 @@ class ReadCommand(commands: Commands, messageCache: MessageCache)(implicit messa
 
   override def description = "Show the romaji and furigana readings of Japanese text"
 
-  override val longDescription =
+  override def longDescription(invocation: String) =
     s"""When invoked alone (with no message), acts on the previous message in the channel.
        |Otherwise, give this command some text to work with.
-       |Example: ${commands.prefix}$name 藁で束ねても男一匹
+       |Example: $invocation 藁で束ねても男一匹
     """.stripMargin
 
   override def execute(message: Message, args: String): Unit = {

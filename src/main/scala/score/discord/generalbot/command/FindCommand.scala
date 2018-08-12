@@ -11,22 +11,22 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class FindCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class FindCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   override def name: String = "find"
 
   override val aliases: GenIterable[String] = List("id")
 
   override def description: String = "Finds a role, user or emoji by name"
 
-  override val longDescription =
+  override def longDescription(invocation: String) =
     s"""Usage:
-       |`${commands.prefix}$name mod`
+       |`$invocation mod`
        |This might find the moderator roles on the server.
-       |`${commands.prefix}$name score`
+       |`$invocation score`
        |This might find users called score in the server.
-       |`${commands.prefix}$name blob`
+       |`$invocation blob`
        |This might find blob emotes on the server.
-       |`${commands.prefix}$name fortnite`
+       |`$invocation fortnite`
        |This might find users playing fortnite on the server.
        |
        |So far, this searches roles, emotes, users, and games.

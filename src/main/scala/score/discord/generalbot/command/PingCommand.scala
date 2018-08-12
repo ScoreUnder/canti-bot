@@ -19,8 +19,6 @@ class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.A
 
   override def description: String = "Check the lag from the bot to the server"
 
-  override def longDescription: String = super.longDescription
-
   def getPingMessage(timeSent: Instant, timeReallySent: Option[Instant], timeOnServer: Instant, timeReceived: Instant): String = {
     var times = mutable.Buffer.empty[String]
     def diff(x: Instant, y: Instant) = formatTimeDiff(Duration.between(x, y))

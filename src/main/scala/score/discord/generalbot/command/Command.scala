@@ -15,7 +15,7 @@ trait Command {
 
   def description: String
 
-  def longDescription: String = ""
+  def longDescription(invocation: String): String = ""
 
   def checkPermission(message: Message): Boolean
 

@@ -132,12 +132,12 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
       override def description = "Create a private voice chat channel"
 
-      override val longDescription =
+      override def longDescription(invocation: String) =
         s"""This command creates a semi-private voice channel.
-           |You can set a user limit (e.g. `${commands.prefix}$name 4`), or leave it blank to make it completely private.
-           |You may also invite other users there using the `${commands.prefix}${invite.name}` command.
+           |You can set a user limit (e.g. `$invocation 4`), or leave it blank to make it completely private.
+           |You may also invite other users there using the `$invocation command.
            |The name of the channel can be set by adding it to the end of the command.
-           |e.g. `${commands.prefix}$name 3 Hangout number 1`""".stripMargin
+           |e.g. `$invocation 3 Hangout number 1`""".stripMargin
 
       override def execute(message: Message, args: String): Unit = {
         val result =

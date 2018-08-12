@@ -12,7 +12,7 @@ import scala.async.Async._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class FuriganaCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
 
   override def name = "furigana"
 
@@ -20,9 +20,9 @@ class FuriganaCommand(commands: Commands)(implicit messageOwnership: MessageOwne
 
   override def description = "Render text with furigana as an image"
 
-  override val longDescription: String =
+  override def longDescription(invocation: String): String =
     s"""Mix text and furigana:
-       |`${commands.prefix}$name {郵便局:ゆうびんきょく}に{行:い}きました`
+       |`$invocation {郵便局:ゆうびんきょく}に{行:い}きました`
        |This will then be rendered into an image, with the furigana text on top of the corresponding kanji.
     """.stripMargin
 

@@ -45,7 +45,7 @@ class GeneralBot {
         bot.setToken(config.token)
 
         val commands = new Commands(new CommandPermissionLookup(dbConfig, LruCache.empty(2000), "command_perms"))
-        val quoteCommand = new QuoteCommand(commands, messageCache)
+        val quoteCommand = new QuoteCommand(messageCache)
         val conversations = new Conversations
         bot addEventListener commands
         bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands)
@@ -63,13 +63,13 @@ class GeneralBot {
         commands register new StopCommand(this, userId = config.owner)
         commands register new RestrictCommand(commands)
         commands register new BotInviteCommand
-        commands register new FuriganaCommand(commands)
-        commands register new BlameCommand(commands)
+        commands register new FuriganaCommand
+        commands register new BlameCommand
         commands register new BotInfoCommand(userId = config.owner)
         commands register new GameStatsCommand
-        commands register new FindCommand(commands)
+        commands register new FindCommand
         commands register quoteCommand
-        val readCommand = new ReadCommand(commands, messageCache)
+        val readCommand = new ReadCommand(messageCache)
         if (readCommand.available) commands register readCommand
         commands register new PingCommand
 

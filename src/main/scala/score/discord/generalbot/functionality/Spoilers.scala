@@ -27,22 +27,22 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
 
     override def description = "Hide a spoiler"
 
-    override val longDescription =
+    override def longDescription(invocation: String) =
       s"""Hides your message with a short bot message not revealing its contents.
          |Others can click the magnifying glass on the message to see its contents.
          |Example usage:
          |```
-         |${commands.prefix}$name
+         |$invocation
          |```
          |This will prompt you for the contents in DM.
          |
          |You can also give the spoiler inline (though someone might see it before it gets deleted):
          |```
-         |${commands.prefix}$name The rabbit hole goes even deeper
+         |$invocation The rabbit hole goes even deeper
          |```
          |You can add a short preview by starting the spoiler with "Hint:". This ends at the end of the line. It works in DM and inline.
          |```
-         |${commands.prefix}$name Hint: Star Wars spoilers
+         |$invocation Hint: Star Wars spoilers
          |Use the force, Luke!
          |```
       """.stripMargin
