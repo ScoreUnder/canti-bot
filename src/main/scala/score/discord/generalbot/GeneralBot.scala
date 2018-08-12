@@ -71,6 +71,7 @@ class GeneralBot {
         commands register quoteCommand
         val readCommand = new ReadCommand(commands, messageCache)
         if (readCommand.available) commands register readCommand
+        commands register new PingCommand
 
         bot addEventListener ({
           case ev: ReadyEvent =>
