@@ -37,59 +37,65 @@ class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: Messag
 
   override def execute(cmdMessage: Message, args: String): Unit = {
     async {
-      val (quoteId, specifiedChannel) = parseQuoteIDs(args)
-      val jda = cmdMessage.getJDA
-      val channel =
-        specifiedChannel match {
-          case Some(chanID) =>
-            Option(jda.getTextChannelById(chanID.value))
-              .orElse(Option(jda.getPrivateChannelById(chanID.value)))
-          case None =>
-            messageCache
-              .find(_.messageId == quoteId)
-              .map(m => m.chanId)
-              .flatMap(ch => Option(jda.getTextChannelById(ch.value)))
-              .orElse(Some(cmdMessage.getChannel))
-        }
-
-
-      val sender = cmdMessage.getAuthor
-      val allowedChannel = channel match {
-        case Some(ch: Channel) if sender canSee ch => Right(ch)
-        case Some(ch: Group) if sender canSee ch => Right(ch)
-        case Some(ch: PrivateChannel) if ch.getUser == sender => Right(ch)
-        case Some(_) => Left("You do not have access to the specified channel.")
-        case None => Left("I do not have access to the specified channel.")
-      }
-      val botReply = allowedChannel match {
-        case Right(ch) =>
-          import APIHelper.Error
-          import ErrorResponse._
-          val foundMessage = APIHelper.tryRequest(ch getMessageById quoteId.value).map(Right(_)).recover {
-            case Error(UNKNOWN_MESSAGE) if specifiedChannel.isEmpty =>
-              Left("Can't find the channel that message is in. Try specifying it manually.")
-            case Error(UNKNOWN_MESSAGE) =>
-              Left("Can't find that message in the channel specified.")
-            case Error(UNKNOWN_CHANNEL) =>
-              Left("Can't find that channel.")
-            case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) | _: PermissionException =>
-              Left("I don't have permission to read messages in that channel.")
-          }
-
-          for {
-            message <- foundMessage
-            reply <- cmdMessage reply {
-              message match {
-                case Right(msg) => getMessageAsQuote(cmdMessage, ch, msg)
-                case Left(err) => BotMessages.error(err)
-              }
+      val (quoteIdMaybe, specifiedChannel) = parseQuoteIDs(args)
+      val botReply = quoteIdMaybe match {
+        case Some(quoteId) =>
+          val jda = cmdMessage.getJDA
+          val channel =
+            specifiedChannel match {
+              case Some(chanID) =>
+                Option(jda.getTextChannelById(chanID.value))
+                  .orElse(Option(jda.getPrivateChannelById(chanID.value)))
+              case None =>
+                messageCache
+                  .find(_.messageId == quoteId)
+                  .map(m => m.chanId)
+                  .flatMap(ch => Option(jda.getTextChannelById(ch.value)))
+                  .orElse(Some(cmdMessage.getChannel))
             }
-          } yield reply
-        case Left(err) =>
-          cmdMessage reply BotMessages.error(err)
+
+          checkChannelVisibility(channel, cmdMessage.getAuthor) match {
+            case Right(ch) =>
+              import APIHelper.Error
+              import ErrorResponse._
+              val foundMessage = APIHelper.tryRequest(ch getMessageById quoteId.value).map(Right(_)).recover {
+                case Error(UNKNOWN_MESSAGE) if specifiedChannel.isEmpty =>
+                  Left("Can't find the channel that message is in. Try specifying it manually.")
+                case Error(UNKNOWN_MESSAGE) =>
+                  Left("Can't find that message in the channel specified.")
+                case Error(UNKNOWN_CHANNEL) =>
+                  Left("Can't find that channel.")
+                case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) | _: PermissionException =>
+                  Left("I don't have permission to read messages in that channel.")
+              }
+
+              for {
+                message <- foundMessage
+                reply <- cmdMessage reply {
+                  message match {
+                    case Right(msg) => getMessageAsQuote(cmdMessage, ch, msg)
+                    case Left(err) => BotMessages.error(err)
+                  }
+                }
+              } yield reply
+            case Left(err) =>
+              cmdMessage reply BotMessages.error(err)
+          }
+        case None =>
+          cmdMessage reply BotMessages.error("You need to give a message ID to quote")
       }
       await(botReply)
     }.failed.foreach(APIHelper.loudFailure("quoting a message", cmdMessage.getChannel))
+  }
+
+  private def checkChannelVisibility(channel: Option[MessageChannel], sender: User) = {
+    channel match {
+      case Some(ch: Channel) if sender canSee ch => Right(ch)
+      case Some(ch: Group) if sender canSee ch => Right(ch)
+      case Some(ch: PrivateChannel) if ch.getUser == sender => Right(ch)
+      case Some(_) => Left("You do not have access to the specified channel.")
+      case None => Left("I do not have access to the specified channel.")
+    }
   }
 
   private def getMessageAsQuote(cmdMessage: Message, ch: MessageChannel, msg: Message) = {
@@ -108,13 +114,15 @@ class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: Messag
 
     // If shift+click was used to copy a long ID
     if (remains.startsWith("-") && secondIdStr.nonEmpty) {
-      (ID.fromString[Message](secondIdStr), Some(ID.fromString[TextChannel](firstIdStr)))
-    } else {
+      (Some(ID.fromString[Message](secondIdStr)), Some(ID.fromString[TextChannel](firstIdStr)))
+    } else if (firstIdStr.nonEmpty) {
       val quoteId = ID.fromString[Message](firstIdStr)
       val specifiedChannel = QuoteCommand.CHANNEL_REGEX
         .findPrefixMatchOf(remains)
         .map(m => ID.fromString[TextChannel](m.group(1)))
-      (quoteId, specifiedChannel)
+      (Some(quoteId), specifiedChannel)
+    } else {
+      (None, None)
     }
   }
 
