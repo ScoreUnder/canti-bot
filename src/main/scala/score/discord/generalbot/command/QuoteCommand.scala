@@ -6,7 +6,6 @@ import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.requests.ErrorResponse
 import score.discord.generalbot.collections.MessageCache
-import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -16,6 +15,7 @@ import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
 import scala.async.Async._
 import scala.collection.GenIterable
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   override def name: String = "quote"
@@ -35,8 +35,10 @@ class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: Messag
        |`>>12341234`
     """.stripMargin
 
-  override def execute(cmdMessage: Message, args: String): Unit = {
-    async {
+  override def execute(cmdMessage: Message, args: String): Unit = executeFuture(cmdMessage, args)
+
+  def executeFuture(cmdMessage: Message, args: String): Future[Message] = {
+    val future = async {
       val (quoteIdMaybe, specifiedChannel) = parseQuoteIDs(args)
       val botReply = quoteIdMaybe match {
         case Some(quoteId) =>
@@ -85,7 +87,9 @@ class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: Messag
           cmdMessage reply BotMessages.error("You need to give a message ID to quote")
       }
       await(botReply)
-    }.failed.foreach(APIHelper.loudFailure("quoting a message", cmdMessage.getChannel))
+    }
+    future.failed.foreach(APIHelper.loudFailure("quoting a message", cmdMessage.getChannel))
+    future
   }
 
   private def checkChannelVisibility(channel: Option[MessageChannel], sender: User) = {
