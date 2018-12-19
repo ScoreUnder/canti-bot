@@ -2,7 +2,6 @@ package score.discord.generalbot.functionality
 
 import net.dv8tion.jda.core.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.exceptions.{ErrorResponseException, PermissionException}
 import net.dv8tion.jda.core.hooks.EventListener
 import score.discord.generalbot.collections.StringByMessage
 import score.discord.generalbot.command.Command
@@ -49,14 +48,8 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
 
     override def execute(message: Message, args: String) {
       async {
-        APIHelper.tryRequest(message.delete(), {
-          case _: PermissionException =>
-            message reply BotMessages.error("I don't have permission to delete messages here.")
-          case e: ErrorResponseException =>
-            message reply BotMessages.error(s"Error deleting your message. ${e.getMeaning}.")
-          case e =>
-            APIHelper.loudFailure("deleting a message", message.getChannel)(e)
-        })
+        APIHelper.tryRequest(message.delete(),
+          onFail = APIHelper.loudFailure("deleting a message", message.getChannel))
 
         args.trim match {
           case "" =>

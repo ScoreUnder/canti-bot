@@ -1,7 +1,7 @@
 package score.discord.generalbot.util
 
 import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.exceptions.ErrorResponseException
+import net.dv8tion.jda.core.exceptions.{ErrorResponseException, PermissionException}
 import net.dv8tion.jda.core.requests.{ErrorResponse, RestAction}
 import score.discord.generalbot.wrappers.Tap._
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -32,6 +32,7 @@ object APIHelper {
     failure(whatFailed)(exception)
     channel ! BotMessages.error(
       exception match {
+        case _: PermissionException => s"Error when $whatFailed: I don't have permission for that"
         case Error(x) => s"Error when $whatFailed: ${x.getMeaning}"
         case _ => s"Unknown error occurred when $whatFailed"
       })
