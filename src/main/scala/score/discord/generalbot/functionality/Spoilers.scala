@@ -88,7 +88,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
       // Must be lowercase (to allow case insensitive string comparison)
       val hintPrefix = "hint:"
       val Array(hintText, spoilerText) =
-        if (args.take(hintPrefix.length).toLowerCase == hintPrefix) {
+        if (args.take(hintPrefix.length) equalsIgnoreCase hintPrefix) {
           (args drop hintPrefix.length).split("\n", 2)
         } else {
           Array("spoilers", args)
