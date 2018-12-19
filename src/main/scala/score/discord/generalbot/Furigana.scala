@@ -85,8 +85,12 @@ object Furigana {
           val maxWidth = imageMaxWidth - x
           if (width > maxWidth) {
             val split = splitText(text, maxWidth)
-            val result = PositionedFurigana(x, y, mainMetrics.stringWidth(split), 0, split, "")
-            process(0, y + lineHeight, (text drop split.length, "") :: next, result :: acc)
+            val (spaceSplit, remain) = split.lastIndexWhere(_.isWhitespace) match {
+              case -1 => (split, text drop split.length)
+              case i => (split take i, text drop (i+1))
+            }
+            val result = PositionedFurigana(x, y, mainMetrics.stringWidth(spaceSplit), 0, spaceSplit, "")
+            process(0, y + lineHeight, (remain, "") :: next, result :: acc)
           } else {
             val result = PositionedFurigana(x, y, width, 0, text, "")
             process(x + width, y, next, result :: acc)
