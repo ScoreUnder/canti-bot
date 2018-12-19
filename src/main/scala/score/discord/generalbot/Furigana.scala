@@ -1,13 +1,13 @@
 package score.discord.generalbot
 
-import java.awt.{Color, Font, RenderingHints}
-
-import scala.annotation.tailrec
 import java.awt.image.BufferedImage
+import java.awt.{Color, Font, FontMetrics, RenderingHints}
 import java.io.ByteArrayOutputStream
+
 import javax.imageio.ImageIO
 
-import scala.collection.mutable
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 
 object Furigana {
   private val dummyImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB)
@@ -25,7 +25,6 @@ object Furigana {
     * @return PNG data
     */
   def renderPNG(furiText: Traversable[(String, String)]): Array[Byte] = {
-    val imageMaxWidth = 1000
     val furiYAdjust = 0
     val lineGap = 10
 
@@ -36,62 +35,11 @@ object Furigana {
     val furiAscent = furiMetrics.getAscent + furiYAdjust
     val mainAscent = mainMetrics.getAscent
 
-    def splitText(text: String, toWidth: Int) = {
-      var width, index, prevIndex = 0
-      while (width < toWidth && index < text.length) {
-        prevIndex = index
-        index = text.offsetByCodePoints(index, 1)
-        assert(prevIndex != index)
-
-        width += mainMetrics.charWidth(text.codePointAt(prevIndex))
-      }
-      text take prevIndex
-    }
-
-    val positionedFuri = {
-      var x = 0
-      var y = -furiYAdjust
-      def advanceLine() {
-        x = 0
-        y += lineHeight
-      }
-      furiText flatMap {
-        case (text, furi) =>
-          @tailrec
-          def process(text: String, furi: String, result: mutable.ArrayBuffer[PositionedFurigana]): Seq[PositionedFurigana] = {
-            val textWidth = mainMetrics.stringWidth(text)
-            val furiWidth = furiMetrics.stringWidth(furi)
-            val width = textWidth max furiWidth
-
-            def addVerbatim() = {
-              result += PositionedFurigana(x, y, textWidth, furiWidth, text, furi)
-              x += width
-              result
-            }
-
-            if (text == "\n" && furi.isEmpty) {
-              advanceLine()
-              result
-            } else if (x + width > imageMaxWidth) {
-              if (furi.isEmpty) {
-                val maxWidth = imageMaxWidth - x
-                val split = splitText(text, maxWidth)
-                result += PositionedFurigana(x, y, mainMetrics.stringWidth(split), furiWidth, split, furi)
-                advanceLine()
-                process(text drop split.length, furi, result)
-              } else {
-                if (x > 0) advanceLine()
-                addVerbatim()
-              }
-            } else addVerbatim()
-          }
-          process(text, furi, mutable.ArrayBuffer.empty[PositionedFurigana])
-      }
-    }
+    val positionedFuri = positionText(furiText, -furiYAdjust, lineHeight, mainMetrics, furiMetrics)
 
     val image = new BufferedImage(
       positionedFuri.map(f => (f.furiWidth max f.textWidth) + f.x).max,
-      positionedFuri.last.y + lineHeight,
+      positionedFuri.head.y + lineHeight,
       BufferedImage.TYPE_INT_RGB
     )
     val graphics = image.createGraphics()
@@ -117,4 +65,44 @@ object Furigana {
     outputStream.toByteArray
   }
 
+  private def positionText(furiText: Traversable[(String, String)], initialY: Int, lineHeight: Int, mainMetrics: FontMetrics, furiMetrics: FontMetrics): Iterable[PositionedFurigana] = {
+    val imageMaxWidth = 1000
+
+    def splitText(text: String, toWidth: Int) = {
+      val numCodePoints = text.codePoints().iterator().asScala.toStream
+        .scanLeft(0) { (width, chr) => width + mainMetrics.charWidth(chr) }
+        .lastIndexWhere { width => width < toWidth }
+      text take text.offsetByCodePoints(0, numCodePoints)
+    }
+
+    @tailrec
+    def process(x: Int, y: Int, vals: List[(String, String)], acc: List[PositionedFurigana]): List[PositionedFurigana] =
+      vals match {
+        case Nil => acc
+        case ("\n", "") :: next => process(0, y + lineHeight, next, acc)
+        case (text, "") :: next =>
+          val width = mainMetrics.stringWidth(text)
+          val maxWidth = imageMaxWidth - x
+          if (width > maxWidth) {
+            val split = splitText(text, maxWidth)
+            val result = PositionedFurigana(x, y, mainMetrics.stringWidth(split), 0, split, "")
+            process(0, y + lineHeight, (text drop split.length, "") :: next, result :: acc)
+          } else {
+            val result = PositionedFurigana(x, y, width, 0, text, "")
+            process(x + width, y, next, result :: acc)
+          }
+        case (text, furi) :: next =>
+          val textWidth = mainMetrics.stringWidth(text)
+          val furiWidth = furiMetrics.stringWidth(furi)
+          val width = textWidth max furiWidth
+          if (x + width > imageMaxWidth && x > 0) {
+            process(0, y + lineHeight, vals, acc)
+          } else {
+            val result = PositionedFurigana(x, y, textWidth, furiWidth, text, furi)
+            process(x + width, y, next, result :: acc)
+          }
+      }
+
+    process(0, initialY, furiText.toList, Nil)
+  }
 }
