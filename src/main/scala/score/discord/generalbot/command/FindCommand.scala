@@ -1,7 +1,7 @@
 package score.discord.generalbot.command
 
+import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.Message
-import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -34,64 +34,71 @@ class FindCommand(implicit messageOwnership: MessageOwnership) extends Command.A
 
   override def execute(message: Message, args: String): Unit = {
     Future {
-      val origSearchTerm = args.trim
-      val searchTerm = origSearchTerm.toLowerCase.toUpperCase
-      if (searchTerm.isEmpty) {
-        message reply BotMessages.error("Please enter a term to search for.")
-        return
-      }
-
-      def containsSearchTerm(haystack: String) =
-        haystack.toLowerCase.toUpperCase.contains(searchTerm)
-
-      var results: Seq[String] = Nil.view
-      message.getGuild match {
-        case null =>
-          // Private chat
-          results ++= message.getChannel.participants
-            .filter(u => containsSearchTerm(s"@${u.name}#${u.discriminator}"))
-            .map(u => s"**User** ${u.mentionWithName}: `${u.getId}`")
-        case guild =>
-          results ++= guild.getRoles.asScala.view
-            .filter(r => containsSearchTerm(s"@${r.getName}"))
-            .map(r => s"**Role** ${r.getAsMention} (${MessageUtils.sanitise(s"@${r.getName}")}): `${r.getId}`")
-          results ++= guild.getEmotes.asScala.view
-            .filter(e => containsSearchTerm(s":${e.getName}:"))
-            .map(e => s"**Emote** ${e.getAsMention} (:${e.getName}:): `${e.getId}`")
-          results ++= guild.getMembers.asScala.view
-            .filter(m =>
-              containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
-                Option(m.getNickname).exists(n => containsSearchTerm(s"@$n")))
-            .map(m => s"**User** ${m.getUser.mentionWithName}: `${m.getUser.getId}`")
-          results ++= guild.getMembers.asScala.view
-            .filter(m => Option(m.getGame).exists(g => containsSearchTerm(g.getName)))
-            .map { m =>
-              val game = MessageUtils.sanitise(m.getGame.getName)
-              s"**Game** ${m.getUser.mentionWithName} playing $game"
-            }
-      }
-      val maxResults = 10
-      val searchTermSanitised = MessageUtils.sanitiseCode(origSearchTerm)
-      results = results.take(maxResults + 1).toVector
-      if (results.isEmpty) {
-        message reply BotMessages.plain(s"No results found for ``$searchTermSanitised``")
-      } else {
-        val header =
-          if (results.size > maxResults)
-            s"__First $maxResults results for ``$searchTermSanitised``__"
-          else if (results.size == 1)
-            s"__Got one result for ``$searchTermSanitised``__"
-          else
-            s"__Got ${results.size} results for ``$searchTermSanitised``__"
-
-        val footer =
-          if (results.size > maxResults)
-            "\n**...and more**"
-          else
-            ""
-
-        message reply BotMessages.okay(s"$header\n${results take maxResults mkString "\n"}$footer")
+      val searchTerm = args.trim
+      message reply {
+        if (searchTerm.isEmpty) BotMessages.error("Please enter a term to search for.")
+        else makeSearchReply(message, searchTerm)
       }
     }.failed.foreach(APIHelper.loudFailure("searching for entities", message.getChannel))
+  }
+
+  private def makeSearchReply(message: Message, searchTerm: String): EmbedBuilder = {
+    val maxResults = 10
+    val searchTermSanitised = MessageUtils.sanitiseCode(searchTerm)
+    val results = getSearchResults(message, searchTerm).take(maxResults + 1).toVector
+    if (results.isEmpty) {
+      BotMessages.plain(s"No results found for ``$searchTermSanitised``")
+    } else {
+      val header =
+        if (results.size > maxResults)
+          s"__First $maxResults results for ``$searchTermSanitised``__"
+        else if (results.size == 1)
+          s"__Got one result for ``$searchTermSanitised``__"
+        else
+          s"__Got ${results.size} results for ``$searchTermSanitised``__"
+
+      val footer =
+        if (results.size > maxResults)
+          "\n**...and more**"
+        else
+          ""
+
+      BotMessages.okay(s"$header\n${results take maxResults mkString "\n"}$footer")
+    }
+  }
+
+  private def getSearchResults(message: Message, origSearchTerm: String): Seq[String] = {
+    val searchTerm = origSearchTerm.toLowerCase.toUpperCase
+
+    def containsSearchTerm(haystack: String) =
+      haystack.toLowerCase.toUpperCase.contains(searchTerm)
+
+    var results: Seq[String] = Nil.view
+    message.getGuild match {
+      case null =>
+        // Private chat
+        results ++= message.getChannel.participants
+          .filter(u => containsSearchTerm(s"@${u.name}#${u.discriminator}"))
+          .map(u => s"**User** ${u.mentionWithName}: `${u.getId}`")
+      case guild =>
+        results ++= guild.getRoles.asScala.view
+          .filter(r => containsSearchTerm(s"@${r.getName}"))
+          .map(r => s"**Role** ${r.getAsMention} (${MessageUtils.sanitise(s"@${r.getName}")}): `${r.getId}`")
+        results ++= guild.getEmotes.asScala.view
+          .filter(e => containsSearchTerm(s":${e.getName}:"))
+          .map(e => s"**Emote** ${e.getAsMention} (:${e.getName}:): `${e.getId}`")
+        results ++= guild.getMembers.asScala.view
+          .filter(m =>
+            containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
+              Option(m.getNickname).exists(n => containsSearchTerm(s"@$n")))
+          .map(m => s"**User** ${m.getUser.mentionWithName}: `${m.getUser.getId}`")
+        results ++= guild.getMembers.asScala.view
+          .filter(m => Option(m.getGame).exists(g => containsSearchTerm(g.getName)))
+          .map { m =>
+            val game = MessageUtils.sanitise(m.getGame.getName)
+            s"**Game** ${m.getUser.mentionWithName} playing $game"
+          }
+    }
+    results
   }
 }
