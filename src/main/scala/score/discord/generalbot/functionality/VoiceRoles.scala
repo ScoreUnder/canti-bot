@@ -134,7 +134,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
     event match {
       case ev: ReadyEvent =>
         val jda = ev.getJDA
-        scheduler.schedule(0 minutes, 1 minute) {
+        scheduler.schedule(initialDelay = 0 minutes, delay = 1 minute) {
           for (guild <- jda.guilds;
                voiceState <- guild.voiceStates) {
             queueRoleUpdate(voiceState.getMember)
