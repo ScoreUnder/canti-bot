@@ -3,6 +3,7 @@ package score.discord.generalbot.command
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Game.GameType
 import net.dv8tion.jda.core.entities.{Message, TextChannel}
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -12,7 +13,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class GameStatsCommand(implicit mo: MessageOwnership) extends Command.Anyone {
+class GameStatsCommand(implicit mo: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone {
   private val CHANNEL_REGEX = "<#(\\d+)>".r
 
   override def name: String = "gamestats"

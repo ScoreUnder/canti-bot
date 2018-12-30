@@ -3,7 +3,7 @@ package score.discord.generalbot.functionality
 import net.dv8tion.jda.core.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.EventListener
-import score.discord.generalbot.collections.StringByMessage
+import score.discord.generalbot.collections.{ReplyCache, StringByMessage}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
@@ -16,7 +16,7 @@ import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership) extends EventListener {
+class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   val spoilerEmote = "🔍"
 
   commands register new Command.ServerAdminDiscretion {

@@ -6,7 +6,7 @@ import net.dv8tion.jda.core.entities.{GuildVoiceState, Member, Message, Role}
 import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.hooks.EventListener
-import score.discord.generalbot.collections.RoleByGuild
+import score.discord.generalbot.collections.{ReplyCache, RoleByGuild}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.ParseUtils._
@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
+class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   commands register new Command.ServerAdminOnly {
     override def name = "setvoicerole"
 

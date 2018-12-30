@@ -17,4 +17,7 @@ class PlayCommand(val userId: ID[User]) extends Command.OneUserOnly {
     })
     message.addReaction("👌").queue()
   }
+
+  override def executeForEdit(message: Message, myMessageOption: Option[ID[Message]], args: String): Unit =
+    execute(message, args)
 }

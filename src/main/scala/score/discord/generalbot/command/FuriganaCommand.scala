@@ -3,7 +3,7 @@ package score.discord.generalbot.command
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
 import score.discord.generalbot.Furigana
-import score.discord.generalbot.functionality.Commands
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -12,7 +12,7 @@ import scala.async.Async._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class FuriganaCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone {
 
   override def name = "furigana"
 

@@ -21,7 +21,9 @@ class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.A
 
   def getPingMessage(timeSent: Instant, timeReallySent: Option[Instant], timeOnServer: Instant, timeReceived: Instant): String = {
     var times = mutable.Buffer.empty[String]
+
     def diff(x: Instant, y: Instant) = formatTimeDiff(Duration.between(x, y))
+
     timeReallySent match {
       case Some(time) =>
         times += s"Time waited for rate limiting: ${diff(timeSent, time)}"
@@ -31,7 +33,7 @@ class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.A
     }
     times += s"Time from reception on server until received by bot: ${diff(timeOnServer, timeReceived)}"
     for (time <- timeReallySent) {
-        times += s"Total time (excl. rate limiting): ${diff(time, timeReceived)}"
+      times += s"Total time (excl. rate limiting): ${diff(time, timeReceived)}"
     }
     times += s"Total time: ${diff(timeSent, timeReceived)}"
     times.mkString("\n")

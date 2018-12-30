@@ -2,11 +2,12 @@ package score.discord.generalbot.functionality
 
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.EventListener
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.matching.Events
 
-class TableFlip(implicit messageOwnership: MessageOwnership) extends EventListener {
+class TableFlip(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   val flip = "(╯°□°）╯︵ ┻━┻"
   val unflip = "┬─┬﻿ ノ( ゜-゜ノ)"
 

@@ -40,12 +40,13 @@ class GeneralBot {
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
         implicit val messageOwnership = new DatabaseMessageOwnership(dbConfig, LruCache.empty(20000))
-        val messageCache = new MessageCache(capacity = 2000)
+        implicit val messageCache = new MessageCache
+        implicit val replyCache = new ReplyCache
 
         bot.setToken(config.token)
 
         val commands = new Commands(new CommandPermissionLookup(dbConfig, LruCache.empty(2000), "command_perms"))
-        val quoteCommand = new QuoteCommand(messageCache)
+        val quoteCommand = new QuoteCommand
         val conversations = new Conversations
         bot addEventListener commands
         bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands)

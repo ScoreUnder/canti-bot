@@ -1,9 +1,9 @@
 package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.entities.Message
-import score.discord.generalbot.functionality.Commands
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.{APIHelper, BotMessages}
+import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.wrappers.FutureEither._
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 
-class BlameCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class BlameCommand(implicit val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name = "blame"
 
   override def aliases = Nil
@@ -25,7 +25,7 @@ class BlameCommand(implicit messageOwnership: MessageOwnership) extends Command.
        |To get the ID, turn on Developer Mode, right click the message, and press "Copy ID".
      """.stripMargin
 
-  override def execute(message: Message, args: String): Unit = {
+  override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
     async {
       val resultText = await(for {
         id <- Future.successful(
@@ -33,7 +33,7 @@ class BlameCommand(implicit messageOwnership: MessageOwnership) extends Command.
         ).flatView
         owner <- messageOwnership(message.getJDA, id).map(_.toRight("No ownership info available for that message")).flatView
       } yield s"That message is owned by ${owner.mentionWithName}.")
-      message reply resultText.fold(BotMessages.error, BotMessages.plain)
-    }.failed.foreach(APIHelper.loudFailure("getting a message's blame", message.getChannel))
+      resultText.fold(BotMessages.error, BotMessages.plain).toMessage
+    }
   }
 }

@@ -2,10 +2,10 @@ package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.Message
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.{APIHelper, BotMessages}
-import score.discord.generalbot.wrappers.Scheduler
+import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.async.Async._
@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 
-class HelpCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   val pageSize = 10
 
   override def name = "help"
@@ -22,18 +22,16 @@ class HelpCommand(commands: Commands)(implicit messageOwnership: MessageOwnershi
 
   override def description = "Show descriptions for all commands, or view one command in detail"
 
-  override def execute(message: Message, args: String) {
+  override def executeAndGetMessage(message: Message, args: String): Future[Message] =
     async {
-      val response = ((args match {
+      ((args match {
         case "" => Some(1)
         case x => Try(x.toInt).toOption
       }) match {
         case Some(page) => await(showHelpPage(message, page))
         case None => showCommandHelp(args)
-      }).fold(BotMessages.error, identity)
-      message reply response
-    }.failed foreach APIHelper.loudFailure("running help command", message.getChannel)
-  }
+      }).fold(BotMessages.error, identity).toMessage
+    }
 
   private def showCommandHelp(command: String) = {
     val unprefixed = command.stripPrefix(commands.prefix)

@@ -2,8 +2,9 @@ package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.Message
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
+import score.discord.generalbot.util.{BotMessages, MessageUtils}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.collection.GenIterable
@@ -11,7 +12,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class FindCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name: String = "find"
 
   override val aliases: GenIterable[String] = List("id")
@@ -32,15 +33,13 @@ class FindCommand(implicit messageOwnership: MessageOwnership) extends Command.A
        |So far, this searches roles, emotes, users, and games.
     """.stripMargin
 
-  override def execute(message: Message, args: String): Unit = {
+  override def executeAndGetMessage(message: Message, args: String): Future[Message] =
     Future {
-      val searchTerm = args.trim
-      message reply {
-        if (searchTerm.isEmpty) BotMessages.error("Please enter a term to search for.")
-        else makeSearchReply(message, searchTerm)
-      }
-    }.failed.foreach(APIHelper.loudFailure("searching for entities", message.getChannel))
-  }
+      (args.trim match {
+        case "" => BotMessages.error("Please enter a term to search for.")
+        case searchTerm => makeSearchReply(message, searchTerm)
+      }).toMessage
+    }
 
   private def makeSearchReply(message: Message, searchTerm: String): EmbedBuilder = {
     val maxResults = 10

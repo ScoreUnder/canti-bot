@@ -3,28 +3,25 @@ package score.discord.generalbot.functionality
 import net.dv8tion.jda.core.entities.{Message, Role}
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.EventListener
-import score.discord.generalbot.collections.CommandPermissionLookup
+import score.discord.generalbot.collections.{CommandPermissionLookup, MessageCache, ReplyCache}
 import score.discord.generalbot.command.Command
-import score.discord.generalbot.util.BotMessages
+import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.FutureOption._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
-import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
+import score.discord.generalbot.wrappers.jda.matching.Events.{NonBotMessage, NonBotMessageEdit}
+import score.discord.generalbot.wrappers.Tap._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Scheduler) extends EventListener {
+class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Scheduler, messageCache: MessageCache, replyCache: ReplyCache) extends EventListener {
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
   // Commands list excluding aliases
-  private val commandList = {
-    implicit val commandOrdering: Ordering[Command] =
-      (x, y) => x.name compare y.name
-    mutable.TreeSet[Command]()
-  }
+  private val commandList = mutable.TreeSet[Command]()(_.name compare _.name)
   // String prepended before a command
   val prefix = "&"
 
@@ -66,8 +63,7 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
       }
     }
 
-  def splitCommand(message: Message, requirePrefix: Boolean = true): Option[(String, String)] = {
-    val messageRaw = message.getContentRaw
+  def splitCommand(messageRaw: String, requirePrefix: Boolean = true): Option[(String, String)] = {
     val hasPrefix = messageRaw.startsWith(prefix)
     if (requirePrefix && !hasPrefix)
       None
@@ -82,17 +78,43 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
     }
   }
 
+  def parseCommand(input: String): Option[(Command, String)] = for {
+    (cmdName, cmdExtra) <- splitCommand(input)
+    cmd <- commands.get(cmdName)
+  } yield (cmd, cmdExtra)
+
+  def runIfAllowed(message: Message, cmd: Command, cmdExtra: String): Future[Either[String, Command]] =
+    canRunCommand(cmd, message).tap(_ onComplete {
+      case Success(Right(_)) => cmd.execute(message, cmdExtra)
+      case Success(Left(err)) => message.getChannel sendTemporary BotMessages.error(err)
+      case Failure(ex) => ex.printStackTrace()
+    })
+
   override def onEvent(event: Event) {
     event match {
       case NonBotMessage(message) =>
-        for {
-          (cmdName, cmdExtra) <- splitCommand(message)
-          cmd <- commands.get(cmdName)
-        } {
-          canRunCommand(cmd, message) onComplete {
-            case Success(Right(_)) => cmd.execute(message, cmdExtra)
-            case Success(Left(err)) => message.getChannel sendTemporary BotMessages.error(err)
-            case Failure(ex) => ex.printStackTrace()
+        for ((cmd, cmdExtra) <- parseCommand(message.getContentRaw)) {
+          runIfAllowed(message, cmd, cmdExtra)
+        }
+      case NonBotMessageEdit(oldMsg, newMsg) =>
+        for ((cmd, cmdExtra) <- parseCommand(newMsg.getContentRaw)) {
+          parseCommand(oldMsg.text) match {
+            case None =>
+              runIfAllowed(newMsg, cmd, cmdExtra)
+            case Some((`cmd`, _)) =>
+              canRunCommand(cmd, newMsg) onComplete {
+                case Success(Right(_)) => cmd.executeForEdit(newMsg, replyCache.get(oldMsg.messageId), cmdExtra)
+                case Success(Left(err)) => // Do not print error for edits to command with no perms
+                case Failure(ex) => ex.printStackTrace()
+              }
+            case Some((_, _)) =>
+              runIfAllowed(newMsg, cmd, cmdExtra) foreach {
+                case Right(_) => replyCache.get(oldMsg.messageId).foreach { replyId =>
+                  APIHelper.tryRequest(newMsg.getChannel.deleteMessageById(replyId.value),
+                    onFail = APIHelper.failure("deleting old command reply"))
+                }
+                case _ =>
+              }
           }
         }
       case _ =>

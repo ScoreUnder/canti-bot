@@ -2,11 +2,12 @@ package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Message
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.BotMessages
 import score.discord.generalbot.wrappers.jda.Conversions._
 
-class BotInviteCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class BotInviteCommand(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone {
   override def name = "botinvite"
 
   override def aliases = Nil

@@ -1,11 +1,12 @@
 package score.discord.generalbot.command
+
 import net.dv8tion.jda.client.entities.Group
 import net.dv8tion.jda.core.entities._
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.requests.ErrorResponse
-import score.discord.generalbot.collections.MessageCache
+import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -17,7 +18,7 @@ import scala.collection.GenIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name: String = "quote"
 
   override val aliases: GenIterable[String] = List("q")
@@ -35,12 +36,10 @@ class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: Messag
        |`>>12341234`
     """.stripMargin
 
-  override def execute(cmdMessage: Message, args: String): Unit = executeFuture(cmdMessage, args)
-
-  def executeFuture(cmdMessage: Message, args: String): Future[Message] = {
-    val future = async {
+  def executeAndGetMessage(cmdMessage: Message, args: String): Future[Message] = {
+    async {
       val (quoteIdMaybe, specifiedChannel) = parseQuoteIDs(args)
-      val botReply = quoteIdMaybe match {
+      (quoteIdMaybe match {
         case Some(quoteId) =>
           val jda = cmdMessage.getJDA
           val channel =
@@ -71,25 +70,19 @@ class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: Messag
                   Left("I don't have permission to read messages in that channel.")
               }
 
-              for {
-                message <- foundMessage
-                reply <- cmdMessage reply {
-                  message match {
-                    case Right(msg) => getMessageAsQuote(cmdMessage, ch, msg)
-                    case Left(err) => BotMessages.error(err)
-                  }
-                }
-              } yield reply
+              val futureReply = for (message <- foundMessage) yield message match {
+                case Right(msg) => getMessageAsQuote(cmdMessage, ch, msg)
+                case Left(err) => BotMessages.error(err)
+              }
+              await(futureReply)
+
             case Left(err) =>
-              cmdMessage reply BotMessages.error(err)
+              BotMessages.error(err)
           }
         case None =>
-          cmdMessage reply BotMessages.error("You need to give a message ID to quote")
-      }
-      await(botReply)
+          BotMessages.error("You need to give a message ID to quote")
+      }).toMessage
     }
-    future.failed.foreach(APIHelper.loudFailure("quoting a message", cmdMessage.getChannel))
-    future
   }
 
   private def checkChannelVisibility(channel: Option[MessageChannel], sender: User) = {
@@ -139,6 +132,7 @@ class QuoteCommand(messageCache: MessageCache)(implicit messageOwnership: Messag
       case _ =>
     }
   }
+
 }
 
 object QuoteCommand {

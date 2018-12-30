@@ -22,6 +22,8 @@ trait Command {
   def permissionMessage: String
 
   def execute(message: Message, args: String): Unit
+
+  def executeForEdit(message: Message, myMessageOption: Option[ID[Message]], args: String): Unit = {}
 }
 
 object Command {

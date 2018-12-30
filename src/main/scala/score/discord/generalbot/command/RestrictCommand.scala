@@ -1,6 +1,7 @@
 package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.entities.Message
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.ParseUtils._
@@ -13,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwnership) extends Command.ServerAdminOnly {
+class RestrictCommand(commands: Commands)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.ServerAdminOnly {
   override def name = "restrict"
 
   override def aliases = Nil

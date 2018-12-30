@@ -11,7 +11,7 @@ import net.dv8tion.jda.core.events.{Event, ReadyEvent}
 import net.dv8tion.jda.core.exceptions.PermissionException
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.requests.restaction.ChannelAction
-import score.discord.generalbot.collections.UserByChannel
+import score.discord.generalbot.collections.{ReplyCache, UserByChannel}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
@@ -28,7 +28,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
 
-class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership) extends EventListener {
+class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
 
   private type Timestamp = Long

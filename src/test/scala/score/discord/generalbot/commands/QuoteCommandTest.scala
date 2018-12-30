@@ -2,7 +2,7 @@ package score.discord.generalbot.commands
 
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import org.scalatest._
-import score.discord.generalbot.collections.MessageCache
+import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.command.QuoteCommand
 import score.discord.generalbot.functionality.ownership.{MessageOwnership, NullMessageOwnership}
 import score.discord.generalbot.jdamocks.{FakeJda, FakeUser}
@@ -30,9 +30,10 @@ class QuoteCommandTest extends FlatSpec with Matchers {
   val quotee3MessageData = "Message in the same channel as the command"
   val quotee3Message = quoterChannel.addMessage(quotee3MessageData, quoteeAuthor)
 
-  val messageCache = new MessageCache
+  implicit val messageCache: MessageCache = new MessageCache
+  implicit val replyCache: ReplyCache = new ReplyCache
   messageCache.onEvent(new MessageReceivedEvent(null, 0, quotee2Message))
-  val cmd = new QuoteCommand(messageCache)
+  val cmd = new QuoteCommand
 
   def quoteCommandTest(invocation: String, expected: String): Unit = {
     val quotingMessage = quoterChannel.addMessage(invocation, quoterAuthor)

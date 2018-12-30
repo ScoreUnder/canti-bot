@@ -1,6 +1,7 @@
 package score.discord.generalbot.command
 
 import net.dv8tion.jda.core.entities.{Message, User}
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.ID
@@ -9,7 +10,7 @@ import score.discord.generalbot.wrappers.jda.Conversions._
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: MessageOwnership) extends Command.OneUserOnly {
+class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.OneUserOnly {
   override def name = "botinfo"
 
   override def aliases = Nil
