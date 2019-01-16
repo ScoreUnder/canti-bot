@@ -50,7 +50,6 @@ class GeneralBot {
         val conversations = new Conversations
         bot addEventListener commands
         bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands)
-        bot addEventListener new TableFlip
         bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands)
         bot addEventListener new DeleteOwnedMessages
         bot addEventListener conversations
