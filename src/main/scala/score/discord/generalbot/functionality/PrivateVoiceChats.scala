@@ -215,7 +215,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
 
               val newVoiceChannel = await(channelReq.queueFuture())
 
-              ownerByChannel.synchronized {
+              {
                 ownerByChannel(newVoiceChannel) = message.getAuthor
               }.failed.foreach { ex =>
                 APIHelper.failure("saving private channel")(ex)
