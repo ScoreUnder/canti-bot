@@ -198,6 +198,8 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
            |The name of the channel can be set by adding it to the end of the command.
            |e.g. `$invocation 3 Hangout number 1`""".stripMargin
 
+      private val mistakeRegex = """ (\d+)$""".r.unanchored
+
       override def execute(message: Message, args: String): Unit = {
         val result =
           for {
@@ -224,9 +226,26 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
                 ownerByChannel remove newVoiceChannel
               }
 
-              channel.sendTemporary(BotMessages
+              val successMessage = BotMessages
                 .okay("Your channel has been created.")
-                .setTitle("Success", null))
+                .setTitle("Success", null)
+
+              if (limit == 0) name match {
+                case mistakeRegex(mistake) =>
+                  val cutName = name.dropRight(mistake.length).trim
+                  val invocation = s"${commands.prefix}${this.name} $mistake $cutName"
+                  successMessage.addField(
+                    "Did you mean...?",
+                    s"You may have meant to type " +
+                      s"``${MessageUtils.sanitiseCode(invocation)}``, " +
+                      s"which will create a semi-public channel limited " +
+                      s"to $mistake users.",
+                    false
+                  )
+                case _ =>
+              }
+
+              channel.sendTemporary(successMessage)
 
               // TODO: Fix your shit JDA (asInstanceOf cast)
               APIHelper.tryRequest(
