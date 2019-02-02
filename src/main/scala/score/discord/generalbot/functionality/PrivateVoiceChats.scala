@@ -219,11 +219,14 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
                 ownerByChannel(newVoiceChannel) = message.getAuthor
               }.failed.foreach { ex =>
                 APIHelper.failure("saving private channel")(ex)
-                newVoiceChannel.delete().queueFuture().failed.foreach(APIHelper.failure("deleting private channel after database error"))
+                newVoiceChannel.delete().queueFuture().failed.foreach(
+                  APIHelper.failure("deleting private channel after database error"))
                 ownerByChannel remove newVoiceChannel
               }
 
-              channel sendTemporary BotMessages.okay("Your channel has been created.").setTitle("Success", null)
+              channel.sendTemporary(BotMessages
+                .okay("Your channel has been created.")
+                .setTitle("Success", null))
 
               // TODO: Fix your shit JDA (asInstanceOf cast)
               APIHelper.tryRequest(
@@ -339,7 +342,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
           for ((guildId, channelId) <- toRemove)
             yield ownerByChannel.remove(guildId, channelId)
         }
-        await(removed)  // Propagate exceptions
+        await(removed) // Propagate exceptions
       }.failed.foreach(APIHelper.failure("processing initial private voice chat state"))
 
     case ev: GuildVoiceUpdateEvent =>
