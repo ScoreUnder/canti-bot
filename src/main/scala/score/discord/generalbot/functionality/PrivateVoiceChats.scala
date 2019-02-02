@@ -17,7 +17,7 @@ import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
-import score.discord.generalbot.wrappers.jda.ID
+import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
 import scala.async.Async._
 import scala.collection.JavaConverters._
@@ -26,7 +26,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
@@ -99,33 +99,86 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
            |Invites the mentioned parties, in this case person1 and person2, to your current channel.
          """.stripMargin.trim
 
+      lazy val inviteMessage: String = s"Please join a voice channel and " +
+        s"type `${commands.prefix}${accept.name}` to accept this invitation."
+
+      val permInviteMessage: String = s"You may now enter the channel."
+
       override def execute(message: Message, args: String): Unit = {
-        val response = (for {
+        val response = for {
           member <- CommandHelper(message).member
           chan <- Option(member.getVoiceState.getChannel)
             .toRight("You must be in voice chat to use this command.")
           success <- message.getMentionedUsers.asScala match {
             case Seq() => Left("You must mention the users you want to join you in voice chat.")
             case Seq(mentions@_*) =>
-              for (mention <- mentions)
-                invites.put(
-                  GuildUserId(chan.getGuild.id, mention.id),
-                  Invite(message.getAuthor.id, chan.id, System.currentTimeMillis() + (10 minutes).toMillis)
-                )
-
-              val mentioned = mentions map {
-                case you if you == message.getAuthor => ">(You)"
-                case user => user.mention
-              }
-              Right(
-                s"""${mentioned mkString ", "}:
-                   |You have been invited to join ${message.getAuthor.mention} in voice chat.
-                   |Please join a voice channel and type `${commands.prefix}${accept.name}`
-                   |to accept this invitation.""".stripMargin
-              )
+              assert(message.getGuild == chan.getGuild)
+              Right(inviteUsers(channel = chan, inviter = message.getAuthor, invitees = mentions))
           }
-        } yield success).fold(BotMessages.error(_): MessageFromX, x => x: MessageFromX)
-        message reply response
+        } yield success
+
+        response.fold(
+          x => Future.successful(BotMessages.error(x): MessageFromX),
+          x => x.map(s => s: MessageFromX)
+        ) foreach (message reply _)
+      }
+
+      def inviteUsers(channel: VoiceChannel, inviter: User, invitees: Seq[User]): Future[String] = {
+        def toMentionStr(u: User) =
+          if (u == inviter) ">(You)"
+          else u.mention
+
+        val mentioned = invitees map toMentionStr
+
+        for {
+          owner <- ownerByChannel(channel)
+          // Invite with perms if invited by private channel owner
+          // else invite with invite system
+          (permsAdded, remaining) <-
+            if (owner.exists(_.id == inviter.id) && channel.getUserLimit == 0) {
+              addVoicePerms(invitees, channel, channel.getGuild)
+            } else Future.successful(Nil, invitees)
+        } yield {
+          for (mention <- remaining)
+            invites.put(
+              GuildUserId(channel.getGuild.id, mention.id),
+              Invite(inviter.id, channel.id, System.currentTimeMillis() + (10 minutes).toMillis)
+            )
+
+          val bothInviteMessage = (permsAdded, remaining) match {
+            case (_, Seq()) => permInviteMessage
+            case (Seq(), _) => inviteMessage
+            case (_, _) =>
+              val permInvitedStr = permsAdded map toMentionStr mkString ", "
+              val remainingStr = remaining map toMentionStr mkString ", "
+              s"$permInvitedStr:\n$permInviteMessage\n$remainingStr:\n$inviteMessage"
+          }
+
+          s"""${mentioned mkString ", "}:
+             |You have been invited to join ${inviter.mention} in voice chat in ${channel.mention}.
+             |$bothInviteMessage""".stripMargin
+        }
+      }
+
+      private def addVoicePerms(users: Seq[User], channel: Channel, guild: Guild): Future[(Seq[User], Seq[User])] = {
+        try {
+          val permUpdater = ChannelPermissionUpdater(channel)
+          val addedMembers = users.map(guild.findMember).map {
+            case Some(targetMember) =>
+              permUpdater.grant(targetMember, Permission.VOICE_CONNECT)
+              Right(())
+            case None =>
+              Left("Member missing from guild")
+          }
+
+          val (granted, notFound) = (addedMembers zip users).partition(_._1.isRight)
+          permUpdater.queue().transform {
+            case Success(_) => Success((granted.map(_._2), notFound.map(_._2)))
+            case Failure(_) => Success((Nil, users))
+          }
+        } catch {
+          case _: PermissionException => Future.successful((Nil, users))
+        }
       }
     }
 
