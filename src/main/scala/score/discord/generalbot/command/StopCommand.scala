@@ -5,7 +5,7 @@ import score.discord.generalbot.GeneralBot
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, TimeoutException}
 import scala.concurrent.duration._
 
 class StopCommand(bot: GeneralBot, val userId: ID[User]) extends Command.OneUserOnly {
@@ -17,7 +17,11 @@ class StopCommand(bot: GeneralBot, val userId: ID[User]) extends Command.OneUser
 
   override def execute(message: Message, args: String) {
     // Wait a little to add the reaction, but give up quickly as shutting down is more important
-    Await.ready(message.addReaction("👌").queueFuture(), 300.millis)
+    try {
+      Await.ready(message.addReaction("👌").queueFuture(), 300.millis)
+    } catch {
+      case _: TimeoutException =>
+    }
     bot.stop()
   }
 }
