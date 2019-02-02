@@ -38,7 +38,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
   }
 
   {
-    val accept = new Command.Anyone {
+    val accept: Command = new Command.Anyone {
       override def name = "accept"
 
       override def aliases = List("acc")
@@ -86,7 +86,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
       }
     }
 
-    val invite = new Command.Anyone {
+    val invite: Command = new Command.Anyone {
       override def name = "invite"
 
       override val aliases = List("inv")
