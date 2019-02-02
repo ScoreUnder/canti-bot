@@ -28,7 +28,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
 
-class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
 
   private type Timestamp = Long
@@ -156,12 +156,12 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
               val newVoiceChannel = await(channelReq.queueFuture())
 
-              userByChannel.synchronized {
-                userByChannel(newVoiceChannel) = message.getAuthor
+              ownerByChannel.synchronized {
+                ownerByChannel(newVoiceChannel) = message.getAuthor
               }.failed.foreach { ex =>
                 APIHelper.failure("saving private channel")(ex)
                 newVoiceChannel.delete().queueFuture().failed.foreach(APIHelper.failure("deleting private channel after database error"))
-                userByChannel remove newVoiceChannel
+                ownerByChannel remove newVoiceChannel
               }
 
               channel sendTemporary BotMessages.okay("Your channel has been created.").setTitle("Success", null)
@@ -258,7 +258,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
     case ev: ReadyEvent =>
       val jda = ev.getJDA
       async {
-        val allUsersByChannel = await(userByChannel.all)
+        val allUsersByChannel = await(ownerByChannel.all)
         val toRemove = new mutable.HashSet[(ID[Guild], ID[Channel])]
 
         for ((guildId, channelId, _) <- allUsersByChannel) {
@@ -270,7 +270,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
                 await(channel.delete.queueFuture())
                 // Note: Sequenced rather than parallel because the channel
                 // might not be deleted due to permissions or other reasons.
-                await(userByChannel remove channel)
+                await(ownerByChannel remove channel)
               }.failed.foreach(APIHelper.failure("deleting unused private channel"))
             case _ =>
           }
@@ -278,7 +278,7 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
         val removed = Future.sequence {
           for ((guildId, channelId) <- toRemove)
-            yield userByChannel.remove(guildId, channelId)
+            yield ownerByChannel.remove(guildId, channelId)
         }
         await(removed)  // Propagate exceptions
       }.failed.foreach(APIHelper.failure("processing initial private voice chat state"))
@@ -288,10 +288,10 @@ class PrivateVoiceChats(userByChannel: UserByChannel, commands: Commands)(implic
 
       if (channel.getMembers.isEmpty)
         async {
-          val user = await(userByChannel(channel))
+          val user = await(ownerByChannel(channel))
           if (user.isDefined) {
             await(channel.delete.queueFuture())
-            await(userByChannel remove channel)
+            await(ownerByChannel remove channel)
           }
         }.failed.foreach(APIHelper.failure("deleting unused private channel"))
 
