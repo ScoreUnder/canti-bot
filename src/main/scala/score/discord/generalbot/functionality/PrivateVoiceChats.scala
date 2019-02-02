@@ -93,6 +93,12 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
 
       override def description = "Ask another user to join your current voice channel"
 
+      override def longDescription(invocation: String): String =
+        s"""Usage:
+           |`$invocation @person1 @person2`
+           |Invites the mentioned parties, in this case person1 and person2, to your current channel.
+         """.stripMargin.trim
+
       override def execute(message: Message, args: String): Unit = {
         val response = (for {
           member <- CommandHelper(message).member
