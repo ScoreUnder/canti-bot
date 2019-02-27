@@ -194,7 +194,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
       override def longDescription(invocation: String) =
         s"""This command creates a semi-private voice channel.
            |You can set a user limit (e.g. `$invocation 4`), or leave it blank to make it completely private.
-           |You may also invite other users there using the `$invocation` command.
+           |You may also invite other users there using the `${commands.prefix}${invite.name}` command.
            |The name of the channel can be set by adding it to the end of the command.
            |e.g. `$invocation 3 Hangout number 1`""".stripMargin
 
