@@ -15,6 +15,7 @@ import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
 
 import scala.async.Async._
 import scala.collection.GenIterable
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -98,11 +99,36 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
   private def getMessageAsQuote(cmdMessage: Message, ch: MessageChannel, msg: Message) = {
     val chanName = Option(ch.getName).map("#" + _).getOrElse("Untitled channel")
     val sender = msg.getAuthor
-    BotMessages
+
+    val quote = BotMessages
       .plain(msg.getContentRaw)
       .setAuthor(sender.getName, null, sender.getAvatarUrl)
       .setTimestamp(msg.getCreationTime)
       .setFooter(s"$chanName | Requested by ${cmdMessage.getAuthor.mentionAsText}", null)
+
+    val embeds = msg.getEmbeds.asScala
+
+    embeds.flatMap(emb => Option(emb.getImage)).headOption match {
+      case Some(image) => quote.setImage(image.getUrl)
+      case None =>
+    }
+
+    // Overwrite embed preview image with uploaded image if applicable
+    // as uploaded image is "more important"
+    msg.getAttachments.asScala.find(_.isImage) match {
+      case Some(image) => quote.setImage(image.getUrl)
+      case None =>
+    }
+
+    for (embed <- embeds; desc <- Option(embed.getDescription)) {
+      quote.addField("[Embed description]", desc, false)
+    }
+
+    for (embed <- embeds; field <- embed.getFields.asScala) {
+      quote.addField(field)
+    }
+
+    quote
   }
 
   private def parseQuoteIDs(args: String) = {
