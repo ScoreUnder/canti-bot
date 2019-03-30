@@ -119,7 +119,12 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
         .map(m => ID.fromString[TextChannel](m.group(1)))
       (Some(quoteId), specifiedChannel)
     } else {
-      (None, None)
+      args match {
+        case QuoteCommand.LINK_REGEX(channelId, messageId) =>
+          (Some(ID.fromString[Message](messageId)), Some(ID.fromString[Channel](channelId)))
+        case _ =>
+          (None, None)
+      }
     }
   }
 
@@ -136,8 +141,10 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
 }
 
 object QuoteCommand {
+  private val LINK_REGEX_STR = """https://(?:[^.]+\.)?discordapp\.com/channels/\d+/(\d+)/(\d+)"""
+  private val LINK_REGEX = s"^$LINK_REGEX_STR".r.unanchored
   private val CHANNEL_REGEX = "\\s*<#(\\d+)>".r
-  // To avoid false positives, trigger on 9+ digits
+  // To avoid false positives, trigger on message URL or 9+ digits
   // 1 second past discord epoch is already 10 digits in their snowflake format.
-  private val GREENTEXT_REGEX = ">>(?=\\d{9,})".r
+  private val GREENTEXT_REGEX = s">>(?=\\d{9,}|$LINK_REGEX_STR)".r
 }
