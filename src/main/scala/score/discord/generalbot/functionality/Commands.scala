@@ -25,18 +25,51 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
   // String prepended before a command
   val prefix = "&"
 
+  /** Normalises a command name string into a form suitable to be looked up
+    * as a key in the command map.
+    * Not guaranteed to behave similarly between versions.
+    *
+    * @param name command name
+    * @return name in normalised form
+    */
+  private def normaliseCommandName(name: String): String = name.toLowerCase
+
+  /** Register a command with this command registry. The command may then be
+    * retrieved via its main name or any of its aliases, and will be available
+    * to the command-dispatching event listener.
+    *
+    * @param command command to register
+    */
   def register(command: Command): Unit = {
-    commands(command.name) = command
+    commands(normaliseCommandName(command.name)) = command
     for (alias <- command.aliases) {
-      commands(alias) = command
+      commands(normaliseCommandName(alias)) = command
     }
     commandList += command
   }
 
-  def get(commandName: String) = commands.get(commandName)
+  /** Retrieve a command by name from this command registry.
+    *
+    * @param commandName name or alias of command
+    * @return optional command
+    */
+  def get(commandName: String): Option[Command] =
+    commands.get(normaliseCommandName(commandName))
 
-  def all = commandList.toList
+  /** Retrieve all registered commands from this command registry.
+    *
+    * @return collection of all commands
+    */
+  def all: Seq[Command] = commandList.toList
 
+  /** Look up the role required to execute this command. Results in a future
+    * None if anyone can use the command, or a future Some if it is restricted
+    * to a specific role.
+    *
+    * @param cmd command to look up
+    * @param message command message (to determine guild)
+    * @return required role
+    */
   def requiredRole(cmd: Command, message: Message): Future[Option[Role]] =
     cmd match {
       case cmd: Command.ServerAdminDiscretion =>
@@ -47,12 +80,28 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
       case _ => Future.successful(None)
     }
 
+  /** Determines whether a command corresponding to a given message can be
+    * executed on that guild by that member, skipping other checks like
+    * server admin status.
+    *
+    * @param cmd command to check
+    * @param message command message
+    * @return whether allowed or not
+    */
   def isAllowedOnServer(cmd: Command, message: Message): Future[Boolean] =
     (for {
       role <- requiredRole(cmd, message).flatView
       member <- Future.successful(Option(message.getMember)).flatView
     } yield member has role).map(_ getOrElse true)
 
+  /** Determines whether a command corresponding to a given message can be
+    * executed on that guild by that member, and if not returns a human-readable
+    * error message.
+    *
+    * @param cmd command to check
+    * @param message command message
+    * @return either error or command
+    */
   def canRunCommand(cmd: Command, message: Message): Future[Either[String, Command]] =
     if (!(cmd checkPermission message))
       Future.successful(Left(cmd.permissionMessage))
@@ -63,6 +112,13 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
       }
     }
 
+  /** Splits a raw message into command name and arguments. No validation is
+    * done to check that the name is correct in any way.
+    *
+    * @param messageRaw message to parse command from
+    * @param requirePrefix whether command prefix is necessary
+    * @return optionally (name, args) of command
+    */
   def splitCommand(messageRaw: String, requirePrefix: Boolean = true): Option[(String, String)] = {
     val hasPrefix = messageRaw.startsWith(prefix)
     if (requirePrefix && !hasPrefix)
@@ -78,9 +134,14 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
     }
   }
 
+  /** Parses a command string into the command object and argument string.
+    *
+    * @param input command string
+    * @return optionally (command, args)
+    */
   def parseCommand(input: String): Option[(Command, String)] = for {
     (cmdName, cmdExtra) <- splitCommand(input)
-    cmd <- commands.get(cmdName)
+    cmd <- get(cmdName)
   } yield (cmd, cmdExtra)
 
   def runIfAllowed(message: Message, cmd: Command, cmdExtra: String): Future[Either[String, Command]] =
