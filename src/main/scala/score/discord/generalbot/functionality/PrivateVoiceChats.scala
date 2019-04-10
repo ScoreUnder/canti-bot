@@ -41,7 +41,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
     val accept: Command = new Command.Anyone {
       override def name = "accept"
 
-      override def aliases = List("acc")
+      override def aliases = List("acc", "accpet")
 
       override def description = "Accept another user's invitation to join a voice channel"
 
