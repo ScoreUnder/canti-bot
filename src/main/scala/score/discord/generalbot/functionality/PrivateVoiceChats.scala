@@ -96,7 +96,7 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
       override def longDescription(invocation: String): String =
         s"""Usage:
            |`$invocation @person1 @person2`
-           |Invites the mentioned parties, in this case person1 and person2, to your current channel.
+           |Invites the mentioned parties, in this case person1 and person2, to your current voice channel.
          """.stripMargin.trim
 
       lazy val inviteMessage: String = s"Please join a voice channel and " +
@@ -191,10 +191,11 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
 
       override def description = "Create a private voice chat channel"
 
-      override def longDescription(invocation: String) =
+      override def longDescription(invocation: String): String =
         s"""This command creates a semi-private voice channel.
-           |You can set a user limit (e.g. `$invocation 4`), or leave it blank to make it completely private.
-           |You may also invite other users there using the `${commands.prefix}${invite.name}` command.
+           |You can set a user limit (e.g. `$invocation 4`), or leave it blank to make it completely closed.
+           |Any user may enter below the user limit, but after that an invite is required to enter.
+           |You may invite other users there using the `${commands.prefix}${invite.name}` command.
            |The name of the channel can be set by adding it to the end of the command.
            |e.g. `$invocation 3 Hangout number 1`""".stripMargin
 
