@@ -101,7 +101,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
     val sender = msg.getAuthor
 
     val quote = BotMessages
-      .plain(msg.getContentRaw)
+      .plain(s"[🔗 Go to message ↦](${msg.getJumpUrl})\n${msg.getContentRaw}")
       .setAuthor(sender.getName, null, sender.getAvatarUrl)
       .setTimestamp(msg.getCreationTime)
       .setFooter(s"$chanName | Requested by ${cmdMessage.getAuthor.mentionAsText}", null)
