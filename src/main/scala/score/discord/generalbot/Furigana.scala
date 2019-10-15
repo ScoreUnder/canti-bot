@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Furigana {
   private val dummyImage = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB)
@@ -24,7 +24,7 @@ object Furigana {
     * @param furiText List of (Literal, Reading) pairs comprising the text
     * @return PNG data
     */
-  def renderPNG(furiText: Traversable[(String, String)]): Array[Byte] = {
+  def renderPNG(furiText: Iterable[(String, String)]): Array[Byte] = {
     val furiYAdjust = 0
     val lineGap = 10
 
@@ -65,11 +65,11 @@ object Furigana {
     outputStream.toByteArray
   }
 
-  private def positionText(furiText: Traversable[(String, String)], initialY: Int, lineHeight: Int, mainMetrics: FontMetrics, furiMetrics: FontMetrics): Iterable[PositionedFurigana] = {
+  private def positionText(furiText: Iterable[(String, String)], initialY: Int, lineHeight: Int, mainMetrics: FontMetrics, furiMetrics: FontMetrics): Iterable[PositionedFurigana] = {
     val imageMaxWidth = 1000
 
     def splitText(text: String, toWidth: Int) = {
-      val numCodePoints = text.codePoints().iterator().asScala.toStream
+      val numCodePoints = text.codePoints().iterator().asScala.to(LazyList)
         .scanLeft(0) { (width, chr) => width + mainMetrics.charWidth(chr) }
         .lastIndexWhere { width => width < toWidth }
       text take text.offsetByCodePoints(0, numCodePoints)

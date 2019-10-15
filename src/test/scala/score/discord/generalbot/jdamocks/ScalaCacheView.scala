@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import net.dv8tion.jda.api.utils.cache.CacheView
 import net.dv8tion.jda.api.utils.{ClosableIterator, LockIterator}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class ScalaCacheView[T](cache: Iterable[T], getName: T => String) extends CacheView[T] {
   val lock = new ReentrantReadWriteLock

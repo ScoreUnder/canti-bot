@@ -5,9 +5,9 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 
 class FutureEither[L, R](val value: Future[Either[L, R]]) extends AnyVal {
-  def map[R2](f: (R) => R2): Future[Either[L, R2]] = value.map(_.map(f))
+  def map[R2](f: R => R2): Future[Either[L, R2]] = value.map(_.map(f))
 
-  def flatMap[R2](f: (R) => Future[Either[L, R2]]): Future[Either[L, R2]] =
+  def flatMap[R2](f: R => Future[Either[L, R2]]): Future[Either[L, R2]] =
     value flatMap {
       case Left(_) => value.asInstanceOf[Future[Either[L, R2]]]
       case Right(x) => f(x)

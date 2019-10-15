@@ -77,7 +77,7 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
     }.failed.foreach(APIHelper.loudFailure("displaying kakasi reading", message.getChannel))
   }
 
-  private def processFurigana(raw: String): Traversable[(String, String)] = {
+  private def processFurigana(raw: String): Iterable[(String, String)] = {
     val spaces = WHITESPACE.findAllMatchIn(raw).map(_.start).toVector
     (for {
       positions <- (List(0) ++ spaces.map(_ + 1)) zip (spaces ++ List(raw.length))

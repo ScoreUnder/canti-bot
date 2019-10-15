@@ -5,12 +5,10 @@ import net.dv8tion.jda.api.entities.{ISnowflake, Message, User}
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 
-import scala.collection.GenIterable
-
 trait Command {
   def name: String
 
-  def aliases: GenIterable[String]
+  def aliases: Seq[String]
 
   def description: String
 

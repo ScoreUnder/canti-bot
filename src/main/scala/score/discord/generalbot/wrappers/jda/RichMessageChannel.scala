@@ -5,7 +5,7 @@ import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -27,7 +27,7 @@ class RichMessageChannel(val channel: MessageChannel) extends AnyVal {
   }
 
   def sendTemporary(message: MessageFromX, duration: Duration = 10 seconds)(implicit exec: Scheduler): Unit =
-    channel.sendMessage(message.toMessage).queue({ (message) =>
+    channel.sendMessage(message.toMessage).queue({ message =>
       exec.schedule(duration) {
         message.delete().queue()
       }
@@ -35,7 +35,7 @@ class RichMessageChannel(val channel: MessageChannel) extends AnyVal {
 
   def participants: Seq[User] = channel match {
     case guildChannel: GuildChannel =>
-      guildChannel.getMembers.asScala.view.map(_.getUser)
+      guildChannel.getMembers.iterator().asScala.map(_.getUser).toSeq
     case privateChannel: PrivateChannel =>
       List(channel.getJDA.getSelfUser, privateChannel.getUser)
   }

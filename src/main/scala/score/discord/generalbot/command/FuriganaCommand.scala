@@ -46,7 +46,7 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
           arr += ((literal, phonetic))
       }
     }
-    arr
+    arr.toSeq
   }
 
   override def execute(message: Message, args: String) {

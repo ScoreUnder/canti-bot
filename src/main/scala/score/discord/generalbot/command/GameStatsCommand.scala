@@ -8,8 +8,7 @@ import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
-import scala.collection.GenIterable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -18,7 +17,7 @@ class GameStatsCommand(implicit mo: MessageOwnership, replyCache: ReplyCache) ex
 
   override def name: String = "gamestats"
 
-  override def aliases: GenIterable[String] = List("gs")
+  override def aliases: Seq[String] = List("gs")
 
   override def description: String = "Lists out the most popular games in the given channel at this point in time"
 
@@ -45,7 +44,7 @@ class GameStatsCommand(implicit mo: MessageOwnership, replyCache: ReplyCache) ex
             if !member.getUser.isBot
             game <- member.getActivities.asScala
             if game.getType == ActivityType.DEFAULT
-          } yield game.getName).groupBy(identity).mapValues(_.size)
+          } yield game.getName).groupBy(identity).view.mapValues(_.size)
 
           val rows = games.size min 5
           Right(

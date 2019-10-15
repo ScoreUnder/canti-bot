@@ -4,19 +4,21 @@ lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
       organization := "score.discord",
-      scalaVersion := "2.12.8",
+      scalaVersion := "2.13.1",
       version      := "0.1.0-SNAPSHOT"
     )),
     name := "generalbot",
-    resolvers += "jcenter-bintray" at "http://jcenter.bintray.com",
+    resolvers += "jcenter-bintray" at "https://jcenter.bintray.com",
     libraryDependencies ++= Seq(
       scalaTest % Test,
       "net.dv8tion" % "JDA" % "4.0.0_52",
       "org.apache.commons" % "commons-lang3" % "3.5",
       "org.xerial" % "sqlite-jdbc" % "3.16.1",
-      "com.typesafe.slick" %% "slick" % "3.2.0",
+      "com.typesafe.slick" %% "slick" % "3.3.2",
       "com.typesafe" % "config" % "1.2.1",
-      "org.scala-lang.modules" %% "scala-async" % "0.9.6"
+      "org.scala-lang.modules" %% "scala-async" % "0.10.0",
+      // https://github.com/scala/scala-async/issues/220
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
     ),
     test in assembly := {}
   )

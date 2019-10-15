@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.entities.{Guild, Role}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.util.Try
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object ParseUtils {
   def searchRoles(guild: Guild, roleName: String): Seq[Role] =
@@ -15,6 +15,7 @@ object ParseUtils {
       Try(roleName.toLong)
         .map(id => List(guild.getRoleById(id)))
         .getOrElse(guild.getRolesByName(roleName, true).asScala)
+        .toSeq
 
   def findRole(guild: Guild, roleName: String): Either[EmbedBuilder, Role] =
     searchRoles(guild, roleName) match {

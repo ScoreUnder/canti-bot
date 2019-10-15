@@ -13,7 +13,7 @@ import net.dv8tion.jda.api.utils.cache.{CacheView, SnowflakeCacheView}
 import net.dv8tion.jda.api.{AccountType, JDA, Permission}
 import okhttp3.OkHttpClient
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class FakeJda extends JDA {
   private var guilds = Map.empty[Long, Guild]
@@ -62,7 +62,7 @@ class FakeJda extends JDA {
 
   override def getTextChannelCache: SnowflakeCacheView[TextChannel] =
     new ScalaSnowflakeCacheView[GuildChannel, TextChannel](
-      guilds.values.flatMap(_.getTextChannels.asScala).groupBy(_.getIdLong).mapValues(_.head),
+      guilds.values.flatMap(_.getTextChannels.asScala).groupBy(_.getIdLong).view.mapValues(_.head).toMap,
       _.getName)
 
   override def getVoiceChannelCache: SnowflakeCacheView[VoiceChannel] = ???

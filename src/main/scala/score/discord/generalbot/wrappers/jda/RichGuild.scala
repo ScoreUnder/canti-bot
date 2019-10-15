@@ -3,7 +3,7 @@ package score.discord.generalbot.wrappers.jda
 import net.dv8tion.jda.api.entities._
 import score.discord.generalbot.wrappers.jda.Conversions._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class RichGuild(val guild: Guild) extends AnyVal {
   def name = guild.getName

@@ -64,7 +64,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
       val channel = message.getChannel
       for {
         privateChannel <- message.getAuthor.openPrivateChannel().queueFuture()
-        myMessage <- privateChannel.sendMessage(
+        _ <- privateChannel.sendMessage(
           s"Please enter your spoiler contents for ${channel.mention}, or reply with 'cancel' to cancel."
         ).queueFuture()
       } yield {

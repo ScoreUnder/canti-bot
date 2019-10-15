@@ -13,15 +13,14 @@ import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
 
 import scala.async.Async._
-import scala.collection.GenIterable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name: String = "quote"
 
-  override val aliases: GenIterable[String] = List("q")
+  override val aliases: Seq[String] = List("q")
 
   override def description: String = "Embed a message as a quote"
 

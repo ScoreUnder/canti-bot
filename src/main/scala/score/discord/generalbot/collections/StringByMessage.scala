@@ -25,7 +25,7 @@ class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile],
 
   private val database = dbConfig.db
   private val stringByMessage = TableQuery[StringByMessage](new StringByMessage(_: Tag, tableName))
-  private val lookupQuery = Compiled({ (id: ConstColumn[ID[Message]]) =>
+  private val lookupQuery = Compiled({ id: ConstColumn[ID[Message]] =>
     stringByMessage.filter(t => t.messageId === id).map(_.text)
   })
 

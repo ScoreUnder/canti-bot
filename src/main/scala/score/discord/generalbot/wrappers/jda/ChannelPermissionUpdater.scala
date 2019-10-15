@@ -5,14 +5,15 @@ import net.dv8tion.jda.api.entities.{GuildChannel, Member}
 import score.discord.generalbot.wrappers.jda.ChannelPermissionUpdater.PermissionState
 import score.discord.generalbot.wrappers.jda.Conversions._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.Future
 
 class ChannelPermissionUpdater(channel: GuildChannel) {
   private[this] val overrideState = mutable.HashMap[Member, PermissionState](
     channel.getMemberPermissionOverrides.asScala
-      .map(ov => ov.getMember -> PermissionState(ov.getAllowedRaw, ov.getDeniedRaw)): _*
+      .map(ov => ov.getMember -> PermissionState(ov.getAllowedRaw, ov.getDeniedRaw))
+      .toSeq: _*
   ).withDefaultValue(PermissionState(0, 0))
   private val manager = channel.getManager
 

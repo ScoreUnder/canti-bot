@@ -8,11 +8,11 @@ import net.dv8tion.jda.api.Permission._
 import net.dv8tion.jda.api.{JDA, OnlineStatus, Permission}
 import net.dv8tion.jda.api.entities._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class FakeGuildMember(guild: Guild, user: User) extends Member {
-  var myPerms = Vector.empty[Permission]
-  var myChanPerms = Vector(MESSAGE_READ, MESSAGE_WRITE, VIEW_CHANNEL)
+  val myPerms = Vector.empty[Permission]
+  val myChanPerms = Vector(MESSAGE_READ, MESSAGE_WRITE, VIEW_CHANNEL)
 
   override def getUser: User = user
 

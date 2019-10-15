@@ -3,7 +3,7 @@ package score.discord.generalbot.wrappers
 import scala.language.implicitConversions
 
 class Tap[T](val me: T) extends AnyVal {
-  def tap(f: (T) => Unit): T = {
+  def tap(f: T => Unit): T = {
     f(me)
     me
   }

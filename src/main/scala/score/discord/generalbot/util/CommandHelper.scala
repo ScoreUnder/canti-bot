@@ -10,7 +10,7 @@ object CommandHelper {
     def guild: Either[String, Guild] = Option(_me.getGuild).toRight("You can only use this command from within a server.")
 
     def member: Either[String, Member] =
-      guild flatMap { (guild) =>
+      guild flatMap { guild =>
         Option(guild.getMember(_me.getAuthor))
           .toRight("Internal error: Can't find your server membership. This might be a temporary problem.")
       }

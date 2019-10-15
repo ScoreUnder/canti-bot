@@ -68,6 +68,8 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def getRolePermissionOverrides: util.List[PermissionOverride] = ???
 
+  override def createCopy(): ChannelAction[TextChannel] = createCopy(getGuild)
+
   override def createCopy(guild: Guild): ChannelAction[TextChannel] = ???
 
   override def getManager: ChannelManager = ???

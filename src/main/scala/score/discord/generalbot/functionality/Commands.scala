@@ -165,7 +165,7 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
             case Some((`cmd`, _)) =>
               canRunCommand(cmd, newMsg) onComplete {
                 case Success(Right(_)) => cmd.executeForEdit(newMsg, replyCache.get(oldMsg.messageId), cmdExtra)
-                case Success(Left(err)) => // Do not print error for edits to command with no perms
+                case Success(Left(_)) => // Do not print error for edits to command with no perms
                 case Failure(ex) => ex.printStackTrace()
               }
             case Some((_, _)) =>

@@ -20,7 +20,7 @@ import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
 import scala.async.Async._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -109,7 +109,7 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
           member <- CommandHelper(message).member
           chan <- Option(member.getVoiceState.getChannel)
             .toRight("You must be in voice chat to use this command.")
-          success <- message.getMentionedUsers.asScala match {
+          success <- message.getMentionedUsers.asScala.toSeq match {
             case Seq() => Left("You must mention the users you want to join you in voice chat.")
             case Seq(mentions@_*) =>
               assert(message.getGuild == chan.getGuild)

@@ -7,15 +7,14 @@ import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{BotMessages, MessageUtils}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
-import scala.collection.GenIterable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name: String = "find"
 
-  override val aliases: GenIterable[String] = List("id")
+  override val aliases: Seq[String] = List("id")
 
   override def description: String = "Finds a role, user or emoji by name"
 
@@ -72,7 +71,7 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
     def containsSearchTerm(haystack: String) =
       haystack.toLowerCase.toUpperCase.contains(searchTerm)
 
-    var results: Seq[String] = Nil.view
+    var results: Seq[String] = Vector.empty
     message.getGuild match {
       case null =>
         // Private chat
