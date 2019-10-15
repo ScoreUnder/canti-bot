@@ -184,7 +184,7 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
 
     commands register accept
     commands register invite
-    commands register new Command.ServerAdminDiscretion {
+    commands register new Command.Anyone {
       override def name = "private"
 
       override val aliases = List("prv", "pv", "voice")
@@ -311,8 +311,6 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
             x.printStackTrace()
             "Unknown error occurred when trying to create your channel."
         })
-
-      override def getIdLong = 253013831501437455L
     }
   }
 

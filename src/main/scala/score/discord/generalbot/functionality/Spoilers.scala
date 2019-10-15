@@ -19,7 +19,7 @@ import scala.concurrent.Future
 class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   val spoilerEmote = "🔍"
 
-  commands register new Command.ServerAdminDiscretion {
+  commands register new Command.Anyone {
     override def name = "spoiler"
 
     override val aliases = List("sp", "spoil", "hide")
@@ -79,8 +79,6 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
         }
       }
     }
-
-    override def getIdLong = -1145591283071885991L
   }
 
   private def createSpoiler(spoilerChannel: MessageChannel, author: User, args: String): Future[Unit] = {

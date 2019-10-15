@@ -47,13 +47,7 @@ class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwne
 
   private def showHelpPage(message: Message, page: Int) = {
     async {
-      val myCommands = await(Future.sequence(commands.all.map { cmd =>
-        if (cmd checkPermission message)
-          for (allowed <- commands.isAllowedOnServer(cmd, message))
-            yield if (allowed) Some(cmd) else None
-        else Future.successful(None)
-      })).flatten
-
+      val myCommands = commands.all.filter(_ checkPermission message)
       val pageOffset = pageSize * (page - 1)
       val numPages = (myCommands.length + pageSize - 1) / pageSize
 

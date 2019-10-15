@@ -38,8 +38,6 @@ object Command {
     override def permissionMessage = "Anyone may use this command."
   }
 
-  trait ServerAdminDiscretion extends Anyone with ISnowflake
-
   trait OneUserOnly extends Command {
     override def checkPermission(message: Message) =
       message.getAuthor.id == userId
