@@ -1,7 +1,9 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.core.entities.impl.MemberImpl
-import net.dv8tion.jda.core.entities.{Member, Role}
+import java.util
+
+import net.dv8tion.jda.api.entities.{Member, Role}
+import net.dv8tion.jda.internal.entities.MemberImpl
 
 class RichMember(val member: Member) extends AnyVal {
   def has(role: Role) = (member match {
@@ -13,7 +15,7 @@ class RichMember(val member: Member) extends AnyVal {
 }
 
 class MemberRolesShim(val member: Member) extends AnyVal {
-  def +=(roleReason: (Role, String)) = member.getGuild.getController.addRolesToMember(member, roleReason._1).reason(roleReason._2).queue()
+  def +=(roleReason: (Role, String)) = member.getGuild.modifyMemberRoles(member, util.Arrays.asList(roleReason._1), null).reason(roleReason._2).queue()
 
-  def -=(roleReason: (Role, String)) = member.getGuild.getController.removeRolesFromMember(member, roleReason._1).reason(roleReason._2).queue()
+  def -=(roleReason: (Role, String)) = member.getGuild.modifyMemberRoles(member, null, util.Arrays.asList(roleReason._1)).reason(roleReason._2).queue()
 }

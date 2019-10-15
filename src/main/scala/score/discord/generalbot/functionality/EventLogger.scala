@@ -1,14 +1,14 @@
 package score.discord.generalbot.functionality
 
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.events._
-import net.dv8tion.jda.core.events.guild.member.GuildMemberNickChangeEvent
-import net.dv8tion.jda.core.events.guild.voice._
-import net.dv8tion.jda.core.events.message._
-import net.dv8tion.jda.core.events.message.guild.GenericGuildMessageEvent
-import net.dv8tion.jda.core.events.message.react._
-import net.dv8tion.jda.core.events.user.GenericUserEvent
-import net.dv8tion.jda.core.hooks.EventListener
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.events._
+import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent
+import net.dv8tion.jda.api.events.guild.voice._
+import net.dv8tion.jda.api.events.message._
+import net.dv8tion.jda.api.events.message.guild.GenericGuildMessageEvent
+import net.dv8tion.jda.api.events.message.react._
+import net.dv8tion.jda.api.events.user.GenericUserEvent
+import net.dv8tion.jda.api.hooks.EventListener
 import org.apache.commons.lang3.time.FastDateFormat
 import score.discord.generalbot.wrappers.jda.Conversions._
 
@@ -20,7 +20,7 @@ class EventLogger extends EventListener {
   private def formatMessage(message: Message) =
     message.getContentRaw.split('\n').map("\t" + _).mkString("\n")
 
-  override def onEvent(event: Event): Unit = event match {
+  override def onEvent(event: GenericEvent): Unit = event match {
     case _: ReadyEvent =>
       log("Bot is ready.")
     case ev: StatusChangeEvent =>
@@ -45,9 +45,9 @@ class EventLogger extends EventListener {
     case ev: GuildVoiceMoveEvent =>
       log(s"VOICE MOVE: ${ev.getMember.getUser.unambiguousString} from " +
         s"${ev.getChannelLeft.unambiguousString} to ${ev.getChannelJoined.unambiguousString}")
-    case ev: GuildMemberNickChangeEvent =>
+    case ev: GuildMemberUpdateNicknameEvent =>
       log(s"NICK CHANGE: ${ev.getGuild.unambiguousString} ${ev.getMember.getUser.unambiguousString} " +
-        s"from ${ev.getPrevNick} to ${ev.getNewNick}")
+        s"from ${ev.getOldNickname} to ${ev.getNewNickname}")
     case ev: MessageReactionAddEvent =>
       log(s"REACT: ${ev.getUser.unambiguousString} ${ev.getReaction}")
     case ev: MessageReactionRemoveEvent =>

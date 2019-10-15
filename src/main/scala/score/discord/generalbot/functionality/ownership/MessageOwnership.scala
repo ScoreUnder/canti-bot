@@ -1,7 +1,7 @@
 package score.discord.generalbot.functionality.ownership
 
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.entities.{Message, User}
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.{Message, User}
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 

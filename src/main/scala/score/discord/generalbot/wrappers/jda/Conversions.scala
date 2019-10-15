@@ -1,13 +1,13 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.core.entities._
-import net.dv8tion.jda.core.requests.RestAction
-import net.dv8tion.jda.core.{EmbedBuilder, JDA, MessageBuilder}
+import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.{EmbedBuilder, JDA, MessageBuilder}
 
 import scala.language.implicitConversions
 
 object Conversions {
-  implicit final def toRichChannel(channel: Channel): RichChannel = new RichChannel(channel)
+  implicit final def toRichVoiceChannel(channel: VoiceChannel): RichVoiceChannel = new RichVoiceChannel(channel)
 
   implicit final def toRichMessageChannel(channel: MessageChannel): RichMessageChannel = new RichMessageChannel(channel)
 

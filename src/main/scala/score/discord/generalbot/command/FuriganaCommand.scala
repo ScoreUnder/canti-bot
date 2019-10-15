@@ -1,7 +1,7 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.Furigana
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -71,18 +71,20 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
 
       val imageBytes = Furigana.renderPNG(furiText)
 
-      import net.dv8tion.jda.core.entities.Message.MentionType._
+      import net.dv8tion.jda.api.entities.Message.MentionType._
       val newMessage = new MessageBuilder()
         .append(origWithoutFuri)
       maybeGuild match {
         case Some(guild) =>
           // Allow channel mentions - why not?
-          // Also, work around a JDA bug by putting EVERYONE/HERE at the end
           newMessage.stripMentions(guild, USER, ROLE, EVERYONE, HERE)
         case None =>
       }
       newMessage.getStringBuilder.insert(0, s"${message.getAuthor.mention} ")
-      val newMsg = await(message.getChannel.sendFile(imageBytes, "furigana.png", newMessage.build).queueFuture())
+      val newMsg = await(
+        message.getChannel.sendFile(imageBytes, "furigana.png")
+          .append(newMessage.getStringBuilder.toString)
+          .queueFuture())
       messageOwnership(newMsg) = message.getAuthor
     }.failed foreach APIHelper.loudFailure("rendering furigana", message.getChannel)
   }

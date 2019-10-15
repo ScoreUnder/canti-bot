@@ -1,8 +1,7 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.{ISnowflake, Message, User}
-import score.discord.generalbot.Config
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.{ISnowflake, Message, User}
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 

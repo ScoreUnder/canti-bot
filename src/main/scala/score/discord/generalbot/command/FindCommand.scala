@@ -1,7 +1,7 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{BotMessages, MessageUtils}
@@ -91,12 +91,13 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
             containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
               Option(m.getNickname).exists(n => containsSearchTerm(s"@$n")))
           .map(m => s"**User** ${m.getUser.mentionWithName}: `${m.getUser.getId}`")
-        results ++= guild.getMembers.asScala.view
-          .filter(m => Option(m.getGame).exists(g => containsSearchTerm(g.getName)))
-          .map { m =>
-            val game = MessageUtils.sanitise(m.getGame.getName)
-            s"**Game** ${m.getUser.mentionWithName} playing $game"
-          }
+        results ++= (for {
+          member <- guild.getMembers.asScala.view
+          activity <- member.getActivities.asScala
+          name = activity.getName
+          if containsSearchTerm(name)
+          safeName = MessageUtils.sanitise(name)
+        } yield s"**Game** ${member.getUser.mentionWithName} playing $safeName")
     }
     results
   }

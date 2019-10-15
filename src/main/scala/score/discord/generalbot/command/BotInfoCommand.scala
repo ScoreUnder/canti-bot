@@ -1,6 +1,6 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.core.entities.{Message, User}
+import net.dv8tion.jda.api.entities.{Message, User}
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
@@ -26,7 +26,7 @@ class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: M
         val owner = guild.getOwner.getUser
         s"${guild.getName} ($memberCount users; owner: ${owner.name}#${owner.discriminator})"
       }
-      val me = await(jda.asBot().getApplicationInfo.queueFuture())
+      val me = await(jda.retrieveApplicationInfo.queueFuture())
       await(message reply BotMessages.plain("Some basic bot info")
         .addField("Owner", s"<@$userId>", true)
         .addField("Servers", s"${allGuilds.size}", true)

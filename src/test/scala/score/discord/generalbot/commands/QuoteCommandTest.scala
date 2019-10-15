@@ -1,6 +1,6 @@
 package score.discord.generalbot.commands
 
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.scalatest._
 import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.command.QuoteCommand
@@ -41,7 +41,7 @@ class QuoteCommandTest extends FlatSpec with Matchers {
     val future = cmd.executeFuture(quotingMessage, invocation.drop(invocation.indexOf(" ") + 1))
     Await.result(future, Duration.Inf)
 
-    quoterChannel.getMessageById(quoterChannel.getLatestMessageId).complete()
+    quoterChannel.retrieveMessageById(quoterChannel.getLatestMessageId).complete()
       .getEmbeds.get(0).getDescription should include(expected)
   }
 

@@ -1,6 +1,6 @@
 package score.discord.generalbot.collections
 
-import net.dv8tion.jda.core.entities.{Guild, ISnowflake, Role}
+import net.dv8tion.jda.api.entities.{Guild, ISnowflake, Role}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.util.DBUtils
 import score.discord.generalbot.wrappers.jda.Conversions._

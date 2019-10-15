@@ -1,7 +1,7 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities.{Channel, Member}
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.{GuildChannel, Member}
 import score.discord.generalbot.wrappers.jda.ChannelPermissionUpdater.PermissionState
 import score.discord.generalbot.wrappers.jda.Conversions._
 
@@ -9,7 +9,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Future
 
-class ChannelPermissionUpdater(channel: Channel) {
+class ChannelPermissionUpdater(channel: GuildChannel) {
   private[this] val overrideState = mutable.HashMap[Member, PermissionState](
     channel.getMemberPermissionOverrides.asScala
       .map(ov => ov.getMember -> PermissionState(ov.getAllowedRaw, ov.getDeniedRaw)): _*
@@ -36,5 +36,5 @@ object ChannelPermissionUpdater {
 
   private case class PermissionState(allow: Long, deny: Long)
 
-  def apply(channel: Channel) = new ChannelPermissionUpdater(channel)
+  def apply(channel: GuildChannel) = new ChannelPermissionUpdater(channel)
 }

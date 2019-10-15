@@ -1,8 +1,8 @@
 package score.discord.generalbot.functionality
 
-import net.dv8tion.jda.core.entities.{Message, MessageChannel, User}
-import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.hooks.EventListener
+import net.dv8tion.jda.api.entities.{Message, MessageChannel, User}
+import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.matching.Events._
@@ -29,7 +29,7 @@ class Conversations extends EventListener {
     ongoingConversation((user, channel)) = action
   }
 
-  override def onEvent(event: Event): Unit =
+  override def onEvent(event: GenericEvent): Unit =
     event match {
       case NonBotMessage(msg) =>
         val userId = msg.getAuthor.id

@@ -1,8 +1,8 @@
 package score.discord.generalbot.functionality.ownership
 
-import net.dv8tion.jda.core.entities.{ChannelType, Message, MessageChannel, User}
-import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.hooks.EventListener
+import net.dv8tion.jda.api.entities.{ChannelType, Message, MessageChannel, User}
+import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.generalbot.util.APIHelper
 import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.matching.Events.{MessageDelete, NonBotReact}
@@ -18,7 +18,7 @@ class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends E
     else
       messageOwnership(channel.getJDA, messageId)
 
-  override def onEvent(ev: Event) {
+  override def onEvent(ev: GenericEvent) {
     ev match {
       case NonBotReact(react @ React.Text("❌" | "🚮"), messageId, channel, user) =>
         getOwnership(user, channel, messageId).foreach {

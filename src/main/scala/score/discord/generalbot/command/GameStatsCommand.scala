@@ -1,8 +1,8 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.entities.Game.GameType
-import net.dv8tion.jda.core.entities.{Message, TextChannel}
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.entities.Activity.ActivityType
+import net.dv8tion.jda.api.entities.{Message, TextChannel}
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
@@ -43,9 +43,8 @@ class GameStatsCommand(implicit mo: MessageOwnership, replyCache: ReplyCache) ex
           val games = (for {
             member <- ch.getMembers.asScala
             if !member.getUser.isBot
-            game = member.getGame
-            if game ne null
-            if game.getType == GameType.DEFAULT
+            game <- member.getActivities.asScala
+            if game.getType == ActivityType.DEFAULT
           } yield game.getName).groupBy(identity).mapValues(_.size)
 
           val rows = games.size min 5

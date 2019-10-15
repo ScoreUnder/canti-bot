@@ -1,9 +1,17 @@
 package score.discord.generalbot.jdamocks
 
-import net.dv8tion.jda.core.entities.ISnowflake
-import net.dv8tion.jda.core.utils.cache.SnowflakeCacheView
+import java.util.stream.{Stream => JStream}
 
-class ScalaSnowflakeCacheView[T >: Null <: ISnowflake](cache: collection.Map[Long, T], getName: T => String)
-  extends ScalaCacheView[T](cache.values, getName) with SnowflakeCacheView[T] {
-  override def getElementById(id: Long): T = cache.get(id).orNull
+import net.dv8tion.jda.api.entities.ISnowflake
+import net.dv8tion.jda.api.utils.cache.SortedSnowflakeCacheView
+
+import scala.collection.JavaConverters._
+
+class ScalaSnowflakeCacheView[Q <: Comparable[Q], T <: Q with ISnowflake](cache: collection.Map[Long, T], getName: T => String)
+  extends ScalaCacheView[T](cache.values, getName) with SortedSnowflakeCacheView[T] {
+  override def getElementById(id: Long): T = cache.get(id).getOrElse(null.asInstanceOf[T])
+
+  override def streamUnordered(): JStream[T] = cache.values.asJavaCollection.stream()
+
+  override def parallelStreamUnordered(): JStream[T] = cache.values.asJavaCollection.parallelStream()
 }

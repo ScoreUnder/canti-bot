@@ -1,8 +1,8 @@
 package score.discord.generalbot.wrappers.jda.matching
 
-import net.dv8tion.jda.core.entities._
-import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent
-import net.dv8tion.jda.core.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
+import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
+import net.dv8tion.jda.api.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
 import score.discord.generalbot.collections.MessageCache
 import score.discord.generalbot.discord.BareMessage
 import score.discord.generalbot.wrappers.jda.ID

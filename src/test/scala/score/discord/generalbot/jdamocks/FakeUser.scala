@@ -2,24 +2,18 @@ package score.discord.generalbot.jdamocks
 
 import java.util
 
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.entities.{Guild, PrivateChannel, User}
-import net.dv8tion.jda.core.requests.RestAction
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.{Guild, PrivateChannel, User}
+import net.dv8tion.jda.api.requests.RestAction
 
 class FakeUser(name: String, id: Long) extends User {
   override def getName: String = name
 
   override def getDiscriminator: String = "1234"
 
-  override def getAvatarId: String = ???
-
-  override def getAvatarUrl: String = "http://example.com/fake-avatar.jpg"
+  override def getAvatarId: String = "123456789"
 
   override def getDefaultAvatarId: String = ???
-
-  override def getDefaultAvatarUrl: String = ???
-
-  override def getEffectiveAvatarUrl: String = ???
 
   override def hasPrivateChannel: Boolean = ???
 
@@ -36,4 +30,6 @@ class FakeUser(name: String, id: Long) extends User {
   override def getAsMention: String = ???
 
   override def isFake: Boolean = ???
+
+  override def getAsTag: String = ???
 }

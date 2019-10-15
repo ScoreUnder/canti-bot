@@ -1,7 +1,7 @@
 package score.discord.generalbot.wrappers.jda.matching
 
-import net.dv8tion.jda.core.entities.MessageReaction
-import net.dv8tion.jda.core.entities.MessageReaction.ReactionEmote
+import net.dv8tion.jda.api.entities.MessageReaction
+import net.dv8tion.jda.api.entities.MessageReaction.ReactionEmote
 
 object React {
   object Text {

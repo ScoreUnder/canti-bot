@@ -1,8 +1,8 @@
 package score.discord.generalbot.functionality
 
-import net.dv8tion.jda.core.entities.{Message, Role}
-import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.hooks.EventListener
+import net.dv8tion.jda.api.entities.{Message, Role}
+import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.generalbot.collections.{CommandPermissionLookup, MessageCache, ReplyCache}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.util.{APIHelper, BotMessages}
@@ -151,7 +151,7 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
       case Failure(ex) => ex.printStackTrace()
     })
 
-  override def onEvent(event: Event) {
+  override def onEvent(event: GenericEvent) {
     event match {
       case NonBotMessage(message) =>
         for ((cmd, cmdExtra) <- parseCommand(message.getContentRaw)) {

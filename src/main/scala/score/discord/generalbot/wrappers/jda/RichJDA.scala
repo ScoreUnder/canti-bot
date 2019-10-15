@@ -1,7 +1,7 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.entities.{Guild, User}
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.{Guild, User}
 
 import scala.collection.JavaConverters._
 

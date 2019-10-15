@@ -1,8 +1,8 @@
 package score.discord.generalbot.functionality
 
-import net.dv8tion.jda.core.entities.{Message, MessageChannel, TextChannel, User}
-import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.hooks.EventListener
+import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
+import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.generalbot.collections.{ReplyCache, StringByMessage}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -106,7 +106,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
     }
   }
 
-  override def onEvent(event: Event): Unit = event match {
+  override def onEvent(event: GenericEvent): Unit = event match {
     case NonBotReact(React.Text(`spoilerEmote`), message, channel, user) =>
       val channelName = channel match {
         case ch: TextChannel => ch.getAsMention

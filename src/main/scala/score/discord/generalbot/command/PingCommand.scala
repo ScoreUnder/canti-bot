@@ -2,7 +2,7 @@ package score.discord.generalbot.command
 
 import java.time.{Duration, Instant}
 
-import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.APIHelper
 import score.discord.generalbot.util.TimeUtils.formatTimeDiff
@@ -48,7 +48,7 @@ class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.A
           timeReallySent = Some(Instant.now())
           true
         }).queueFuture()
-        timeOnServer = pingMessage.getCreationTime.toInstant
+        timeOnServer = pingMessage.getTimeCreated.toInstant
         timeReceived = Instant.now()
         _ = messageOwnership(pingMessage) = message.getAuthor
         _ <- pingMessage.editMessage(getPingMessage(timeSent, timeReallySent, timeOnServer, timeReceived)).queueFuture()

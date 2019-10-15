@@ -1,6 +1,6 @@
 package score.discord.generalbot.collections
 
-import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.util.DBUtils
 import score.discord.generalbot.wrappers.jda.ID
 import slick.basic.DatabaseConfig

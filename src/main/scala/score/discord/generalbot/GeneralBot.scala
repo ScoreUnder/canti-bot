@@ -1,14 +1,14 @@
 package score.discord.generalbot
 
-import java.io.File
+import java.io.{File, IOException}
 import java.net.URLClassLoader
 import java.util.concurrent.{Executors, ScheduledExecutorService}
 
 import com.typesafe.config.ConfigFactory
-import net.dv8tion.jda.core.entities.Game
-import net.dv8tion.jda.core.events.ReadyEvent
-import net.dv8tion.jda.core.hooks.EventListener
-import net.dv8tion.jda.core.{AccountType, JDA, JDABuilder}
+import net.dv8tion.jda.api.entities.Activity
+import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.{AccountType, JDA, JDABuilder}
 import score.discord.generalbot.collections._
 import score.discord.generalbot.command._
 import score.discord.generalbot.functionality._
@@ -48,14 +48,15 @@ class GeneralBot {
         val commands = new Commands(new CommandPermissionLookup(dbConfig, LruCache.empty(2000), "command_perms"))
         val quoteCommand = new QuoteCommand
         val conversations = new Conversations
-        bot addEventListener commands
-        bot addEventListener new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands)
-        bot addEventListener new PrivateVoiceChats(new UserByChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands)
-        bot addEventListener new DeleteOwnedMessages
-        bot addEventListener conversations
-        bot addEventListener new Spoilers(new StringByMessage(dbConfig, LruCache.empty(100), "spoilers_by_message"), commands, conversations)
-        bot addEventListener new quoteCommand.GreentextListener
-        bot addEventListener messageCache
+        bot.addEventListeners(
+          commands,
+          new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands),
+          new PrivateVoiceChats(new UserByVoiceChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands),
+          new DeleteOwnedMessages,
+          conversations,
+          new Spoilers(new StringByMessage(dbConfig, LruCache.empty(100), "spoilers_by_message"), commands, conversations),
+          new quoteCommand.GreentextListener,
+          messageCache)
 
         val helpCommand = new HelpCommand(commands)
         commands register helpCommand
@@ -73,17 +74,18 @@ class GeneralBot {
         if (readCommand.available) commands register readCommand
         commands register new PingCommand
 
-        bot addEventListener ({
-          case ev: ReadyEvent =>
-            // TODO: Make configurable?
-            ev.getJDA.getPresence.setGame(Game playing s"Usage: ${commands.prefix}${helpCommand.name}")
-          case _ =>
-        }: EventListener)
-        bot addEventListener new EventLogger
+        bot.addEventListeners(
+          {
+            case ev: ReadyEvent =>
+              // TODO: Make configurable?
+              ev.getJDA.getPresence.setActivity(Activity playing s"Usage: ${commands.prefix}${helpCommand.name}")
+            case _ =>
+          }: EventListener,
+          new EventLogger)
 
         // The discord bot spawns off new threads and its event handlers expect
         // everything to have been set up, so this must come last.
-        discord = Some(bot.buildBlocking())
+        discord = Some(bot.build())
 
       case Some(_) =>
         throw new UnsupportedOperationException("Cannot start() the same bot object twice without at least stopping in between.")
@@ -99,6 +101,12 @@ class GeneralBot {
         try executor.awaitTermination(timeout.length, timeout.unit)
         catch {
           case _: InterruptedException =>
+        }
+        bot.getHttpClient.dispatcher().executorService().shutdown()
+        bot.getHttpClient.connectionPool().evictAll()
+        try Option(bot.getHttpClient.cache()).foreach(_.close())
+        catch {
+          case _: IOException =>
         }
 
       case None =>

@@ -3,15 +3,17 @@ package score.discord.generalbot.jdamocks
 import java.util
 import java.util.Collections
 
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.entities.{Message, MessageChannel, MessageEmbed, User}
-import net.dv8tion.jda.core.entities.impl.AbstractMessage
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.{Message, MessageActivity, MessageChannel, MessageEmbed, User}
+import net.dv8tion.jda.internal.entities.AbstractMessage
 import score.discord.generalbot.SnowflakeOrdering
 
 class FakeMessage(channel: MessageChannel, id: Long, content: String, author: User, embeds: util.List[MessageEmbed])
   extends AbstractMessage(content, "dummy nonce", false)
   with SnowflakeOrdering
 {
+  override def getJumpUrl: String = s"https://dummy.jump.url/$id"
+
   override def unsupported(): Unit = ???
 
   override def getChannel: MessageChannel = channel
@@ -25,4 +27,6 @@ class FakeMessage(channel: MessageChannel, id: Long, content: String, author: Us
   override def getJDA: JDA = channel.getJDA
 
   override def getIdLong: Long = id
+
+  override def getActivity: MessageActivity = ???
 }

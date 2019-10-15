@@ -1,6 +1,6 @@
 package score.discord.generalbot
 
-import net.dv8tion.jda.core.entities.ISnowflake
+import net.dv8tion.jda.api.entities.ISnowflake
 
 trait SnowflakeOrdering extends Ordered[ISnowflake] { this: ISnowflake =>
   override def compare(that: ISnowflake): Int =

@@ -1,6 +1,6 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.core.requests.RestAction
+import net.dv8tion.jda.api.requests.RestAction
 
 import scala.concurrent.{Future, Promise}
 

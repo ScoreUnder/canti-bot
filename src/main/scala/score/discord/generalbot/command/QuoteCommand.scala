@@ -1,11 +1,10 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.client.entities.Group
-import net.dv8tion.jda.core.entities._
-import net.dv8tion.jda.core.events.Event
-import net.dv8tion.jda.core.exceptions.PermissionException
-import net.dv8tion.jda.core.hooks.EventListener
-import net.dv8tion.jda.core.requests.ErrorResponse
+import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.exceptions.PermissionException
+import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.requests.ErrorResponse
 import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
@@ -60,7 +59,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
             case Right(ch) =>
               import APIHelper.Error
               import ErrorResponse._
-              val foundMessage = APIHelper.tryRequest(ch getMessageById quoteId.value).map(Right(_)).recover {
+              val foundMessage = APIHelper.tryRequest(ch retrieveMessageById quoteId.value).map(Right(_)).recover {
                 case Error(UNKNOWN_MESSAGE) if specifiedChannel.isEmpty =>
                   Left("Can't find the channel that message is in. Try specifying it manually.")
                 case Error(UNKNOWN_MESSAGE) =>
@@ -88,8 +87,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
 
   private def checkChannelVisibility(channel: Option[MessageChannel], sender: User) = {
     channel match {
-      case Some(ch: Channel) if sender canSee ch => Right(ch)
-      case Some(ch: Group) if sender canSee ch => Right(ch)
+      case Some(ch: GuildChannel) if sender canSee ch => Right(ch)
       case Some(ch: PrivateChannel) if ch.getUser == sender => Right(ch)
       case Some(_) => Left("You do not have access to the specified channel.")
       case None => Left("I do not have access to the specified channel.")
@@ -103,7 +101,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
     val quote = BotMessages
       .plain(s"[🔗 Go to message ↦](${msg.getJumpUrl})\n${msg.getContentRaw}")
       .setAuthor(sender.getName, null, sender.getAvatarUrl)
-      .setTimestamp(msg.getCreationTime)
+      .setTimestamp(msg.getTimeCreated)
       .setFooter(s"$chanName | Requested by ${cmdMessage.getAuthor.mentionAsText}", null)
 
     val embeds = msg.getEmbeds.asScala
@@ -147,7 +145,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
     } else {
       args match {
         case QuoteCommand.LINK_REGEX(channelId, messageId) =>
-          (Some(ID.fromString[Message](messageId)), Some(ID.fromString[Channel](channelId)))
+          (Some(ID.fromString[Message](messageId)), Some(ID.fromString[TextChannel](channelId)))
         case _ =>
           (None, None)
       }
@@ -155,7 +153,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
   }
 
   class GreentextListener extends EventListener {
-    override def onEvent(event: Event): Unit = event match {
+    override def onEvent(event: GenericEvent): Unit = event match {
       case NonBotMessage(message) =>
         QuoteCommand.GREENTEXT_REGEX
           .findPrefixMatchOf(message.getContentRaw)

@@ -2,16 +2,17 @@ package score.discord.generalbot.jdamocks
 
 import java.util
 
-import net.dv8tion.jda.client.requests.restaction.pagination.MentionPaginationAction
-import net.dv8tion.jda.core.{JDA, Region}
-import net.dv8tion.jda.core.entities._
-import net.dv8tion.jda.core.managers.{AudioManager, GuildController, GuildManager, GuildManagerUpdatable}
-import net.dv8tion.jda.core.requests.RestAction
-import net.dv8tion.jda.core.requests.restaction.pagination.AuditLogPaginationAction
-import net.dv8tion.jda.core.utils.cache.{MemberCacheView, SnowflakeCacheView}
+import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.managers.{AudioManager, GuildManager}
+import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.restaction.{AuditableRestAction, ChannelAction, MemberAction, RoleAction}
+import net.dv8tion.jda.api.requests.restaction.order.{CategoryOrderAction, ChannelOrderAction, RoleOrderAction}
+import net.dv8tion.jda.api.requests.restaction.pagination.AuditLogPaginationAction
+import net.dv8tion.jda.api.utils.cache.{MemberCacheView, SnowflakeCacheView, SortedSnowflakeCacheView}
+import net.dv8tion.jda.api.{JDA, Region}
 
 class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
-  var channels = Map.empty[Long, Channel]
+  var channels = Map.empty[Long, GuildChannel]
   var members = Map.empty[Long, Member]
 
   def makeTextChannel(name: String): FakeTextChannel = {
@@ -26,21 +27,13 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
     member
   }
 
-  override def retrieveRegions(): RestAction[util.EnumSet[Region]] = ???
-
   override def getName: String = ???
 
   override def getIconId: String = ???
 
-  override def getIconUrl: String = ???
-
   override def getFeatures: util.Set[String] = ???
 
   override def getSplashId: String = ???
-
-  override def getSplashUrl: String = ???
-
-  override def getVanityUrl: RestAction[String] = ???
 
   override def getAfkChannel: VoiceChannel = ???
 
@@ -60,35 +53,23 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
 
   override def getMemberCache: MemberCacheView = ???
 
-  override def getCategoryCache: SnowflakeCacheView[Category] = ???
+  override def getCategoryCache: SortedSnowflakeCacheView[Category] = ???
 
-  override def getTextChannelCache: SnowflakeCacheView[TextChannel] = new ScalaSnowflakeCacheView(channels.collect {
+  override def getTextChannelCache: SortedSnowflakeCacheView[TextChannel] = new ScalaSnowflakeCacheView[GuildChannel, TextChannel](channels.collect {
     case (id, c: TextChannel) => id -> c
   }, _.getName)
 
-  override def getVoiceChannelCache: SnowflakeCacheView[VoiceChannel] = ???
+  override def getVoiceChannelCache: SortedSnowflakeCacheView[VoiceChannel] = ???
 
-  override def getRoleCache: SnowflakeCacheView[Role] = ???
+  override def getRoleCache: SortedSnowflakeCacheView[Role] = ???
 
   override def getEmoteCache: SnowflakeCacheView[Emote] = ???
-
-  override def getBanList: RestAction[util.List[Guild.Ban]] = ???
-
-  override def getPrunableMemberCount(days: Int): RestAction[Integer] = ???
 
   override def getPublicRole: Role = ???
 
   override def getDefaultChannel: TextChannel = ???
 
   override def getManager: GuildManager = ???
-
-  override def getManagerUpdatable: GuildManagerUpdatable = ???
-
-  override def getController: GuildController = ???
-
-  override def getRecentMentions: MentionPaginationAction = ???
-
-  override def getAuditLogs: AuditLogPaginationAction = ???
 
   override def leave(): RestAction[Void] = ???
 
@@ -99,10 +80,6 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def getAudioManager: AudioManager = ???
 
   override def getJDA: JDA = fakeJda
-
-  override def getInvites: RestAction[util.List[Invite]] = ???
-
-  override def getWebhooks: RestAction[util.List[Webhook]] = ???
 
   override def getVoiceStates: util.List[GuildVoiceState] = ???
 
@@ -119,4 +96,98 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def isAvailable: Boolean = ???
 
   override def getIdLong: Long = id
+
+  override def retrieveRegions(includeDeprecated: Boolean): RestAction[util.EnumSet[Region]] = ???
+
+  override def addMember(accessToken: String, userId: String): MemberAction = ???
+
+  override def retrieveVanityUrl(): RestAction[String] = ???
+
+  override def getVanityCode: String = ???
+
+  override def getDescription: String = ???
+
+  override def getBannerId: String = ???
+
+  override def getBoostTier: Guild.BoostTier = ???
+
+  override def getBoostCount: Int = ???
+
+  override def getBoosters: util.List[Member] = ???
+
+  override def getMaxMembers: Int = ???
+
+  override def getMaxPresences: Int = ???
+
+  override def getOwnerIdLong: Long = ???
+
+  override def getStoreChannelCache: SortedSnowflakeCacheView[StoreChannel] = ???
+
+  override def getChannels(includeHidden: Boolean): util.List[GuildChannel] = ???
+
+  override def retrieveEmotes(): RestAction[util.List[ListedEmote]] = ???
+
+  override def retrieveEmoteById(id: String): RestAction[ListedEmote] = ???
+
+  override def retrieveBanList(): RestAction[util.List[Guild.Ban]] = ???
+
+  override def retrieveBanById(userId: String): RestAction[Guild.Ban] = ???
+
+  override def retrievePrunableMemberCount(days: Int): RestAction[Integer] = ???
+
+  override def retrieveAuditLogs(): AuditLogPaginationAction = ???
+
+  override def retrieveInvites(): RestAction[util.List[Invite]] = ???
+
+  override def retrieveWebhooks(): RestAction[util.List[Webhook]] = ???
+
+  override def moveVoiceMember(member: Member, voiceChannel: VoiceChannel): RestAction[Void] = ???
+
+  override def modifyNickname(member: Member, nickname: String): AuditableRestAction[Void] = ???
+
+  override def prune(days: Int): AuditableRestAction[Integer] = ???
+
+  override def kick(member: Member, reason: String): AuditableRestAction[Void] = ???
+
+  override def ban(user: User, delDays: Int, reason: String): AuditableRestAction[Void] = ???
+
+  override def ban(userId: String, delDays: Int, reason: String): AuditableRestAction[Void] = ???
+
+  override def unban(userId: String): AuditableRestAction[Void] = ???
+
+  override def deafen(member: Member, deafen: Boolean): AuditableRestAction[Void] = ???
+
+  override def mute(member: Member, mute: Boolean): AuditableRestAction[Void] = ???
+
+  override def addRoleToMember(member: Member, role: Role): AuditableRestAction[Void] = ???
+
+  override def removeRoleFromMember(member: Member, role: Role): AuditableRestAction[Void] = ???
+
+  override def modifyMemberRoles(member: Member, rolesToAdd: util.Collection[Role], rolesToRemove: util.Collection[Role]): AuditableRestAction[Void] = ???
+
+  override def modifyMemberRoles(member: Member, roles: util.Collection[Role]): AuditableRestAction[Void] = ???
+
+  override def transferOwnership(newOwner: Member): AuditableRestAction[Void] = ???
+
+  override def createTextChannel(name: String): ChannelAction[TextChannel] = ???
+
+  override def createVoiceChannel(name: String): ChannelAction[VoiceChannel] = ???
+
+  override def createCategory(name: String): ChannelAction[Category] = ???
+
+  override def createRole(): RoleAction = ???
+
+  override def createEmote(name: String, icon: Icon, roles: Role*): AuditableRestAction[Emote] = ???
+
+  override def modifyCategoryPositions(): ChannelOrderAction = ???
+
+  override def modifyTextChannelPositions(): ChannelOrderAction = ???
+
+  override def modifyVoiceChannelPositions(): ChannelOrderAction = ???
+
+  override def modifyTextChannelPositions(category: Category): CategoryOrderAction = ???
+
+  override def modifyVoiceChannelPositions(category: Category): CategoryOrderAction = ???
+
+  override def modifyRolePositions(useAscendingOrder: Boolean): RoleOrderAction = ???
 }

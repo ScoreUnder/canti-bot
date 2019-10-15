@@ -1,8 +1,8 @@
 package score.discord.generalbot.util
 
-import net.dv8tion.jda.core.entities.MessageChannel
-import net.dv8tion.jda.core.exceptions.{ErrorResponseException, PermissionException}
-import net.dv8tion.jda.core.requests.{ErrorResponse, RestAction}
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.exceptions.{ErrorResponseException, PermissionException}
+import net.dv8tion.jda.api.requests.{ErrorResponse, RestAction}
 import score.discord.generalbot.wrappers.Tap._
 import score.discord.generalbot.wrappers.jda.Conversions._
 

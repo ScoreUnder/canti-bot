@@ -1,6 +1,6 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.core.entities.{Game, Message, User}
+import net.dv8tion.jda.api.entities.{Activity, Message, User}
 import score.discord.generalbot.wrappers.jda.ID
 
 class PlayCommand(val userId: ID[User]) extends Command.OneUserOnly {
@@ -11,9 +11,9 @@ class PlayCommand(val userId: ID[User]) extends Command.OneUserOnly {
   override def description = "Set the game that this bot is currently playing"
 
   override def execute(message: Message, args: String) = {
-    message.getJDA.getPresence.setGame(args match {
+    message.getJDA.getPresence.setActivity(args match {
       case "" => null
-      case name => Game playing name
+      case name => Activity playing name
     })
     message.addReaction("👌").queue()
   }

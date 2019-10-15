@@ -1,6 +1,6 @@
 package score.discord.generalbot.collections
 
-import net.dv8tion.jda.core.entities.{Guild, Role}
+import net.dv8tion.jda.api.entities.{Guild, Role}
 import score.discord.generalbot.util.DBUtils
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID

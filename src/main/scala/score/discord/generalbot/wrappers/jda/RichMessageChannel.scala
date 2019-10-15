@@ -1,7 +1,6 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.client.entities.Group
-import net.dv8tion.jda.core.entities._
+import net.dv8tion.jda.api.entities._
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -35,11 +34,9 @@ class RichMessageChannel(val channel: MessageChannel) extends AnyVal {
     })
 
   def participants: Seq[User] = channel match {
-    case guildChannel: Channel =>
+    case guildChannel: GuildChannel =>
       guildChannel.getMembers.asScala.view.map(_.getUser)
     case privateChannel: PrivateChannel =>
       List(channel.getJDA.getSelfUser, privateChannel.getUser)
-    case groupChannel: Group =>
-      groupChannel.getUsers.asScala
   }
 }

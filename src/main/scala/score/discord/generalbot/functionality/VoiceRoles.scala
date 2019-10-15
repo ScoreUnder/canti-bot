@@ -2,10 +2,10 @@ package score.discord.generalbot.functionality
 
 import java.util.concurrent.{ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom}
 
-import net.dv8tion.jda.core.entities.{GuildVoiceState, Member, Message, Role}
-import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
-import net.dv8tion.jda.core.events.{Event, ReadyEvent}
-import net.dv8tion.jda.core.hooks.EventListener
+import net.dv8tion.jda.api.entities.{GuildVoiceState, Member, Message, Role}
+import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
+import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
+import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.generalbot.collections.{ReplyCache, RoleByGuild}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -130,7 +130,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
     }
   }
 
-  override def onEvent(event: Event) {
+  override def onEvent(event: GenericEvent) {
     event match {
       case ev: ReadyEvent =>
         val jda = ev.getJDA

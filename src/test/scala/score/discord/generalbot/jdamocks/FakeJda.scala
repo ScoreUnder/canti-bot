@@ -1,16 +1,17 @@
 package score.discord.generalbot.jdamocks
 
 import java.util
+import java.util.concurrent.{ExecutorService, ScheduledExecutorService}
 
-import net.dv8tion.jda.bot.JDABot
-import net.dv8tion.jda.client.JDAClient
-import net.dv8tion.jda.core.entities._
-import net.dv8tion.jda.core.hooks.IEventManager
-import net.dv8tion.jda.core.managers.{AudioManager, Presence}
-import net.dv8tion.jda.core.requests.RestAction
-import net.dv8tion.jda.core.requests.restaction.GuildAction
-import net.dv8tion.jda.core.utils.cache.{CacheView, SnowflakeCacheView}
-import net.dv8tion.jda.core.{AccountType, JDA}
+import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.hooks.IEventManager
+import net.dv8tion.jda.api.managers.{AudioManager, DirectAudioController, Presence}
+import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.restaction.GuildAction
+import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.utils.cache.{CacheView, SnowflakeCacheView}
+import net.dv8tion.jda.api.{AccountType, JDA, Permission}
+import okhttp3.OkHttpClient
 
 import scala.collection.JavaConverters._
 
@@ -30,12 +31,6 @@ class FakeJda extends JDA {
   }
 
   override def getStatus: JDA.Status = ???
-
-  override def getPing: Long = ???
-
-  override def getCloudflareRays: util.List[String] = ???
-
-  override def getWebSocketTrace: util.List[String] = ???
 
   override def setEventManager(manager: IEventManager): Unit = ???
 
@@ -66,7 +61,7 @@ class FakeJda extends JDA {
   override def getCategoryCache: SnowflakeCacheView[Category] = ???
 
   override def getTextChannelCache: SnowflakeCacheView[TextChannel] =
-    new ScalaSnowflakeCacheView(
+    new ScalaSnowflakeCacheView[GuildChannel, TextChannel](
       guilds.values.flatMap(_.getTextChannels.asScala).groupBy(_.getIdLong).mapValues(_.head),
       _.getName)
 
@@ -94,8 +89,6 @@ class FakeJda extends JDA {
 
   override def isAutoReconnect: Boolean = ???
 
-  override def isAudioEnabled: Boolean = ???
-
   override def isBulkDeleteSplittingEnabled: Boolean = ???
 
   override def shutdown(): Unit = ???
@@ -104,7 +97,31 @@ class FakeJda extends JDA {
 
   override def getAccountType: AccountType = ???
 
-  override def asClient(): JDAClient = ???
+  override def getGatewayPing: Long = ???
 
-  override def asBot(): JDABot = ???
+  override def awaitStatus(status: JDA.Status): JDA = ???
+
+  override def getRateLimitPool: ScheduledExecutorService = ???
+
+  override def getGatewayPool: ScheduledExecutorService = ???
+
+  override def getCallbackPool: ExecutorService = ???
+
+  override def getHttpClient: OkHttpClient = ???
+
+  override def getDirectAudioController: DirectAudioController = ???
+
+  override def getStoreChannelCache: SnowflakeCacheView[StoreChannel] = ???
+
+  override def getEventManager: IEventManager = ???
+
+  override def retrieveApplicationInfo(): RestAction[ApplicationInfo] = ???
+
+  override def getInviteUrl(permissions: Permission*): String = ???
+
+  override def getInviteUrl(permissions: util.Collection[Permission]): String = ???
+
+  override def getShardManager: ShardManager = ???
+
+  override def retrieveWebhookById(webhookId: String): RestAction[Webhook] = ???
 }

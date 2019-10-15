@@ -1,7 +1,7 @@
 package score.discord.generalbot.util
 
-import net.dv8tion.jda.core.entities.{Guild, Member}
-import net.dv8tion.jda.core.{MessageBuilder, entities}
+import net.dv8tion.jda.api.entities.{Guild, Member}
+import net.dv8tion.jda.api.{MessageBuilder, entities}
 
 object CommandHelper {
   def apply(message: entities.Message): Message = new CommandHelper.Message(message)
@@ -16,7 +16,7 @@ object CommandHelper {
       }
 
     def mentionsToPlaintext(input: String = _me.getContentRaw): String = {
-      import net.dv8tion.jda.core.entities.Message.MentionType._
+      import net.dv8tion.jda.api.entities.Message.MentionType._
       val builder = new MessageBuilder().append(input)
       guild match {
         case Right(guild) =>

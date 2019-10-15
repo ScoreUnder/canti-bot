@@ -4,14 +4,14 @@ import java.util
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
-import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.entities._
-import net.dv8tion.jda.core.events.guild.voice.GuildVoiceUpdateEvent
-import net.dv8tion.jda.core.events.{Event, ReadyEvent}
-import net.dv8tion.jda.core.exceptions.PermissionException
-import net.dv8tion.jda.core.hooks.EventListener
-import net.dv8tion.jda.core.requests.restaction.ChannelAction
-import score.discord.generalbot.collections.{ReplyCache, UserByChannel}
+import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
+import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
+import net.dv8tion.jda.api.exceptions.PermissionException
+import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.requests.restaction.ChannelAction
+import score.discord.generalbot.collections.{ReplyCache, UserByVoiceChannel}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
@@ -28,12 +28,12 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
 
   private type Timestamp = Long
 
-  case class Invite(from: ID[User], channel: ID[Channel], expiry: Timestamp) {
+  case class Invite(from: ID[User], channel: ID[VoiceChannel], expiry: Timestamp) {
     def valid = System.currentTimeMillis() < expiry
   }
 
@@ -68,7 +68,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
           memberName = member.getEffectiveName
           voiceMention = s"<#${voiceChannel.rawId}>"
         } yield APIHelper.tryRequest(
-          message.getGuild.getController.moveVoiceMember(member, voiceChannel),
+          message.getGuild.moveVoiceMember(member, voiceChannel),
           onFail = sendChannelMoveError(channel)
         ).foreach { _ =>
           invites.remove(GuildUserId(member))
@@ -160,7 +160,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
         }
       }
 
-      private def addVoicePerms(users: Seq[User], channel: Channel, guild: Guild): Future[(Seq[User], Seq[User])] = {
+      private def addVoicePerms(users: Seq[User], channel: VoiceChannel, guild: Guild): Future[(Seq[User], Seq[User])] = {
         try {
           val permUpdater = ChannelPermissionUpdater(channel)
           val addedMembers = users.map(guild.findMember).map {
@@ -249,7 +249,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
 
               // TODO: Fix your shit JDA (asInstanceOf cast)
               APIHelper.tryRequest(
-                guild.getController.moveVoiceMember(member, newVoiceChannel.asInstanceOf[VoiceChannel]),
+                guild.moveVoiceMember(member, newVoiceChannel.asInstanceOf[VoiceChannel]),
                 onFail = sendChannelMoveError(channel)
               )
             }.failed.foreach(APIHelper.loudFailure("creating private channel", channel))
@@ -259,7 +259,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
           message reply BotMessages.error(err)
       }
 
-      private def addChannelPermissions(channelReq: ChannelAction, member: Member, limit: Int) = {
+      private def addChannelPermissions(channelReq: ChannelAction[VoiceChannel], member: Member, limit: Int) = {
         val guild = member.getGuild
         if (limit == 0)
         // If no limit, deny access to all users by default
@@ -303,7 +303,7 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
       }
 
       private def createChannel(name: String, guild: Guild) =
-        Try(guild.getController.createVoiceChannel(name)).toEither.left.map({
+        Try(guild.createVoiceChannel(name)).toEither.left.map({
           case _: PermissionException =>
             "I don't have permission to create a voice channel. A server administrator will need to fix this."
           case x =>
@@ -335,12 +335,12 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
   private def sendChannelMoveError(chan: MessageChannel)(ex: Throwable) =
     chan sendTemporary BotMessages.error(translateChannelMoveError(ex))
 
-  override def onEvent(event: Event): Unit = event match {
+  override def onEvent(event: GenericEvent): Unit = event match {
     case ev: ReadyEvent =>
       val jda = ev.getJDA
       async {
         val allUsersByChannel = await(ownerByChannel.all)
-        val toRemove = new mutable.HashSet[(ID[Guild], ID[Channel])]
+        val toRemove = new mutable.HashSet[(ID[Guild], ID[VoiceChannel])]
 
         for ((guildId, channelId, _) <- allUsersByChannel) {
           jda.findGuild(guildId).flatMap(_.findVoiceChannel(channelId)) match {
@@ -365,16 +365,19 @@ class PrivateVoiceChats(ownerByChannel: UserByChannel, commands: Commands)(impli
       }.failed.foreach(APIHelper.failure("processing initial private voice chat state"))
 
     case ev: GuildVoiceUpdateEvent =>
-      val channel = ev.getChannelLeft
-
-      if (channel.getMembers.isEmpty)
-        async {
-          val user = await(ownerByChannel(channel))
-          if (user.isDefined) {
-            await(channel.delete.queueFuture())
-            await(ownerByChannel remove channel)
-          }
-        }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+      Option(ev.getChannelLeft) match {
+        case None => // Not a channel leave event
+        case Some(channel) if channel.getMembers.isEmpty =>
+          // Last person to leave a channel
+          async {
+            val user = await(ownerByChannel(channel))
+            if (user.isDefined) {
+              await(channel.delete.queueFuture())
+              await(ownerByChannel remove channel)
+            }
+          }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+        case _ => // Channel leave, but not last person
+      }
 
     case _ =>
   }

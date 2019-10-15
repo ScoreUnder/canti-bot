@@ -1,7 +1,7 @@
 package score.discord.generalbot.util
 
-import net.dv8tion.jda.core.EmbedBuilder
-import net.dv8tion.jda.core.entities.{Guild, Role}
+import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.{Guild, Role}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.util.Try

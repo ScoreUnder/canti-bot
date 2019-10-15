@@ -4,9 +4,9 @@ import java.awt.Color
 import java.time.OffsetDateTime
 import java.util
 
-import net.dv8tion.jda.core.Permission._
-import net.dv8tion.jda.core.{JDA, OnlineStatus, Permission}
-import net.dv8tion.jda.core.entities._
+import net.dv8tion.jda.api.Permission._
+import net.dv8tion.jda.api.{JDA, OnlineStatus, Permission}
+import net.dv8tion.jda.api.entities._
 
 import scala.collection.JavaConverters._
 
@@ -20,11 +20,11 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getJDA: JDA = guild.getJDA
 
-  override def getJoinDate: OffsetDateTime = ???
+  override def getTimeJoined: OffsetDateTime = ???
 
   override def getVoiceState: GuildVoiceState = ???
 
-  override def getGame: Game = ???
+  override def getActivities: util.List[Activity] = ???
 
   override def getOnlineStatus: OnlineStatus = ???
 
@@ -38,7 +38,7 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getColorRaw: Int = ???
 
-  override def getPermissions(channel: Channel): util.List[Permission] = myChanPerms.asJava
+  override def getPermissions(channel: GuildChannel): util.EnumSet[Permission] = util.EnumSet.copyOf(myChanPerms.asJava)
 
   override def canInteract(member: Member): Boolean = ???
 
@@ -52,13 +52,23 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getAsMention: String = ???
 
-  override def getPermissions: util.List[Permission] = myPerms.asJava
+  override def getPermissions: util.EnumSet[Permission] = util.EnumSet.copyOf(myPerms.asJava)
 
   override def hasPermission(permissions: Permission*): Boolean = getPermissions.containsAll(permissions.asJava)
 
   override def hasPermission(permissions: util.Collection[Permission]): Boolean = getPermissions.containsAll(permissions)
 
-  override def hasPermission(channel: Channel, permissions: Permission*): Boolean = getPermissions(channel).containsAll(permissions.asJava)
+  override def hasPermission(channel: GuildChannel, permissions: Permission*): Boolean = getPermissions(channel).containsAll(permissions.asJava)
 
-  override def hasPermission(channel: Channel, permissions: util.Collection[Permission]): Boolean = getPermissions(channel).containsAll(permissions)
+  override def hasPermission(channel: GuildChannel, permissions: util.Collection[Permission]): Boolean = getPermissions(channel).containsAll(permissions)
+
+  override def getTimeBoosted: OffsetDateTime = ???
+
+  override def getOnlineStatus(`type`: ClientType): OnlineStatus = ???
+
+  override def getPermissionsExplicit: util.EnumSet[Permission] = ???
+
+  override def getPermissionsExplicit(channel: GuildChannel): util.EnumSet[Permission] = ???
+
+  override def getIdLong: Long = user.getIdLong
 }

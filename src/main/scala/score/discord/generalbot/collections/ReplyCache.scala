@@ -2,7 +2,7 @@ package score.discord.generalbot.collections
 
 import java.util
 
-import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.wrappers.jda.ID
 
 class ReplyCache(val capacity: Int = 100) {

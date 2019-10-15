@@ -5,12 +5,11 @@ import java.nio.CharBuffer
 import java.nio.charset.CodingErrorAction
 import java.util.concurrent.TimeUnit
 
-import net.dv8tion.jda.core.MessageBuilder
-import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.Message.MentionType
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.Message.MentionType
 import score.discord.generalbot.Furigana
 import score.discord.generalbot.collections.{MessageCache, ReplyCache}
-import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -69,9 +68,10 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
             .append(' ')
             .append(romaji)
             .stripMentions(message.getJDA, MentionType.EVERYONE, MentionType.HERE)
-            .build()
+            .getStringBuilder
+            .toString
 
-        val finalMessage = await(message.getChannel.sendFile(image, "furigana.png", romajiMessage).queueFuture())
+        val finalMessage = await(message.getChannel.sendFile(image, "furigana.png").append(romajiMessage).queueFuture())
         messageOwnership(finalMessage) = message.getAuthor
       }
     }.failed.foreach(APIHelper.loudFailure("displaying kakasi reading", message.getChannel))

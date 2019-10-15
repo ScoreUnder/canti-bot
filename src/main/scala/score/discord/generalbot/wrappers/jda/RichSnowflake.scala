@@ -1,6 +1,6 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.core.entities.ISnowflake
+import net.dv8tion.jda.api.entities.ISnowflake
 
 class RichSnowflake[T <: ISnowflake](val _me: T) extends AnyVal {
   def rawId = _me.getIdLong

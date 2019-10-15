@@ -2,7 +2,7 @@ package score.discord.generalbot.util
 
 import java.awt.Color
 
-import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.api.EmbedBuilder
 
 object BotMessages {
   val ERROR_COLOR = new Color(240, 100, 100)

@@ -3,11 +3,11 @@ package score.discord.generalbot.jdamocks
 import java.util
 import java.util.Collections
 
-import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.entities._
-import net.dv8tion.jda.core.managers.{ChannelManager, ChannelManagerUpdatable}
-import net.dv8tion.jda.core.requests.RestAction
-import net.dv8tion.jda.core.requests.restaction._
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.managers.ChannelManager
+import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.restaction._
 import score.discord.generalbot.wrappers.jda.ID
 
 import scala.util.Try
@@ -27,15 +27,13 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def isNSFW: Boolean = ???
 
-  override def getWebhooks: RestAction[util.List[Webhook]] = ???
-
   override def createWebhook(name: String): WebhookAction = ???
 
   override def deleteMessages(messages: util.Collection[Message]): RestAction[Void] = ???
 
   override def deleteMessagesByIds(messageIds: util.Collection[String]): RestAction[Void] = ???
 
-  override def getMessageById(messageId: Long): RestAction[Message] = FakeMessageAction(cachedMessages(messageId))
+  override def retrieveMessageById(messageId: Long): RestAction[Message] = new FakeMessageAction(cachedMessages(messageId))
 
   override def deleteWebhookById(id: String): AuditableRestAction[Void] = ???
 
@@ -43,13 +41,11 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def removeReactionById(messageId: String, unicode: String, user: User): RestAction[Void] = ???
 
-  override def getMessageById(messageId: String): RestAction[Message] = getMessageById(ID.fromString(messageId).value)
+  override def retrieveMessageById(messageId: String): RestAction[Message] = retrieveMessageById(ID.fromString(messageId).value)
 
   override def canTalk: Boolean = ???
 
   override def canTalk(member: Member): Boolean = ???
-
-  override def compareTo(o: TextChannel): Int = ???
 
   override def getGuild: Guild = guild
 
@@ -61,40 +57,24 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def getPositionRaw: Int = ???
 
-  override def getPermissionOverride(member: Member): PermissionOverride = ???
-
-  override def getPermissionOverride(role: Role): PermissionOverride = ???
-
   override def getPermissionOverrides: util.List[PermissionOverride] = ???
 
   override def getMemberPermissionOverrides: util.List[PermissionOverride] = ???
 
   override def sendMessage(msg: Message): MessageAction =
-    FakeMessageAction(
+    new FakeMessageAction(
       addMessage(content = msg.getContentRaw, author = Try(msg.getAuthor).toOption.orNull, embeds = msg.getEmbeds)
     )
 
   override def getRolePermissionOverrides: util.List[PermissionOverride] = ???
 
-  override def createCopy(guild: Guild): ChannelAction = ???
+  override def createCopy(guild: Guild): ChannelAction[TextChannel] = ???
 
   override def getManager: ChannelManager = ???
 
-  override def getManagerUpdatable: ChannelManagerUpdatable = ???
-
   override def delete(): AuditableRestAction[Void] = ???
 
-  override def createPermissionOverride(member: Member): PermissionOverrideAction = ???
-
-  override def createPermissionOverride(role: Role): PermissionOverrideAction = ???
-
-  override def putPermissionOverride(member: Member): PermissionOverrideAction = ???
-
-  override def putPermissionOverride(role: Role): PermissionOverrideAction = ???
-
   override def createInvite(): InviteAction = ???
-
-  override def getInvites: RestAction[util.List[Invite]] = ???
 
   override def getLatestMessageIdLong: Long = lastMessage
 
@@ -109,4 +89,18 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   override def getAsMention: String = s"<#$id>"
 
   override def getIdLong: Long = id
+
+  override def getSlowmode: Int = ???
+
+  override def retrieveWebhooks(): RestAction[util.List[Webhook]] = ???
+
+  override def getPermissionOverride(permissionHolder: IPermissionHolder): PermissionOverride = ???
+
+  override def createPermissionOverride(permissionHolder: IPermissionHolder): PermissionOverrideAction = ???
+
+  override def putPermissionOverride(permissionHolder: IPermissionHolder): PermissionOverrideAction = ???
+
+  override def retrieveInvites(): RestAction[util.List[Invite]] = ???
+
+  override def compareTo(o: GuildChannel): Int = ???
 }
