@@ -230,7 +230,7 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
                 .okay("Your channel has been created.")
                 .setTitle("Success", null)
 
-              if (limit == 0) name match {
+              if (limit == 0) args.trim match {
                 case mistakeRegex(mistake) =>
                   val cutName = name.dropRight(mistake.length).trim
                   val invocation = s"${commands.prefix}${this.name} $mistake $cutName"
