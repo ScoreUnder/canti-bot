@@ -17,5 +17,6 @@ lazy val root = (project in file(".")).
       "com.typesafe.slick" %% "slick" % "3.2.0",
       "com.typesafe" % "config" % "1.2.1",
       "org.scala-lang.modules" %% "scala-async" % "0.9.6"
-    )
+    ),
+    test in assembly := {}
   )
