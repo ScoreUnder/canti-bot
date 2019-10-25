@@ -12,7 +12,7 @@ object ParseUtils {
     if (roleName.isEmpty)
       Nil
     else
-      Try(roleName.toLong)
+      roleName.toLongOption
         .map(id => List(guild.getRoleById(id)))
         .getOrElse(guild.getRolesByName(roleName, true).asScala)
         .toSeq

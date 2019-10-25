@@ -292,7 +292,7 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
         }
 
         val maxNameLen = 100
-        Try(limit.toInt).toOption
+        limit.toIntOption
           .filter(x => x >= 0 && x <= 99)
           .map((_, name))
           .getOrElse((0, trimmedArgs))

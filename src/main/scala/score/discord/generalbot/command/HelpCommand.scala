@@ -5,12 +5,11 @@ import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.BotMessages
+import score.discord.generalbot.util.{BotMessages, IntStr}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Try
 
 class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   val pageSize = 10
@@ -23,12 +22,10 @@ class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwne
 
   override def executeAndGetMessage(message: Message, args: String): Future[Message] =
     Future {
-      ((args match {
-        case "" => Some(1)
-        case x => Try(x.toInt).toOption
-      }) match {
-        case Some(page) => showHelpPage(message, page)
-        case None => showCommandHelp(args)
+      (args.trim match {
+        case "" => showHelpPage(message, 1)
+        case IntStr(page) => showHelpPage(message, page)
+        case cmdName => showCommandHelp(cmdName)
       }).fold(BotMessages.error, identity).toMessage
     }
 
