@@ -1,5 +1,6 @@
 package score.discord.generalbot.command
 
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
@@ -13,9 +14,9 @@ import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
 
 import scala.async.Async._
-import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters._
 
 class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name: String = "quote"
@@ -37,50 +38,53 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
 
   def executeAndGetMessage(cmdMessage: Message, args: String): Future[Message] = {
     async {
-      val (quoteIdMaybe, specifiedChannel) = parseQuoteIDs(args)
-      (quoteIdMaybe match {
-        case Some(quoteId) =>
-          val jda = cmdMessage.getJDA
-          val channel =
-            specifiedChannel match {
-              case Some(chanID) =>
-                Option(jda.getTextChannelById(chanID.value))
-                  .orElse(Option(jda.getPrivateChannelById(chanID.value)))
-              case None =>
-                messageCache
-                  .find(_.messageId == quoteId)
-                  .map(m => m.chanId)
-                  .flatMap(ch => Option(jda.getTextChannelById(ch.value)))
-                  .orElse(Some(cmdMessage.getChannel))
-            }
-
+      (parseQuoteIDs(args) match {
+        case Some((quoteId, specifiedChannel)) =>
+          val channel = channelOrBestGuess(cmdMessage, quoteId, specifiedChannel)
           checkChannelVisibility(channel, cmdMessage.getAuthor) match {
             case Right(ch) =>
-              import APIHelper.Error
-              import ErrorResponse._
-              val foundMessage = APIHelper.tryRequest(ch retrieveMessageById quoteId.value).map(Right(_)).recover {
-                case Error(UNKNOWN_MESSAGE) if specifiedChannel.isEmpty =>
-                  Left("Can't find the channel that message is in. Try specifying it manually.")
-                case Error(UNKNOWN_MESSAGE) =>
-                  Left("Can't find that message in the channel specified.")
-                case Error(UNKNOWN_CHANNEL) =>
-                  Left("Can't find that channel.")
-                case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) | _: PermissionException =>
-                  Left("I don't have permission to read messages in that channel.")
-              }
+              val foundMessage = await(APIHelper
+                .tryRequest(ch retrieveMessageById quoteId.value)
+                .map(Right(_))
+                .recover(stringifyMessageRetrievalError(specifiedChannel)))
 
-              val futureReply = for (message <- foundMessage) yield message match {
-                case Right(msg) => getMessageAsQuote(cmdMessage, ch, msg)
-                case Left(err) => BotMessages.error(err)
-              }
-              await(futureReply)
-
-            case Left(err) =>
-              BotMessages.error(err)
+              for (message <- foundMessage)
+                yield getMessageAsQuote(cmdMessage, ch, message)
+            case Left(e) => Left(e)
           }
         case None =>
-          BotMessages.error("You need to give a message ID to quote")
-      }).toMessage
+          Left("You need to give a message ID to quote")
+      }).fold(BotMessages.error, identity).toMessage
+    }
+  }
+
+  private def channelOrBestGuess(context: Message, quoteId: ID[Message], specifiedChannel: Option[ID[TextChannel]]): Option[MessageChannel] = {
+    val jda: JDA = context.getJDA
+    specifiedChannel match {
+      case Some(chanID) =>
+        Option(jda.getTextChannelById(chanID.value))
+          .orElse(Option(jda.getPrivateChannelById(chanID.value)))
+      case None =>
+        messageCache
+          .find(_.messageId == quoteId)
+          .map(m => m.chanId)
+          .flatMap(ch => Option(jda.getTextChannelById(ch.value)))
+          .orElse(Some(context.getChannel))
+    }
+  }
+
+  private def stringifyMessageRetrievalError(specifiedChannel: Option[ID[MessageChannel]]): PartialFunction[Throwable, Either[String, Nothing]] = {
+    import APIHelper.Error
+    import ErrorResponse._
+    {
+      case Error(UNKNOWN_MESSAGE) if specifiedChannel.isEmpty =>
+        Left("Can't find the channel that message is in. Try specifying it manually.")
+      case Error(UNKNOWN_MESSAGE) =>
+        Left("Can't find that message in the channel specified.")
+      case Error(UNKNOWN_CHANNEL) =>
+        Left("Can't find that channel.")
+      case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) | _: PermissionException =>
+        Left("I don't have permission to read messages in that channel.")
     }
   }
 
@@ -134,19 +138,19 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
 
     // If shift+click was used to copy a long ID
     if (remains.startsWith("-") && secondIdStr.nonEmpty) {
-      (Some(ID.fromString[Message](secondIdStr)), Some(ID.fromString[TextChannel](firstIdStr)))
+      Some((ID.fromString[Message](secondIdStr), Some(ID.fromString[TextChannel](firstIdStr))))
     } else if (firstIdStr.nonEmpty) {
       val quoteId = ID.fromString[Message](firstIdStr)
       val specifiedChannel = QuoteCommand.CHANNEL_REGEX
         .findPrefixMatchOf(remains)
         .map(m => ID.fromString[TextChannel](m.group(1)))
-      (Some(quoteId), specifiedChannel)
+      Some((quoteId, specifiedChannel))
     } else {
       args match {
         case QuoteCommand.LINK_REGEX(channelId, messageId) =>
-          (Some(ID.fromString[Message](messageId)), Some(ID.fromString[TextChannel](channelId)))
+          Some((ID.fromString[Message](messageId), Some(ID.fromString[TextChannel](channelId))))
         case _ =>
-          (None, None)
+          None
       }
     }
   }
