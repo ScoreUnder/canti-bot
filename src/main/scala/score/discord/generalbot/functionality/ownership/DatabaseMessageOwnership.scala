@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.entities.{Message, User}
 import score.discord.generalbot.collections.Cache
 import score.discord.generalbot.util.DBUtils
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.ID
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -40,8 +41,8 @@ class DatabaseMessageOwnership(dbConfig: DatabaseConfig[_ <: JdbcProfile],
       database.run(lookupQuery(key).result).map(_.headOption)
   }
 
-  override def apply(jda: JDA, messageId: ID[Message]): Future[Option[User]] =
-    cache(messageId).map(_ flatMap jda.findUser)
+  override def apply(messageId: ID[Message])(implicit jda: JDA): Future[Option[User]] =
+    cache(messageId).map(idMaybe => idMaybe.flatMap(_.find))
 
   override def update(message: Message, user: User): Unit = {
     cache(message.id) = Some(user.id)

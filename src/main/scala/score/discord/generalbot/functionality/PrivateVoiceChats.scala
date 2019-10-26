@@ -4,7 +4,7 @@ import java.util
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
-import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.{JDA, Permission}
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
@@ -17,6 +17,7 @@ import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
 import scala.async.Async._
@@ -336,13 +337,13 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
 
   override def onEvent(event: GenericEvent): Unit = event match {
     case ev: ReadyEvent =>
-      val jda = ev.getJDA
+      implicit val jda: JDA = ev.getJDA
       async {
         val allUsersByChannel = await(ownerByChannel.all)
         val toRemove = new mutable.HashSet[(ID[Guild], ID[VoiceChannel])]
 
         for ((guildId, channelId, _) <- allUsersByChannel) {
-          jda.findGuild(guildId).flatMap(_.findVoiceChannel(channelId)) match {
+          channelId.find match {
             case None =>
               toRemove += ((guildId, channelId))
             case Some(channel) if channel.getMembers.isEmpty =>

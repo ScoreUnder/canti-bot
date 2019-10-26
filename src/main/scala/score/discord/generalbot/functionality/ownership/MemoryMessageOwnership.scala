@@ -4,18 +4,20 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.{Message, User}
 import score.discord.generalbot.collections.{Cache, NullCacheBackend}
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.ID
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class MemoryMessageOwnership(cacheBase: Cache[ID[Message], Option[ID[User]]]) extends MessageOwnership {
   private[this] val cache = NullCacheBackend of cacheBase
 
-  override def apply(jda: JDA, messageId: ID[Message]) = async {
+  override def apply(messageId: ID[Message])(implicit jda: JDA): Future[Option[User]] = async {
     for {
       userId <- await(cache(messageId))
-      user <- jda.findUser(userId)
+      user <- userId.find
     } yield user
   }
 

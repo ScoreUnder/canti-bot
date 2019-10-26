@@ -10,6 +10,7 @@ import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.matching.Events.NonBotMessage
 
@@ -58,17 +59,15 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
     }
   }
 
-  private def channelOrBestGuess(context: Message, quoteId: ID[Message], specifiedChannel: Option[ID[TextChannel]]): Option[MessageChannel] = {
-    val jda: JDA = context.getJDA
+  private def channelOrBestGuess(context: Message, quoteId: ID[Message], specifiedChannel: Option[ID[MessageChannel]]): Option[MessageChannel] = {
+    implicit val jda: JDA = context.getJDA
     specifiedChannel match {
-      case Some(chanID) =>
-        Option(jda.getTextChannelById(chanID.value))
-          .orElse(Option(jda.getPrivateChannelById(chanID.value)))
+      case Some(chanID) => chanID.find
       case None =>
         messageCache
           .find(_.messageId == quoteId)
           .map(m => m.chanId)
-          .flatMap(ch => Option(jda.getTextChannelById(ch.value)))
+          .flatMap(_.find)
           .orElse(Some(context.getChannel))
     }
   }
@@ -138,7 +137,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
 
     // If shift+click was used to copy a long ID
     if (remains.startsWith("-") && secondIdStr.nonEmpty) {
-      Some((ID.fromString[Message](secondIdStr), Some(ID.fromString[TextChannel](firstIdStr))))
+      Some((ID.fromString[Message](secondIdStr), Some(ID.fromString[MessageChannel](firstIdStr))))
     } else if (firstIdStr.nonEmpty) {
       val quoteId = ID.fromString[Message](firstIdStr)
       val specifiedChannel = QuoteCommand.CHANNEL_REGEX
@@ -148,7 +147,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
     } else {
       args match {
         case QuoteCommand.LINK_REGEX(channelId, messageId) =>
-          Some((ID.fromString[Message](messageId), Some(ID.fromString[TextChannel](channelId))))
+          Some((ID.fromString[Message](messageId), Some(ID.fromString[MessageChannel](channelId))))
         case _ =>
           None
       }

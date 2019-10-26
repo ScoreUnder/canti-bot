@@ -1,5 +1,6 @@
 package score.discord.generalbot.command
 
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -27,11 +28,12 @@ class BlameCommand(implicit val messageOwnership: MessageOwnership, val replyCac
 
   override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
     async {
+      implicit val jda: JDA = message.getJDA
       val resultText = await(for {
         id <- Future.successful(
           Try(ID fromString args).fold(_ => Left("Expecting a message ID; got something else"), Right(_))
         ).flatView
-        owner <- messageOwnership(message.getJDA, id).map(_.toRight("No ownership info available for that message")).flatView
+        owner <- messageOwnership(id).map(_.toRight("No ownership info available for that message")).flatView
       } yield s"That message is owned by ${owner.mentionWithName}.")
       resultText.fold(BotMessages.error, BotMessages.plain).toMessage
     }

@@ -1,8 +1,10 @@
 package score.discord.generalbot.collections
 
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities._
 import score.discord.generalbot.util.DBUtils
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.ID
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -40,8 +42,8 @@ class UserByVoiceChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
   DBUtils.ensureTableCreated(dbConfig, userByChannelTable, tableName)
 
   def apply(channel: VoiceChannel): Future[Option[User]] = {
-    val jda = channel.getJDA
-    cache(channel).map(_.flatMap(jda.findUser))
+    implicit val jda: JDA = channel.getJDA
+    cache(channel).map(_.flatMap(_.find))
   }
 
   def update(channel: VoiceChannel, user: User): Future[Int] = {

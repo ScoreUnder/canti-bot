@@ -1,5 +1,6 @@
 package score.discord.generalbot.functionality.ownership
 
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.{ChannelType, Message, MessageChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
@@ -15,8 +16,10 @@ class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends E
   private def getOwnership(user: User, channel: MessageChannel, messageId: ID[Message]) =
     if (channel.getType == ChannelType.PRIVATE)
       Future.successful(Some(user))
-    else
-      messageOwnership(channel.getJDA, messageId)
+    else {
+      implicit val jda: JDA = user.getJDA
+      messageOwnership(messageId)
+    }
 
   override def onEvent(ev: GenericEvent) {
     ev match {

@@ -8,9 +8,9 @@ import score.discord.generalbot.wrappers.jda.ID
 import scala.concurrent.Future
 
 trait MessageOwnership {
-  def apply(message: Message): Future[Option[User]] = this(message.getJDA, message.id)
+  def apply(message: Message): Future[Option[User]] = this(message.id)(message.getJDA)
 
-  def apply(jda: JDA, messageId: ID[Message]): Future[Option[User]]
+  def apply(messageId: ID[Message])(implicit jda: JDA): Future[Option[User]]
 
   def update(message: Message, user: User): Unit
 

@@ -7,7 +7,7 @@ import score.discord.generalbot.wrappers.jda.ID
 import scala.concurrent.Future
 
 object NullMessageOwnership extends MessageOwnership {
-  override def apply(jda: JDA, messageId: ID[Message]): Future[Option[User]] = Future.successful(None)
+  override def apply(messageId: ID[Message])(implicit jda: JDA): Future[Option[User]] = Future.successful(None)
 
   override def update(message: Message, user: User): Unit = {}
 
