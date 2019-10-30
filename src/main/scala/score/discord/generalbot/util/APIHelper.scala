@@ -3,12 +3,12 @@ package score.discord.generalbot.util
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.exceptions.{ErrorResponseException, PermissionException}
 import net.dv8tion.jda.api.requests.{ErrorResponse, RestAction}
-import score.discord.generalbot.wrappers.Tap._
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
+import scala.util.chaining._
 
 object APIHelper {
   /** Curried function to report an exception to the console.

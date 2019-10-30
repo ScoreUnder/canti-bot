@@ -7,11 +7,11 @@ import score.discord.generalbot.collections.{CommandPermissionLookup, MessageCac
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.Scheduler
-import score.discord.generalbot.wrappers.Tap._
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.matching.Events.{NonBotMessage, NonBotMessageEdit}
 
 import scala.collection.mutable
+import scala.util.chaining._
 
 class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Scheduler, messageCache: MessageCache, replyCache: ReplyCache) extends EventListener {
   // All commands and aliases, indexed by name

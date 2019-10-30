@@ -7,7 +7,6 @@ import score.discord.generalbot.collections.{ReplyCache, StringByMessage}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
-import score.discord.generalbot.wrappers.Tap._
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.matching.Events.{MessageDelete, NonBotReact}
 import score.discord.generalbot.wrappers.jda.matching.React
@@ -15,6 +14,7 @@ import score.discord.generalbot.wrappers.jda.matching.React
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.chaining._
 
 class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   val spoilerEmote = "🔍"

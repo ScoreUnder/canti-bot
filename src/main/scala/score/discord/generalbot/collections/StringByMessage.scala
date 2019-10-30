@@ -8,7 +8,7 @@ import slick.jdbc.JdbcProfile
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import score.discord.generalbot.wrappers.Tap._
+import scala.util.chaining._
 
 class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile],
                       cacheBase: Cache[ID[Message], Option[String]],

@@ -3,7 +3,7 @@ package score.discord.generalbot.util
 import java.text.NumberFormat
 import java.time.Duration
 
-import score.discord.generalbot.wrappers.Tap._
+import scala.util.chaining._
 
 object TimeUtils {
   val timeUnits = Vector(
