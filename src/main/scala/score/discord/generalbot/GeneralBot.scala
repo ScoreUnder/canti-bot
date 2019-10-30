@@ -45,7 +45,7 @@ class GeneralBot {
 
         bot.setToken(config.token)
 
-        val commands = new Commands(new CommandPermissionLookup(dbConfig, LruCache.empty(2000), "command_perms"))
+        val commands = new Commands
         val quoteCommand = new QuoteCommand
         val conversations = new Conversations
         bot.addEventListeners(

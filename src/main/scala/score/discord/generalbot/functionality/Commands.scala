@@ -3,7 +3,7 @@ package score.discord.generalbot.functionality
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import score.discord.generalbot.collections.{CommandPermissionLookup, MessageCache, ReplyCache}
+import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.Scheduler
@@ -13,7 +13,7 @@ import score.discord.generalbot.wrappers.jda.matching.Events.{NonBotMessage, Non
 import scala.collection.mutable
 import scala.util.chaining._
 
-class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Scheduler, messageCache: MessageCache, replyCache: ReplyCache) extends EventListener {
+class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache: ReplyCache) extends EventListener {
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
   // Commands list excluding aliases
