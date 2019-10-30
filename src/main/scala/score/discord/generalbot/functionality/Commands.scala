@@ -62,7 +62,7 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
     * executed on that guild by that member, and if not returns a human-readable
     * error message.
     *
-    * @param cmd command to check
+    * @param cmd     command to check
     * @param message command message
     * @return either error or command
     */
@@ -73,7 +73,7 @@ class Commands(val permissionLookup: CommandPermissionLookup)(implicit exec: Sch
   /** Splits a raw message into command name and arguments. No validation is
     * done to check that the name is correct in any way.
     *
-    * @param messageRaw message to parse command from
+    * @param messageRaw    message to parse command from
     * @param requirePrefix whether command prefix is necessary
     * @return optionally (name, args) of command
     */
