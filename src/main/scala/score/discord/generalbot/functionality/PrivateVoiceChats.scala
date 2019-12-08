@@ -249,9 +249,8 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
 
               channel.sendTemporary(successMessage)
 
-              // TODO: Fix your shit JDA (asInstanceOf cast)
               APIHelper.tryRequest(
-                guild.moveVoiceMember(member, newVoiceChannel.asInstanceOf[VoiceChannel]),
+                guild.moveVoiceMember(member, newVoiceChannel),
                 onFail = sendChannelMoveError(channel)
               )
             }.failed.foreach(APIHelper.loudFailure("creating private channel", channel))
