@@ -2,24 +2,27 @@ package score.discord.generalbot.functionality
 
 import java.util.concurrent.{ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom}
 
-import net.dv8tion.jda.api.entities.{GuildVoiceState, Member, Message, Role}
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.{Guild, GuildVoiceState, Member, Message, Role}
 import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
-import score.discord.generalbot.collections.{ReplyCache, RoleByGuild}
+import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.ParseUtils._
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper, GuildUserId}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.IdConversions._
+import score.discord.generalbot.wrappers.jda.ID
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   commands register new Command.ServerAdminOnly {
     override def name = "setvoicerole"
 
@@ -33,7 +36,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
         else
           findRole(message.getGuild, args.trim).fold(
             identity, { role =>
-              roleByGuild(message.getGuild) = role  // TODO: Handle exceptions from Future
+              roleByGuild(message.getGuild.id) = role.id  // TODO: Handle exceptions from Future
               BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
             }).addField("Requested by", message.getAuthor.mentionWithName, true)
       )
@@ -47,13 +50,15 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
 
     override def description = "Check the voice chat role"
 
-    override def execute(message: Message, args: String) {
+    override def execute(message: Message, args: String): Unit = {
       async {
+        implicit val jda = message.getJDA
         message.reply(
           (CommandHelper(message).guild match {
             case Left(err) => BotMessages error err
             case Right(guild) =>
-              await(roleByGuild(guild))
+              await(roleByGuild.get(guild.id))
+                .flatMap(_.find)
                 .toRight(BotMessages.plain("There is currently no voice chat role set."))
                 .map(role => BotMessages okay s"The voice chat role is currently set to ${role.mention}.")
                 .fold(identity, identity)
@@ -72,7 +77,7 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
 
     override def execute(message: Message, args: String) {
       async {
-        await(roleByGuild remove message.getGuild)
+        await(roleByGuild remove message.getGuild.id)
         message.addReaction("👌").queue()
       }.failed.foreach(APIHelper.loudFailure("removing voice role", message.getChannel))
     }
@@ -126,7 +131,8 @@ class VoiceRoles(roleByGuild: RoleByGuild, commands: Commands)(implicit schedule
         }
       }
 
-      await(roleByGuild(member.getGuild)).foreach(queueUpdate)
+      implicit val jda: JDA = member.getJDA
+      await(roleByGuild.get(member.getGuild.id)).flatMap(_.find).foreach(queueUpdate)
     }
   }
 

@@ -12,13 +12,14 @@ import net.dv8tion.jda.api.{AccountType, JDA, JDABuilder}
 import score.discord.generalbot.collections._
 import score.discord.generalbot.command._
 import score.discord.generalbot.functionality._
-import score.discord.generalbot.functionality.ownership.{DatabaseMessageOwnership, DeleteOwnedMessages}
+import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MessageOwnership}
 import score.discord.generalbot.wrappers.Scheduler
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import CacheCoordinator._
 
 object GeneralBot extends App {
   new GeneralBot().start()
@@ -39,7 +40,7 @@ class GeneralBot {
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
-        implicit val messageOwnership = new DatabaseMessageOwnership(dbConfig, LruCache.empty(20000))
+        implicit val messageOwnership = new MessageOwnership(new UserByMessage(dbConfig, "message_ownership") withCache LruCache.empty(20000))
         implicit val messageCache = new MessageCache
         implicit val replyCache = new ReplyCache
 
@@ -50,11 +51,11 @@ class GeneralBot {
         val conversations = new Conversations
         bot.addEventListeners(
           commands,
-          new VoiceRoles(new RoleByGuild(dbConfig, LruCache.empty(2000), "voice_active_role"), commands),
-          new PrivateVoiceChats(new UserByVoiceChannel(dbConfig, LruCache.empty(2000), "user_created_channels"), commands),
+          new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000), commands),
+          new PrivateVoiceChats(new UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000), commands),
           new DeleteOwnedMessages,
           conversations,
-          new Spoilers(new StringByMessage(dbConfig, LruCache.empty(100), "spoilers_by_message"), commands, conversations),
+          new Spoilers(new StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100), commands, conversations),
           new quoteCommand.GreentextListener,
           messageCache)
 

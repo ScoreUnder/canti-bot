@@ -9,20 +9,20 @@ object LruCache {
 }
 
 class LruCache[K, V](val maxCapacity: Int, initialCapacity: Option[Int] = None, loadFactor: Float = 0.75f)
-  extends Cache[K, V] {
+  extends CacheLayer[K, Option[V]] {
+  private type OV = Option[V]
   // Backing LinkedHashMap which discards at a certain capacity
   // "true" for accessOrder makes it reorder nodes on access to function as a LRU cache
-  private[this] val backing = new util.LinkedHashMap[K, V](initialCapacity.getOrElse(64 min maxCapacity), loadFactor, true) {
-    override def removeEldestEntry(entry: Entry[K, V]) = size > maxCapacity
+  private[this] val cache = new util.LinkedHashMap[K, OV](initialCapacity.getOrElse(64 min maxCapacity), loadFactor, true) {
+    override def removeEldestEntry(entry: Entry[K, OV]) = size > maxCapacity
   }
 
-  def apply(key: K): Option[V] = Option(backing.get(key))
+  override def get(key: K): Option[OV] =
+    if (cache.containsKey(key)) Some(cache.get(key)) else None
 
-  def invalidate(key: K) {
-    backing.remove(key)
-  }
+  override def update(key: K, value: OV): Unit =
+    cache.put(key, value)
 
-  def update(key: K, value: V) {
-    backing.put(key, value)
-  }
+  override def invalidate(key: K): Unit =
+    cache.remove(key)
 }

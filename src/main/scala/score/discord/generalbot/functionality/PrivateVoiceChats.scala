@@ -11,13 +11,14 @@ import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
-import score.discord.generalbot.collections.{ReplyCache, UserByVoiceChannel}
+import score.discord.generalbot.collections.{AsyncMap, ReplyCache, UserByVoiceChannel}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.IdConversions._
+import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
 import scala.async.Async._
@@ -29,7 +30,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
-class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]], commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
 
   private type Timestamp = Long
@@ -338,10 +339,10 @@ class PrivateVoiceChats(ownerByChannel: UserByVoiceChannel, commands: Commands)(
     case ev: ReadyEvent =>
       implicit val jda: JDA = ev.getJDA
       async {
-        val allUsersByChannel = await(ownerByChannel.all)
+        val allUsersByChannel = await(ownerByChannel.items)
         val toRemove = new mutable.HashSet[(ID[Guild], ID[VoiceChannel])]
 
-        for ((guildId, channelId, _) <- allUsersByChannel) {
+        for (((guildId, channelId), _) <- allUsersByChannel) {
           channelId.find match {
             case None =>
               toRemove += ((guildId, channelId))

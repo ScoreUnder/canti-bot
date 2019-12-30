@@ -2,16 +2,16 @@ package score.discord.generalbot.commands
 
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.scalatest._
-import score.discord.generalbot.collections.{MessageCache, ReplyCache}
+import score.discord.generalbot.collections.{MessageCache, NullCacheBackend, ReplyCache}
 import score.discord.generalbot.command.QuoteCommand
-import score.discord.generalbot.functionality.ownership.{MessageOwnership, NullMessageOwnership}
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.jdamocks.{FakeJda, FakeUser}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 class QuoteCommandTest extends FlatSpec with Matchers {
-  implicit val messageOwnership: MessageOwnership = NullMessageOwnership
+  implicit val messageOwnership: MessageOwnership = new MessageOwnership(new NullCacheBackend)
 
   val jda = new FakeJda
   val guild = jda.makeGuild()

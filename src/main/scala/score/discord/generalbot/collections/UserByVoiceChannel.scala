@@ -1,10 +1,8 @@
 package score.discord.generalbot.collections
 
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities._
 import score.discord.generalbot.util.DBUtils
 import score.discord.generalbot.wrappers.jda.Conversions._
-import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.ID
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -13,8 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class UserByVoiceChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
-                         cacheBase: Cache[ID[VoiceChannel], Option[ID[User]]],
-                         tableName: String) {
+  tableName: String) extends AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]] {
 
   import dbConfig.profile.api._
 
@@ -32,34 +29,26 @@ class UserByVoiceChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
     userByChannelTable.filter(t => t.guildId === guildId && t.channelId === channelId).map(_.userId)
   })
 
-  private val cache = new cacheBase.Backend[VoiceChannel] {
-    override def keyToId(key: VoiceChannel): ID[VoiceChannel] = key.id
-
-    override def missing(channel: VoiceChannel): Future[Option[ID[User]]] =
-      dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).result).map(_.headOption)
-  }
-
   DBUtils.ensureTableCreated(dbConfig, userByChannelTable, tableName)
 
-  def apply(channel: VoiceChannel): Future[Option[User]] = {
-    implicit val jda: JDA = channel.getJDA
-    cache(channel).map(_.flatMap(_.find))
+  override def get(key: (ID[Guild], ID[VoiceChannel])): Future[Option[ID[User]]] = {
+    val (guild, channel) = key
+    dbConfig.db.run(lookupQuery(guild, channel).result).map(_.headOption)
   }
 
-  def update(channel: VoiceChannel, user: User): Future[Int] = {
-    cache(channel) = Some(user.id)
-    dbConfig.db.run(userByChannelTable.insertOrUpdate(channel.getGuild.id, channel.id, user.id))
+  override def update(key: (ID[Guild], ID[VoiceChannel]), value: ID[User]): Future[Int] = {
+    val (guild, channel) = key
+    dbConfig.db.run(userByChannelTable.insertOrUpdate(guild, channel, value))
   }
 
-  def remove(channel: VoiceChannel): Future[Int] = {
-    cache(channel) = None
+  def remove(channel: VoiceChannel): Future[Int] =
     dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).delete)
-  }
 
-  def remove(guild: ID[Guild], channel: ID[VoiceChannel]): Future[Int] = {
-    cache.updateById(channel, None)
+  override def remove(key: (ID[Guild], ID[VoiceChannel])): Future[Int] = {
+    val (guild, channel) = key
     dbConfig.db.run(lookupQuery(guild, channel).delete)
   }
 
-  def all: Future[Seq[(ID[Guild], ID[VoiceChannel], ID[User])]] = dbConfig.db.run(userByChannelTable.result)
+  override def items: Future[Seq[((ID[Guild], ID[VoiceChannel]), ID[User])]] =
+    dbConfig.db.run(userByChannelTable.result).map(_.map(t => ((t._1, t._2), t._3)))
 }

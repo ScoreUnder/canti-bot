@@ -2,7 +2,6 @@ package score.discord.generalbot.collections
 
 import net.dv8tion.jda.api.entities.{Guild, Role}
 import score.discord.generalbot.util.DBUtils
-import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -11,8 +10,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile],
-                  cacheBase: Cache[ID[Guild], Option[ID[Role]]],
-                  tableName: String) {
+  tableName: String) extends AsyncMap[ID[Guild], ID[Role]] {
 
   import dbConfig.profile.api._
 
@@ -28,27 +26,16 @@ class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile],
   private val lookupQuery = Compiled((guildId: ConstColumn[ID[Guild]]) => {
     roleByGuildTable.filter(t => t.guildId === guildId).map(_.roleId)
   })
-
-  private val cache = new cacheBase.Backend[Guild] {
-    override def keyToId(key: Guild): ID[Guild] = key.id
-
-    override def missing(key: Guild): Future[Option[ID[Role]]] =
-      dbConfig.db.run(lookupQuery(key.id).result).map(_.headOption)
-  }
-
   DBUtils.ensureTableCreated(dbConfig, roleByGuildTable, tableName)
 
-  def apply(guild: Guild): Future[Option[Role]] = cache(guild).map(_.flatMap(guild.findRole))
+  override def get(key: ID[Guild]): Future[Option[ID[Role]]] =
+    dbConfig.db.run(lookupQuery(key).result).map(_.headOption)
 
-  def update(guild: Guild, role: Role) {
-    cache(guild) = Some(role.id)
-    database.run(roleByGuildTable.insertOrUpdate(guild.id, role.id))
-  }
+  override def update(guild: ID[Guild], role: ID[Role]): Future[Int] =
+    database.run(roleByGuildTable.insertOrUpdate(guild, role))
 
-  def remove(guild: Guild): Future[Int] = remove(guild.id)
-
-  def remove(guild: ID[Guild]): Future[Int] = {
-    cache.updateById(guild, None)
+  override def remove(guild: ID[Guild]): Future[Int] =
     database.run(lookupQuery(guild).delete)
-  }
+
+  override def items: Future[Seq[(ID[Guild], ID[Role])]] = throw new UnsupportedOperationException()
 }

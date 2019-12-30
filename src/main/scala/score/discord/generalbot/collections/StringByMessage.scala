@@ -8,11 +8,9 @@ import slick.jdbc.JdbcProfile
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.chaining._
 
 class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile],
-                      cacheBase: Cache[ID[Message], Option[String]],
-                      tableName: String) {
+                      tableName: String) extends AsyncMap[ID[Message], String] {
 
   import dbConfig.profile.api._
 
@@ -31,22 +29,14 @@ class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile],
 
   DBUtils.ensureTableCreated(dbConfig, stringByMessage, tableName)
 
-  private[this] val cache = new cacheBase.Backend[ID[Message]] {
-    override def keyToId(key: ID[Message]): ID[Message] = key
+  override def get(key: ID[Message]): Future[Option[String]] =
+    database.run(lookupQuery(key).result).map(_.headOption)
 
-    override def missing(key: ID[Message]): Future[Option[String]] =
-      database.run(lookupQuery(key).result).map(_.headOption)
-  }
-
-  def apply(messageId: ID[Message]): Future[Option[String]] = cache(messageId)
-
-  def update(messageId: ID[Message], text: String): Future[Int] = {
-    cache(messageId) = Some(text)
+  override def update(messageId: ID[Message], text: String): Future[Int] =
     database.run(stringByMessage.insertOrUpdate(messageId, text))
-  }
 
-  def remove(messageId: ID[Message]): Future[Int] =
-    database.run(lookupQuery(messageId).delete).tap(_.foreach { _ =>
-      cache.invalidate(messageId)
-    })
+  override def remove(messageId: ID[Message]): Future[Int] =
+    database.run(lookupQuery(messageId).delete)
+
+  override def items: Future[Seq[(ID[Message], String)]] = throw new UnsupportedOperationException()
 }

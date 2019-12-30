@@ -3,11 +3,12 @@ package score.discord.generalbot.functionality
 import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import score.discord.generalbot.collections.{ReplyCache, StringByMessage}
+import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.matching.Events.{MessageDelete, NonBotReact}
 import score.discord.generalbot.wrappers.jda.matching.React
 
@@ -16,7 +17,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.chaining._
 
-class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   val spoilerEmote = "🔍"
 
   commands register new Command.Anyone {
@@ -111,7 +112,7 @@ class Spoilers(spoilerTexts: StringByMessage, commands: Commands, conversations:
         case ch => Option(ch.getName).getOrElse("unnamed group chat")
       }
       for {
-        maybeText <- spoilerTexts(message).tap(_.failed.foreach(APIHelper.failure("displaying spoiler")))
+        maybeText <- spoilerTexts.get(message).tap(_.failed.foreach(APIHelper.failure("displaying spoiler")))
         text <- maybeText
         privateChannel <- APIHelper.tryRequest(user.openPrivateChannel(),
           onFail = APIHelper.failure(s"opening private channel with ${user.unambiguousString}"))

@@ -1,7 +1,7 @@
 package score.discord.generalbot.wrappers.jda
 
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{Guild, MessageChannel, User, VoiceChannel}
+import net.dv8tion.jda.api.entities.{Guild, MessageChannel, Role, User, VoiceChannel}
 
 import scala.language.implicitConversions
 
@@ -10,6 +10,7 @@ object IdConversions {
   implicit def toRichGuildId(id: ID[Guild]): RichGuildId = new RichGuildId(id.value)
   implicit def toRichVoiceChannelId(id: ID[VoiceChannel]): RichVoiceChannelId = new RichVoiceChannelId(id.value)
   implicit def toRichUserId(id: ID[User]): RichUserId = new RichUserId(id.value)
+  implicit def toRichRoleId(id: ID[Role]): RichRoleId = new RichRoleId(id.value)
 }
 
 class RichMessageChannelId(val me: Long) extends AnyVal {
@@ -27,4 +28,8 @@ class RichVoiceChannelId(val me: Long) extends AnyVal {
 
 class RichUserId(val me: Long) extends AnyVal {
   def find(implicit jda: JDA): Option[User] = Option(jda.getUserById(me))
+}
+
+class RichRoleId(val me: Long) extends AnyVal {
+  def find(implicit jda: JDA): Option[Role] = Option(jda.getRoleById(me))
 }
