@@ -3,6 +3,7 @@ package score.discord.generalbot.wrappers
 import score.discord.generalbot.collections.AsyncMap
 
 import scala.concurrent.Future
+import scala.language.implicitConversions
 
 object AsyncMapExtras {
   implicit def toRichAsyncMap[K, V](me: AsyncMap[K, V]): RichAsyncMap[K, V] = new RichAsyncMap[K, V](me)

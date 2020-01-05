@@ -3,7 +3,7 @@ package score.discord.generalbot.collections
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.languageFeature.implicitConversions
+import scala.language.implicitConversions
 import scala.util.chaining._
 import scala.util.{Failure, Success}
 
