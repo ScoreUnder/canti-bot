@@ -15,7 +15,7 @@ class StopCommand(bot: GeneralBot, val userId: ID[User]) extends Command.OneUser
 
   override def description = "Shut the bot down"
 
-  override def execute(message: Message, args: String) {
+  override def execute(message: Message, args: String): Unit = {
     // Wait a little to add the reaction, but give up quickly as shutting down is more important
     try {
       Await.ready(message.addReaction("👌").queueFuture(), 300.millis)

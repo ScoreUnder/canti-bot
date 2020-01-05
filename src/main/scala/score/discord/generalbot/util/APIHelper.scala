@@ -16,7 +16,7 @@ object APIHelper {
     * @param whatFailed what you were doing to cause the exception, described for the bot owner
     * @param exception  the exception to print
     */
-  def failure(whatFailed: String)(exception: Throwable) {
+  def failure(whatFailed: String)(exception: Throwable): Unit = {
     System.err.println(s"API call failed when $whatFailed")
     exception.printStackTrace()
   }
@@ -28,7 +28,7 @@ object APIHelper {
     * @param channel    the channel to send the "unknown error" message to
     * @param exception  the exception to print
     */
-  def loudFailure(whatFailed: String, channel: MessageChannel)(exception: Throwable) {
+  def loudFailure(whatFailed: String, channel: MessageChannel)(exception: Throwable): Unit = {
     failure(whatFailed)(exception)
     channel ! BotMessages.error(
       exception match {

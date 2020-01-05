@@ -29,7 +29,7 @@ class GeneralBot {
   private var discord: Option[JDA] = None
   private var executor: ScheduledExecutorService = _
 
-  def start() {
+  def start(): Unit = {
     discord match {
       case None =>
         val bot = new JDABuilder(AccountType.BOT)
@@ -92,7 +92,7 @@ class GeneralBot {
     }
   }
 
-  def stop(timeout: Duration = 1 minute) {
+  def stop(timeout: Duration = 1 minute): Unit = {
     discord match {
       case Some(bot) =>
         executor.shutdown()

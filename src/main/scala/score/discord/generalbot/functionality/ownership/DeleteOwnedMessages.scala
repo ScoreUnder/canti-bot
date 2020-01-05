@@ -21,7 +21,7 @@ class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends E
       messageOwnership(messageId)
     }
 
-  override def onEvent(ev: GenericEvent) {
+  override def onEvent(ev: GenericEvent): Unit = {
     ev match {
       case NonBotReact(react @ React.Text("❌" | "🚮"), messageId, channel, user) =>
         getOwnership(user, channel, messageId).foreach {

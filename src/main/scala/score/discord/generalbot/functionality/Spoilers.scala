@@ -47,7 +47,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, 
          |```
       """.stripMargin
 
-    override def execute(message: Message, args: String) {
+    override def execute(message: Message, args: String): Unit = {
       async {
         APIHelper.tryRequest(message.delete(),
           onFail = APIHelper.loudFailure("deleting a message", message.getChannel))

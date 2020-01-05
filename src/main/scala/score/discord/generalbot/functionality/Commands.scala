@@ -108,7 +108,7 @@ class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache:
       case Left(err) => message.getChannel sendTemporary BotMessages.error(err)
     }
 
-  override def onEvent(event: GenericEvent) {
+  override def onEvent(event: GenericEvent): Unit = {
     event match {
       case NonBotMessage(message) =>
         for ((cmd, cmdExtra) <- parseCommand(message.getContentRaw)) {

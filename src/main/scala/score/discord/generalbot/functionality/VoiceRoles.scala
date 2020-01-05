@@ -30,7 +30,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
 
     override def description = "Set the role automatically assigned to voice chat users"
 
-    override def execute(message: Message, args: String) {
+    override def execute(message: Message, args: String): Unit = {
       message.reply(
         if (args.isEmpty) BotMessages.error("Please provide a role name to use as the voice role")
         else
@@ -75,7 +75,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
 
     override def description = "Clear the voice chat role (i.e. stops tagging voice chat users)"
 
-    override def execute(message: Message, args: String) {
+    override def execute(message: Message, args: String): Unit = {
       async {
         await(roleByGuild remove message.getGuild.id)
         message.addReaction("👌").queue()
@@ -83,7 +83,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     }
   }
 
-  private def setRole(member: Member, role: Role, shouldHaveRole: Boolean) {
+  private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit = {
     if (shouldHaveRole != (member has role)) {
       if (shouldHaveRole)
         member.roles += role -> "voice state change"
@@ -95,7 +95,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
   private def shouldHaveRole(state: GuildVoiceState) =
     !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(_ != state.getGuild.getAfkChannel)
 
-  private val pendingRoleUpdates = new ConcurrentHashMap[GuildUserId, ScheduledFuture[_]]
+  private val pendingRoleUpdates = new ConcurrentHashMap[GuildUserId, ScheduledFuture[Unit]]
   private[this] val rng = ThreadLocalRandom.current()
 
   private def queueRoleUpdate(member: Member): Unit = {
@@ -136,7 +136,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     }
   }
 
-  override def onEvent(event: GenericEvent) {
+  override def onEvent(event: GenericEvent): Unit = {
     event match {
       case ev: ReadyEvent =>
         val jda = ev.getJDA

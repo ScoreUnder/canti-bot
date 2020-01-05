@@ -49,7 +49,7 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
     arr.toSeq
   }
 
-  override def execute(message: Message, args: String) {
+  override def execute(message: Message, args: String): Unit = {
     if (args.isEmpty) {
       message.reply(BotMessages error "Please provide the text to render as part of the command.")
       return

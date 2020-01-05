@@ -48,7 +48,7 @@ class CacheCoordinator[K, V](cache: CacheLayer[K, Option[V]], backend: AsyncMap[
   override def items: Future[Seq[(K, V)]] = backend.items // Not cached
 
   // Delete ongoing request and put into cache when complete
-  private def onRequestComplete(key: K, future: Future[Option[V]]) {
+  private def onRequestComplete(key: K, future: Future[Option[V]]): Unit = {
     future.value match {
       case Some(Success(value)) => ongoingRequests.synchronized {
         ongoingRequests.remove(key) match {

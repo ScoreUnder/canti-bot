@@ -12,7 +12,7 @@ import scala.concurrent.duration.Duration
 object DBUtils {
   def ensureTableCreated(dbConfig: DatabaseConfig[_ <: RelationalProfile],
                          table: TableQuery[_ <: RelationalProfile#Table[_]],
-                         tableName: String) {
+                         tableName: String): Unit = {
     import dbConfig.profile.api._
     // Ensure table is created on startup
     Await.result(dbConfig.db.run(MTable.getTables).map(v => {
