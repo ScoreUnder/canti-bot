@@ -72,13 +72,13 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
       haystack.toLowerCase.toUpperCase.contains(searchTerm)
 
     var results: Seq[String] = Vector.empty
-    message.getGuild match {
-      case null =>
+    Option(message.getGuild) match {
+      case None =>
         // Private chat
         results ++= message.getChannel.participants
           .filter(u => containsSearchTerm(s"@${u.name}#${u.discriminator}"))
           .map(u => s"**User** ${u.mentionWithName}: `${u.getId}`")
-      case guild =>
+      case Some(guild) =>
         results ++= guild.getRoles.asScala.view
           .filter(r => containsSearchTerm(s"@${r.getName}"))
           .map(r => s"**Role** ${r.getAsMention} (${MessageUtils.sanitise(s"@${r.getName}")}): `${r.getId}`")

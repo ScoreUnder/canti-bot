@@ -112,23 +112,20 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     async {
       val memberId = GuildUserId(member)
 
-      def updateRole(role: Role) {
+      def updateRole(role: Role): Unit = {
         pendingRoleUpdates remove memberId
         // TODO: No thread-safe way to do this
         setRole(member, role, shouldHaveRole(member.getVoiceState))
       }
 
-      def queueUpdate(role: Role) {
+      def queueUpdate(role: Role): Unit = {
         // Delay to ensure that rapid switching of deafen doesn't run our
         // rate limits out.
         val newFuture = scheduler.schedule((200 + rng.nextInt(300)) milliseconds) {
           updateRole(role)
         }
-        val previousFuture = pendingRoleUpdates.put(memberId, newFuture)
-        previousFuture match {
-          case null =>
-          case future => future.cancel(false)
-        }
+        val previousFuture = Option(pendingRoleUpdates.put(memberId, newFuture))
+        previousFuture.foreach(_.cancel(false))
       }
 
       implicit val jda: JDA = member.getJDA

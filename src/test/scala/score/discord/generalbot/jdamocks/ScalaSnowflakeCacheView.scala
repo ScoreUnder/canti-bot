@@ -9,7 +9,7 @@ import scala.jdk.CollectionConverters._
 
 class ScalaSnowflakeCacheView[Q <: Comparable[Q], T <: Q with ISnowflake](cache: collection.Map[Long, T], getName: T => String)
   extends ScalaCacheView[T](cache.values, getName) with SortedSnowflakeCacheView[T] {
-  override def getElementById(id: Long): T = cache.getOrElse(id, null.asInstanceOf[T])
+  override def getElementById(id: Long): T = cache.getOrElse(id, null)
 
   override def streamUnordered(): JStream[T] = cache.values.asJavaCollection.stream()
 

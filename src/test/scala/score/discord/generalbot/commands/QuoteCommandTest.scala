@@ -32,7 +32,7 @@ class QuoteCommandTest extends FlatSpec with Matchers {
 
   implicit val messageCache: MessageCache = new MessageCache
   implicit val replyCache: ReplyCache = new ReplyCache
-  messageCache.onEvent(new MessageReceivedEvent(null, 0, quotee2Message))
+  messageCache.onEvent(new MessageReceivedEvent(jda, 0, quotee2Message))
   val cmd = new QuoteCommand
 
   def quoteCommandTest(invocation: String, expected: String): Unit = {

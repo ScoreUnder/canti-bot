@@ -26,10 +26,10 @@ class EventLogger extends EventListener {
     case ev: StatusChangeEvent =>
       log(s"Bot status changed to ${ev.getNewStatus}")
     case ev: DisconnectEvent =>
-      ev.getCloseCode match {
-        case null => log("Disconnected, no reason provided.")
-        case code => log(s"Disconnected. code=${code.getCode} meaning=${code.getMeaning}")
-      }
+      val reason = Option(ev.getCloseCode)
+        .map(code => s"code=${code.getCode} meaning=${code.getMeaning}")
+        .getOrElse("no reason provided")
+      log(s"Disconnected, $reason")
     case ev: MessageReceivedEvent =>
       log(s"MESSAGE: ${ev.getMessage.rawId} ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
         formatMessage(ev.getMessage))
