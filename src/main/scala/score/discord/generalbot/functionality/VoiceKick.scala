@@ -87,6 +87,9 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
           voiceState <- Option(member.getVoiceState).toRight("Internal error: no voice state cached for you")
           voiceChan <- Option(voiceState.getChannel).toRight("You must be in a voice channel to run this command")
 
+          _ <- Either.cond(voiceChan != member.getGuild.getAfkChannel, (),
+            "You cannot kick a user from the guild AFK channel")
+
           guildTextChannel <- ensureIsGuildChannel(textChannel)
 
           mentioned <- singleMentionedMember(message)
