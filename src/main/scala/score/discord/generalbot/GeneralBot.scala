@@ -49,6 +49,7 @@ class GeneralBot {
         val commands = new Commands
         val quoteCommand = new QuoteCommand
         val conversations = new Conversations
+        val voiceKick = new VoiceKick
         bot.addEventListeners(
           commands,
           new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000), commands),
@@ -57,9 +58,11 @@ class GeneralBot {
           conversations,
           new Spoilers(new StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100), commands, conversations),
           new quoteCommand.GreentextListener,
+          voiceKick,
           messageCache)
 
         val helpCommand = new HelpCommand(commands)
+        voiceKick.registerCommands(commands)
         commands register helpCommand
         commands register new PlayCommand(userId = config.owner)
         commands register new StopCommand(this, userId = config.owner)
