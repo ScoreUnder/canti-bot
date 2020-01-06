@@ -22,7 +22,7 @@ class ChannelPermissionUpdater(channel: GuildChannel) {
     val oldOverride = overrideState(member)
     val newOverride = oldOverride.copy(
       allow = oldOverride.allow | permsRaw,
-      deny = oldOverride.deny | permsRaw)
+      deny = oldOverride.deny & ~permsRaw)
     manager.putPermissionOverride(member, newOverride.allow, newOverride.deny)
     overrideState(member) = newOverride
     this
