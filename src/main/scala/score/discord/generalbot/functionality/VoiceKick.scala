@@ -135,6 +135,9 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
               pendingKicks += botMsg.id -> kickState
             }
           }
+          botMsg.addReaction(KickVote.emoji).queue()
+          botMsg.addReaction(AbstainVote.emoji).queue()
+          botMsg.addReaction(StayVote.emoji).queue()
         }
       }
 
