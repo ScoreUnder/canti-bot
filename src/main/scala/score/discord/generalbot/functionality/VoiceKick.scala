@@ -100,7 +100,7 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
 
           _ <- Either.cond(voiceChan == mentionedVoiceChan, (),
             s"You are not in the same voice channel as ${mentioned.getUser.mentionWithName}!")
-          _ <- Either.cond(mentioned == member, (), "You cannot vote to kick yourself.")
+          _ <- Either.cond(mentioned != member, (), "You cannot vote to kick yourself.")
           _ <- Either.cond(!voiceState.isDeafened, (),
             "You cannot run this command while deafened (i.e. you must be part of the voice chat)")
 
