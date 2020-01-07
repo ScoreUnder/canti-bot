@@ -265,17 +265,20 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
     Future {
       blocking {
         pendingKicks.synchronized {
-          pendingKicks.get(myMessage).map { kickState =>
-            val newVotes = kickState.votes + (member.id -> Some(voteType))
-            val newKickState = kickState.copy(votes = newVotes)
+          pendingKicks.get(myMessage)
+            // ensure the vote comes from an eligible voter
+            .filter { kickState => kickState.votes.contains(member.id) }
+            .map { kickState =>
+              val newVotes = kickState.votes + (member.id -> Some(voteType))
+              val newKickState = kickState.copy(votes = newVotes)
 
-            val result = newKickState.overallVote
+              val result = newKickState.overallVote
 
-            if (result.isEmpty) pendingKicks(myMessage) = newKickState
-            else pendingKicks.remove(myMessage)
+              if (result.isEmpty) pendingKicks(myMessage) = newKickState
+              else pendingKicks.remove(myMessage)
 
-            newKickState
-          }
+              newKickState
+            }
         }
       }.foreach { kickState =>
         kickState.overallVote match {
