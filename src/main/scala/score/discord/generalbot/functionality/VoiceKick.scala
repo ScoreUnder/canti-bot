@@ -43,13 +43,13 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
   case class KickState(votes: Map[ID[Member], Option[VoteType]], target: ID[Member], channel: ID[VoiceChannel], expiry: Long) {
     private def sumVotes(f: VoteType => Int): Int = votes.values.flatten.map(f).sum
 
-    lazy val passed: Boolean = sumVotes {
+    val passed: Boolean = sumVotes {
       case StayVote => 0
       case AbstainVote => 1
       case KickVote => 2
     } > votes.size
 
-    lazy val failed: Boolean = sumVotes {
+    val failed: Boolean = sumVotes {
       case StayVote => 2
       case AbstainVote => 1
       case KickVote => 0
@@ -177,10 +177,14 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
       else if (kickState.expired) "The vote has timed out."
       else "The vote is currently in progress."
 
-    s"A vote to kick $targetMention from $chanMention has been called.\n" +
-      s"$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
+    val strikethrough =
+      if (kickState.passed || kickState.failed || kickState.expired) "~~"
+      else ""
+
+    s"${strikethrough}A vote to kick $targetMention from $chanMention has been called.${strikethrough}\n" +
+      s"${strikethrough}$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
       s"or against (${StayVote.emoji}) the kick, " +
-      s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.\n\n" +
+      s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.${strikethrough}\n\n" +
       s"**Votes**: $votesSoFar\n$finalResult"
   }
 
