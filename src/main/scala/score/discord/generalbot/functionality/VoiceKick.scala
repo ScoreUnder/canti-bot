@@ -181,10 +181,10 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
       if (kickState.passed || kickState.failed || kickState.expired) "~~"
       else ""
 
-    s"${strikethrough}A vote to kick $targetMention from $chanMention has been called.${strikethrough}\n" +
-      s"${strikethrough}$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
+    s"${strikethrough}A vote to kick $targetMention from $chanMention has been called.$strikethrough\n" +
+      s"$strikethrough$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
       s"or against (${StayVote.emoji}) the kick, " +
-      s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.${strikethrough}\n\n" +
+      s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.$strikethrough\n\n" +
       s"**Votes**: $votesSoFar\n$finalResult"
   }
 
