@@ -22,9 +22,8 @@ object APIHelper {
     exception.printStackTrace()
   }
 
-  /** Similar to failure, but also sends an "unknown error" message in chat.
+  /** Similar to [[APIHelper#failure]], but also sends an "unknown error" message in chat.
     *
-    * @see failure(String)(Throwable)
     * @param whatFailed what you were doing to cause the exception, described for the users and bot owner
     * @param channel    the channel to send the "unknown error" message to
     * @param exception  the exception to print
