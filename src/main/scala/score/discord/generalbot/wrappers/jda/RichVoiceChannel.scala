@@ -15,18 +15,4 @@ class RichVoiceChannel(val channel: VoiceChannel) extends AnyVal {
 
   /** The mention string for this voice channel */
   def mention = s"<#${channel.rawId}>"
-
-  /** Creates a permission override on this channel for the specified member,
-    * using the old permissions if an applicable override already exists.
-    *
-    * @param member member to which the permissions apply
-    * @return permission override request (not yet sent)
-    */
-  def updateOrCreatePermissionOverride(member: Member): PermissionOverrideAction =
-    channel.putPermissionOverride(member).tap { permOverride =>
-      Option(channel.getPermissionOverride(member)).foreach { oldPerms =>
-        permOverride.setAllow(oldPerms.getAllowedRaw)
-        permOverride.setDeny(oldPerms.getDeniedRaw)
-      }
-    }
 }
