@@ -71,4 +71,8 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
   override def getPermissionsExplicit(channel: GuildChannel): util.EnumSet[Permission] = ???
 
   override def getIdLong: Long = user.getIdLong
+
+  override def getActiveClients: util.EnumSet[ClientType] = ???
+
+  override def isFake: Boolean = false  // White lie
 }

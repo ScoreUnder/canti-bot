@@ -124,4 +124,8 @@ class FakeJda extends JDA {
   override def getShardManager: ShardManager = ???
 
   override def retrieveWebhookById(webhookId: String): RestAction[Webhook] = ???
+
+  override def awaitStatus(status: JDA.Status, failOn: JDA.Status*): JDA = ???
+
+  override def getUnavailableGuilds: util.Set[String] = ???
 }

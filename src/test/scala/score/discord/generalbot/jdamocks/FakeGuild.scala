@@ -1,6 +1,7 @@
 package score.discord.generalbot.jdamocks
 
 import java.util
+import java.util.concurrent.CompletableFuture
 
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.managers.{AudioManager, GuildManager}
@@ -190,4 +191,14 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def modifyVoiceChannelPositions(category: Category): CategoryOrderAction = ???
 
   override def modifyRolePositions(useAscendingOrder: Boolean): RoleOrderAction = ???
+
+  override def isLoaded: Boolean = ???
+
+  override def getMemberCount: Int = ???
+
+  override def retrieveMembers(): CompletableFuture[Void] = ???
+
+  override def retrieveMemberById(id: Long): RestAction[Member] = ???
+
+  override def kick(userId: String, reason: String): AuditableRestAction[Void] = ???
 }
