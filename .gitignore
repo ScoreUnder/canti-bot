@@ -3,3 +3,5 @@ config.yml
 state.db
 .idea
 *.iml
+application.conf
+null
