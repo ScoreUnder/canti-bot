@@ -4,6 +4,7 @@ import java.awt.Color
 
 import net.dv8tion.jda.api.EmbedBuilder
 
+/** Helpers to create consistently-styled EmbedBuilders for bot output */
 object BotMessages {
   val ERROR_COLOR = new Color(240, 100, 100)
   val OKAY_COLOR = new Color(100, 130, 240)

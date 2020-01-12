@@ -10,6 +10,14 @@ import scala.concurrent.Future
 import scala.util.chaining._
 
 class RichMessage(val me: Message) extends AnyVal {
+  /** Reply to this message.
+    * Records the new message as being owned by the author of this message, and records it in the reply cache.
+    *
+    * @param contents contents of reply
+    * @param mo message ownership cache
+    * @param replyCache reply cache
+    * @return the new Message, wrapped in Future
+    */
   def reply(contents: MessageFromX)(implicit mo: MessageOwnership, replyCache: ReplyCache): Future[Message] =
     me.getChannel.sendOwned(contents, me.getAuthor).tap(_.foreach { message =>
       replyCache += me.id -> message.id

@@ -7,5 +7,6 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 class RichJDA(val jda: JDA) extends AnyVal {
+  /** A list of guilds this bot (shard) is in */
   def guilds: mutable.Buffer[Guild] = jda.getGuilds.asScala
 }

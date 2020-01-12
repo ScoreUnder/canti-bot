@@ -10,6 +10,7 @@ import scala.concurrent.Future
 import scala.util.Try
 import scala.util.chaining._
 
+/** Miscellaneous functions useful when dealing with JDA's API calls */
 object APIHelper {
   /** Curried function to report an exception to the console.
     *

@@ -10,6 +10,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 object DBUtils {
+  /** Creates a table if it does not already exist. Blocking. */
   def ensureTableCreated(dbConfig: DatabaseConfig[_ <: RelationalProfile],
                          table: TableQuery[_ <: RelationalProfile#Table[_]],
                          tableName: String): Unit = {
