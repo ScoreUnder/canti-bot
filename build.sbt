@@ -20,5 +20,11 @@ lazy val root = (project in file(".")).
       // https://github.com/scala/scala-async/issues/220
       "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided
     ),
-    test in assembly := {}
+    test in assembly := {},
+    assemblyMergeStrategy in assembly := {
+      case "module-info.class" => MergeStrategy.discard
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    },
   )
