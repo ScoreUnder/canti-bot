@@ -180,13 +180,13 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
       else "The vote is currently in progress."
 
     if (!kickState.ended)
-    s"A vote to kick $targetMention from $chanMention has been called.\n" +
-      s"$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
-      s"or against (${StayVote.emoji}) the kick, " +
-      s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.\n\n" +
+      s"A vote to kick $targetMention from $chanMention has been called.\n" +
+        s"$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
+        s"or against (${StayVote.emoji}) the kick, " +
+        s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.\n\n" +
+        s"**Votes**: $votesSoFar\n$finalResult"
+    else s"A vote to kick $targetMention from $chanMention was called and has concluded.\n$usersWhoShouldVote\n\n" +
       s"**Votes**: $votesSoFar\n$finalResult"
-    else s"A vote to kick $targetMention from $chanMention was called and has concluded.\n\n**Votes**: $votesSoFar\n" +
-      s"$finalResult"
   }
 
   private def getEmojiMeaning(emoji: String): Option[VoteType] = emoji match {
