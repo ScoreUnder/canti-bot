@@ -274,6 +274,9 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
   def updateVoteKickMessage(channel: TextChannel, kickState: KickState, myMessage: ID[Message]): Unit = {
     APIHelper.tryRequest(channel.editMessageById(myMessage.value, makeMessageContents(kickState, channel.getGuild)),
       onFail = APIHelper.failure("editing voice kick results"))
+    if (kickState.ended) {
+      APIHelper.tryRequest(channel.clearReactionsById(myMessage.value))
+    }
   }
 
   private def updateKickVote(channel: TextChannel, myMessage: ID[Message], voteType: VoteType, member: Member): Unit = {
