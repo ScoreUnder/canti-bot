@@ -2,6 +2,7 @@ package score.discord.generalbot.functionality
 
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.generalbot.collections.ReplyCache
@@ -43,17 +44,19 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
   case class KickState(votes: Map[ID[Member], Option[VoteType]], target: ID[Member], channel: ID[VoiceChannel], expiry: Long) {
     private def sumVotes(f: VoteType => Int): Int = votes.values.flatten.map(f).sum
 
+    private def hasEnoughUsers = votes.size >= 2
+
     val passed: Boolean = sumVotes {
       case StayVote => 0
       case AbstainVote => 1
       case KickVote => 2
-    } > votes.size
+    } > votes.size && hasEnoughUsers
 
     val failed: Boolean = sumVotes {
       case StayVote => 2
       case AbstainVote => 1
       case KickVote => 0
-    } >= votes.size
+    } >= votes.size || !hasEnoughUsers
 
     def overallVote: Option[VoteType] =
       if (passed) Some(KickVote)
@@ -67,6 +70,7 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
   }
 
   private val pendingKicks = mutable.Map.empty[ID[Message], KickState]
+  private val kickMessagesByMember = mutable.Map.empty[ID[Member], Set[(ID[TextChannel], ID[Message])]].withDefaultValue(Set.empty)
 
   def registerCommands(commands: Commands): Unit = {
     commands register new Command.Anyone {
@@ -92,7 +96,7 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
           _ <- Either.cond(voiceChan != member.getGuild.getAfkChannel, (),
             "You cannot kick a user from the guild AFK channel")
 
-          guildTextChannel <- ensureIsGuildChannel(textChannel)
+          guildTextChannel <- ensureIsGuildTextChannel(textChannel)
 
           mentioned <- singleMentionedMember(message)
           mentionedVoiceState <- Option(mentioned.getVoiceState)
@@ -123,18 +127,21 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
             channel = voiceChan.id,
             expiry = System.currentTimeMillis() + (10 minutes).toMillis)
           val msg = makeMessageContents(kickState, member.getGuild)
-          (kickState, msg)
+          (kickState, guildTextChannel, msg)
         }
 
         result.left.foreach { err => message reply BotMessages.error(err) }
 
         for (resultRight <- result;
-             (kickState, successMsg) = resultRight;
+             (kickState, guildTextChannel, successMsg) = resultRight;
              botMsg <- message reply successMsg) {
           // Record our message ID and initial kick state in pendingKicks
           blocking {
             pendingKicks.synchronized {
               pendingKicks += botMsg.id -> kickState
+              for (member <- kickState.votes.keys) {
+                kickMessagesByMember(member) += ((guildTextChannel.id, botMsg.id))
+              }
             }
           }
           botMsg.addReaction(KickVote.emoji).queue()
@@ -143,9 +150,9 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
         }
       }
 
-      private def ensureIsGuildChannel(textChannel: MessageChannel): Either[String, GuildChannel] =
+      private def ensureIsGuildTextChannel(textChannel: MessageChannel): Either[String, TextChannel] =
         textChannel match {
-          case c: GuildChannel => Right(c)
+          case c: TextChannel => Right(c)
           case _ => Left("Internal error: Command not run from within a guild, but `message.getMember()` disagrees")
         }
 
@@ -283,16 +290,46 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
               val result = newKickState.overallVote
 
               if (result.isEmpty) pendingKicks(myMessage) = newKickState
-              else pendingKicks.remove(myMessage)
+              else {
+                pendingKicks.remove(myMessage)
+                for (member <- newKickState.votes.keys) {
+                  kickMessagesByMember(member) -= ((channel.id, myMessage))
+                }
+              }
 
               newKickState
             }
         }
-      }.foreach { kickState =>
-        kickState.overallVote match {
-          case Some(KickVote) => completeKick(channel, kickState, myMessage)
-          case _ => updateVoteKickMessage(channel, kickState, myMessage)
+      }.foreach { afterUpdateKickState(channel, myMessage, _) }
+    }
+  }
+
+  private def afterUpdateKickState(channel: TextChannel, myMessage: ID[Message], kickState: KickState): Unit = {
+    kickState.overallVote match {
+      case Some(KickVote) => completeKick(channel, kickState, myMessage)
+      case _ => updateVoteKickMessage(channel, kickState, myMessage)
+    }
+  }
+
+  private def removeUserFromVote(member: Member, channel: VoiceChannel): Unit = Future {
+    implicit val jda: JDA = member.getJDA
+    blocking {
+      pendingKicks.synchronized {
+        val oldMessages = kickMessagesByMember(member.id)
+
+        // Remove user from all the votes they are taking part in
+        for ((_, message) <- oldMessages) {
+          val kickState = pendingKicks(message)
+          pendingKicks(message) = kickState.copy(votes = kickState.votes - member.id)
         }
+        kickMessagesByMember(member.id) = Set.empty
+
+        // Take note of kick votes that need updating now that a user has dropped out
+        oldMessages.view.map(tup => (tup, pendingKicks(tup._2))).toSeq
+      }
+    }.foreach { case ((textChannelId, messageId), kickState) =>
+      textChannelId.find.foreach { textChannel =>
+        afterUpdateKickState(textChannel, messageId, kickState)
       }
     }
   }
@@ -303,6 +340,10 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
         vote <- getEmojiMeaning(emoji)
         member <- Option(channel.getGuild.getMember(user))
       } updateKickVote(channel, msgId, vote, member)
+    case ev: GuildVoiceUpdateEvent =>
+      for (channel <- Option(ev.getChannelLeft)) {
+        removeUserFromVote(ev.getEntity, channel)
+      }
     case _ =>
   }
 }
