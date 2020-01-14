@@ -62,6 +62,8 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
 
     // TODO: There is no actual expiry mechanic other than cosmetically
     def expired: Boolean = System.currentTimeMillis() >= expiry
+
+    def ended: Boolean = passed || failed || expired
   }
 
   private val pendingKicks = mutable.Map.empty[ID[Message], KickState]
@@ -177,14 +179,13 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
       else if (kickState.expired) "The vote has timed out."
       else "The vote is currently in progress."
 
-    val strikethrough =
-      if (kickState.passed || kickState.failed || kickState.expired) "~~"
-      else ""
-
-    s"${strikethrough}A vote to kick $targetMention from $chanMention has been called.$strikethrough\n" +
-      s"$strikethrough$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
-      s"or against (${StayVote.emoji}) the kick, " +
-      s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.$strikethrough\n\n" +
+    if (!kickState.ended)
+      s"A vote to kick $targetMention from $chanMention has been called.\n" +
+        s"$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
+        s"or against (${StayVote.emoji}) the kick, " +
+        s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.\n\n" +
+        s"**Votes**: $votesSoFar\n$finalResult"
+    else s"A vote to kick $targetMention from $chanMention was called and has concluded.\n$usersWhoShouldVote\n\n" +
       s"**Votes**: $votesSoFar\n$finalResult"
   }
 
