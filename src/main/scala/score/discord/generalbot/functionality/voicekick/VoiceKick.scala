@@ -24,6 +24,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Future, blocking}
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
+import scala.util.chaining._
 
 class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]],
                 voiceBanExpiries: AsyncMap[(ID[Guild], ID[VoiceChannel], ID[User]), VoiceBanExpiry])
@@ -308,6 +309,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
       onFail = APIHelper.failure("editing voice kick results"))
     if (kickState.ended) {
       APIHelper.tryRequest(channel.clearReactionsById(myMessage.value))
+      removePendingKick(channel, myMessage)
     }
   }
 
@@ -325,12 +327,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
               val result = newKickState.overallVote
 
               if (result.isEmpty) pendingKicks(myMessage) = newKickState
-              else {
-                pendingKicks.remove(myMessage)
-                for (member <- newKickState.votes.keys) {
-                  kickMessagesByMember(member) -= ((channel.id, myMessage))
-                }
-              }
+              else removePendingKick(channel, myMessage)
 
               newKickState
             }
@@ -340,6 +337,15 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
       }
     }
   }
+
+  private def removePendingKick(channel: TextChannel, myMessage: ID[Message]) =
+    pendingKicks.synchronized {
+      pendingKicks.remove(myMessage).tap { kickStateMaybe =>
+        for (kickState <- kickStateMaybe; member <- kickState.votes.keys) {
+          kickMessagesByMember(member) -= ((channel.id, myMessage))
+        }
+      }
+    }
 
   private def afterUpdateKickState(channel: TextChannel, myMessage: ID[Message], kickState: KickState): Unit = {
     kickState.overallVote match {
