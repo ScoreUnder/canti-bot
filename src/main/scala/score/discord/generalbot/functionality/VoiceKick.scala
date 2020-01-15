@@ -310,7 +310,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
         pendingKicks.synchronized {
           pendingKicks.get(myMessage)
             // ensure the vote comes from an eligible voter
-            .filter { kickState => (kickState.votes.contains(member.id) && !kickState.expired) }
+            .filter { kickState => kickState.votes.contains(member.id) && !kickState.expired }
             .map { kickState =>
               val newVotes = kickState.votes + (member.id -> Some(voteType))
               val newKickState = kickState.copy(votes = newVotes)
