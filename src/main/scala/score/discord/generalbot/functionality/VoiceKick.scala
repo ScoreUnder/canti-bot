@@ -1,8 +1,8 @@
 package score.discord.generalbot.functionality
 
 import net.dv8tion.jda.api.entities._
-import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
+import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
@@ -10,12 +10,12 @@ import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.Scheduler
+import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.matching.Events.NonBotReact
 import score.discord.generalbot.wrappers.jda.matching.React
-import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -24,7 +24,8 @@ import scala.concurrent.{Future, blocking}
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 
-class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]])
+class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]],
+                voiceBanExpiries: AsyncMap[(ID[Guild], ID[VoiceChannel], ID[User]), (Long, Boolean)])
                (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache, scheduler: Scheduler) extends EventListener {
 
   sealed trait VoteType {
@@ -215,7 +216,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
     case _ => None
   }
 
-  def removeTemporaryVoiceBan(voiceChannel: VoiceChannel, member: Member, logChannel: MessageChannel, explicitGrant: Boolean): Unit = {
+  def removeTemporaryVoiceBan(voiceChannel: VoiceChannel, member: Member, logChannel: Option[MessageChannel], explicitGrant: Boolean): Unit = {
     Option(voiceChannel.getPermissionOverride(member)).foreach { permissionOverride =>
       val originalPerms = (permissionOverride.getAllowedRaw, permissionOverride.getDeniedRaw)
       val permsWithoutVoiceBan =
@@ -231,10 +232,15 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
         } else {
           permissionOverride.getManager.clear(Permission.VOICE_CONNECT)
         }
-      }, onFail = APIHelper.loudFailure(
-        s"undoing voice tempban permissions in ${voiceChannel.mention} for ${member.getUser.mention}", logChannel))
+      }, onFail = APIHelper.loudFailure(s"undoing voice tempban permissions in ${voiceChannel.mention} for ${member.getUser.mention}", logChannel))
     }
+
+    // Remove voice ban expiry info from DB (no longer necessary)
+    voiceBanExpiries.remove(voiceBanKey(voiceChannel, member))
   }
+
+  private def voiceBanKey(channel: VoiceChannel, member: Member) =
+    (channel.getGuild.id, channel.id, member.getUser.id)
 
   def addTemporaryVoiceBan(voiceChannel: VoiceChannel, member: Member, logChannel: MessageChannel): Unit = {
     val originalPerms =
@@ -248,11 +254,18 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
           originalPerms._1 & ~Permission.VOICE_CONNECT.getRawValue,
           originalPerms._2 | Permission.VOICE_CONNECT.getRawValue),
         onFail = APIHelper.loudFailure(s"adding voice tempban permissions to ${voiceChannel.mention} for ${member.getUser.mention}", logChannel))
-      // TODO: Make more reliable by putting into DB
+
+      // Whether we need to explicitly grant the permission back
       val explicitGrant = (originalPerms._1 & Permission.VOICE_CONNECT.getRawValue) != 0
+
       futureReq.foreach { _ =>
+        // Take note (in DB) of when the voice ban should expire
+        val expiryTimestamp = System.currentTimeMillis() + (10 minutes).toMillis
+        voiceBanExpiries(voiceBanKey(voiceChannel, member)) = (expiryTimestamp, explicitGrant)
+
+        // Expire voice ban using scheduler
         scheduler.schedule(10 minutes) {
-          removeTemporaryVoiceBan(voiceChannel, member, logChannel, explicitGrant)
+          removeTemporaryVoiceBan(voiceChannel, member, Some(logChannel), explicitGrant)
         }
       }
     }
@@ -352,6 +365,26 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
   }
 
   override def onEvent(event: GenericEvent): Unit = event match {
+    case _: ReadyEvent =>
+      implicit val jda: JDA = event.getJDA
+      for {
+        expiries <- voiceBanExpiries.items
+        ((guildId, channelId, userId), (expiryTime, explicitGrant)) <- expiries
+      } {
+        val scheduledUnban = for {
+          guild <- guildId.find
+          channel <- channelId.find
+          user <- userId.find
+          member <- guild.findMember(user)
+        } yield scheduler.schedule((0L max (expiryTime - System.currentTimeMillis())) milliseconds) {
+          removeTemporaryVoiceBan(channel, member, None, explicitGrant)
+        }
+
+        if (scheduledUnban.isEmpty) {
+          // One of the entities (e.g. voice channel) no longer exists, so not applicable
+          voiceBanExpiries.remove((guildId, channelId, userId))
+        }
+      }
     case NonBotReact(React.Text(emoji), msgId, channel: TextChannel, user) =>
       for {
         vote <- getEmojiMeaning(emoji)

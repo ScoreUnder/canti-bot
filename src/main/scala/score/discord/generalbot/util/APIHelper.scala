@@ -38,6 +38,20 @@ object APIHelper {
       })
   }
 
+  /** Similar to loudFailure with a MessageChannel, but uses
+    * [[APIHelper#failure]] if no MessageChannel is provided.
+    *
+    * @param whatFailed   what you were doing to cause the exception, described for the users and bot owner
+    * @param channelMaybe Some channel to send the "unknown error" message to, or None
+    * @param exception    the exception to print
+    */
+  def loudFailure(whatFailed: String, channelMaybe: Option[MessageChannel])(exception: Throwable): Unit = {
+    channelMaybe match {
+      case Some(channel) => loudFailure(whatFailed, channel)(exception)
+      case None => failure(whatFailed)(exception)
+    }
+  }
+
   /** Tries to run apiCall, then queues the result if successful.
     *
     * @param apiCall API call to queue, by name (exceptions are caught)
