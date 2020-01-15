@@ -24,8 +24,8 @@ import scala.concurrent.{Future, blocking}
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 
-class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache, scheduler: Scheduler,
-                ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]]) extends EventListener {
+class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]])
+               (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache, scheduler: Scheduler) extends EventListener {
 
   sealed trait VoteType {
     val emoji: String
@@ -137,7 +137,6 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
         for (resultRight <- result;
              (kickState, guildTextChannel, successMsg, voiceChan, mentioned) = resultRight;
              ownerOption <- ownerByChannel(voiceChan)) {
-
 
           ownerOption match {
             case Some(owner) if owner == message.getAuthor =>

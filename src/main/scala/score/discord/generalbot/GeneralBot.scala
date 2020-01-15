@@ -43,14 +43,14 @@ class GeneralBot {
         implicit val messageOwnership = new MessageOwnership(new UserByMessage(dbConfig, "message_ownership") withCache LruCache.empty(20000))
         implicit val messageCache = new MessageCache
         implicit val replyCache = new ReplyCache
-        implicit val userCreatedChannels = new UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
+        val userCreatedChannels = new UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
 
         bot.setToken(config.token)
 
         val commands = new Commands
         val quoteCommand = new QuoteCommand
         val conversations = new Conversations
-        val voiceKick = new VoiceKick
+        val voiceKick = new VoiceKick(userCreatedChannels)
         bot.addEventListeners(
           commands,
           new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000), commands),
