@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.{JDA, Permission}
-import score.discord.generalbot.collections.ReplyCache
+import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
@@ -15,6 +15,7 @@ import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.matching.Events.NonBotReact
 import score.discord.generalbot.wrappers.jda.matching.React
+import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,7 +24,8 @@ import scala.concurrent.{Future, blocking}
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 
-class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache, scheduler: Scheduler) extends EventListener {
+class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache, scheduler: Scheduler,
+                ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]]) extends EventListener {
 
   sealed trait VoteType {
     val emoji: String
@@ -127,26 +129,37 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
             channel = voiceChan.id,
             expiry = System.currentTimeMillis() + (10 minutes).toMillis)
           val msg = makeMessageContents(kickState, member.getGuild)
-          (kickState, guildTextChannel, msg)
+          (kickState, guildTextChannel, msg, voiceChan, mentioned)
         }
 
         result.left.foreach { err => message reply BotMessages.error(err) }
 
         for (resultRight <- result;
-             (kickState, guildTextChannel, successMsg) = resultRight;
-             botMsg <- message reply successMsg) {
-          // Record our message ID and initial kick state in pendingKicks
-          blocking {
-            pendingKicks.synchronized {
-              pendingKicks += botMsg.id -> kickState
-              for (member <- kickState.votes.keys) {
-                kickMessagesByMember(member) += ((guildTextChannel.id, botMsg.id))
+             (kickState, guildTextChannel, successMsg, voiceChan, mentioned) = resultRight;
+             ownerOption <- ownerByChannel(voiceChan)) {
+
+
+          ownerOption match {
+            case Some(owner) if owner == message.getAuthor =>
+              kickVoiceMember(voiceChan, mentioned, textChannel)
+              message reply BotMessages.okay(
+                s"${mentioned.getAsMention} was forcibly kicked from #${textChannel.name} by the owner ${owner.getAsMention}")
+            case _ =>
+              for (botMsg <- message reply successMsg) {
+                // Record our message ID and initial kick state in pendingKicks
+                blocking {
+                  pendingKicks.synchronized {
+                    pendingKicks += botMsg.id -> kickState
+                    for (member <- kickState.votes.keys) {
+                      kickMessagesByMember(member) += ((guildTextChannel.id, botMsg.id))
+                    }
+                  }
+                }
+                botMsg.addReaction(KickVote.emoji).queue()
+                botMsg.addReaction(AbstainVote.emoji).queue()
+                botMsg.addReaction(StayVote.emoji).queue()
               }
-            }
           }
-          botMsg.addReaction(KickVote.emoji).queue()
-          botMsg.addReaction(AbstainVote.emoji).queue()
-          botMsg.addReaction(StayVote.emoji).queue()
         }
       }
 
@@ -251,7 +264,7 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
       voiceState <- Option(member.getVoiceState)
       if voiceState.getChannel == voiceChannel
     } APIHelper.tryRequest(voiceChannel.getGuild.kickVoiceMember(member),
-      onFail = APIHelper.loudFailure(s"kicking a ${member.getUser.mention} from voice chat", logChannel))
+      onFail = APIHelper.loudFailure(s"kicking ${member.getUser.mention} from voice chat", logChannel))
   }
 
   private def completeKick(channel: TextChannel, kickState: KickState, myMessage: ID[Message]): Unit = {
@@ -285,7 +298,7 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
         pendingKicks.synchronized {
           pendingKicks.get(myMessage)
             // ensure the vote comes from an eligible voter
-            .filter { kickState => kickState.votes.contains(member.id) }
+            .filter { kickState => (kickState.votes.contains(member.id) && !kickState.expired) }
             .map { kickState =>
               val newVotes = kickState.votes + (member.id -> Some(voteType))
               val newKickState = kickState.copy(votes = newVotes)
@@ -303,7 +316,9 @@ class VoiceKick(implicit messageOwnership: MessageOwnership, replyCache: ReplyCa
               newKickState
             }
         }
-      }.foreach { afterUpdateKickState(channel, myMessage, _) }
+      }.foreach {
+        afterUpdateKickState(channel, myMessage, _)
+      }
     }
   }
 
