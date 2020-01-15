@@ -157,6 +157,12 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
                 botMsg.addReaction(KickVote.emoji).queue()
                 botMsg.addReaction(AbstainVote.emoji).queue()
                 botMsg.addReaction(StayVote.emoji).queue()
+                scheduler.schedule((kickState.expiry - System.currentTimeMillis()) milliseconds) {
+                  pendingKicks.synchronized {
+                    for (state <- pendingKicks.get(botMsg.id))
+                      updateVoteKickMessage(botMsg.getTextChannel, state, botMsg.id)
+                  }
+                }
               }
           }
         }
