@@ -100,7 +100,7 @@ class GeneralBot {
   def stop(timeout: Duration = 1 minute): Unit = {
     discord match {
       case Some(bot) =>
-        executor.shutdown()
+        executor.shutdownNow()
         bot.shutdown()
         discord = None
         try executor.awaitTermination(timeout.length, timeout.unit)
