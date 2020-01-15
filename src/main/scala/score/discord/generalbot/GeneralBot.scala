@@ -20,6 +20,7 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import CacheCoordinator._
+import score.discord.generalbot.functionality.voicekick.VoiceKick
 
 object GeneralBot extends App {
   new GeneralBot().start()

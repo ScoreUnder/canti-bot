@@ -1,4 +1,4 @@
-package score.discord.generalbot.functionality
+package score.discord.generalbot.functionality.voicekick
 
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.Command
+import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.Scheduler
@@ -25,7 +26,7 @@ import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 
 class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]],
-                voiceBanExpiries: AsyncMap[(ID[Guild], ID[VoiceChannel], ID[User]), (Long, Boolean)])
+                voiceBanExpiries: AsyncMap[(ID[Guild], ID[VoiceChannel], ID[User]), VoiceBanExpiry])
                (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache, scheduler: Scheduler) extends EventListener {
 
   sealed trait VoteType {
@@ -261,7 +262,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
       futureReq.foreach { _ =>
         // Take note (in DB) of when the voice ban should expire
         val expiryTimestamp = System.currentTimeMillis() + (10 minutes).toMillis
-        voiceBanExpiries(voiceBanKey(voiceChannel, member)) = (expiryTimestamp, explicitGrant)
+        voiceBanExpiries(voiceBanKey(voiceChannel, member)) = VoiceBanExpiry(expiryTimestamp, explicitGrant)
 
         // Expire voice ban using scheduler
         scheduler.schedule(10 minutes) {
@@ -369,7 +370,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
       implicit val jda: JDA = event.getJDA
       for {
         expiries <- voiceBanExpiries.items
-        ((guildId, channelId, userId), (expiryTime, explicitGrant)) <- expiries
+        ((guildId, channelId, userId), VoiceBanExpiry(expiryTime, explicitGrant)) <- expiries
       } {
         val scheduledUnban = for {
           guild <- guildId.find
