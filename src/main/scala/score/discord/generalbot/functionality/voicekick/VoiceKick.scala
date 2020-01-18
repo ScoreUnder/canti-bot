@@ -4,11 +4,13 @@ import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.requests.ErrorResponse._
 import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
+import score.discord.generalbot.util.APIHelper.Error
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
@@ -240,7 +242,11 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
         } else {
           permissionOverride.getManager.clear(Permission.VOICE_CONNECT)
         }
-      }, onFail = APIHelper.loudFailure(s"undoing voice tempban permissions in ${voiceChannel.mention} for ${member.getUser.mention}", logChannel))
+      }, onFail = {
+        case Error(UNKNOWN_OVERRIDE | UNKNOWN_CHANNEL) => // Ignore (ban is no longer applicable anyway)
+        case throwable =>
+          APIHelper.loudFailure(s"undoing voice tempban permissions in ${voiceChannel.mention} for ${member.getUser.mention}", logChannel)(throwable)
+      })
     }
 
     // Remove voice ban expiry info from DB (no longer necessary)
