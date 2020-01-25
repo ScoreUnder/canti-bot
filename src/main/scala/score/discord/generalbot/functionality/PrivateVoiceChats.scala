@@ -184,9 +184,7 @@ class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), 
       }
     }
 
-    commands register accept
-    commands register invite
-    commands register new Command.Anyone {
+    val privat: Command = new Command.Anyone {
       override def name = "private"
 
       override val aliases = List("prv", "pv", "voice")
@@ -201,119 +199,33 @@ class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), 
            |The name of the channel can be set by adding it to the end of the command.
            |e.g. `$invocation 3 Hangout number 1`""".stripMargin
 
-      private val mistakeRegex = """ (\d+)$""".r.unanchored
+      override def execute(message: Message, args: String): Unit = {
+        createUserOwnedChannelFromMessage(message, args, name, public = false)
+      }
+    }
+
+    val public: Command = new Command.Anyone {
+      override def name: String = "public"
+
+      override def aliases: Seq[String] = List("pbv", "pb")
+
+      override def description: String = "Create a public voice chat channel"
+
+      override def longDescription(invocation: String): String =
+        s"""This command creates a public voice channel.
+           |You may invite other users there using the `${commands.prefix}${invite.name}` command.
+           |The name of the channel can be set by adding it to the end of the command.
+           |e.g. `$invocation Hangout number 1`""".stripMargin
 
       override def execute(message: Message, args: String): Unit = {
-        val result =
-          for {
-            member <- CommandHelper(message).member
-            voiceChannel <- Option(member.getVoiceState.getChannel)
-              .toRight("You need to join voice chat before you can do this.")
-            (limit, name) = parseChannelDetails(args, voiceChannel)
-            guild = message.getGuild
-            channelReq <- createChannel(name, guild)
-          } yield {
-            val channel = message.getChannel
-            async {
-              addChannelPermissions(channelReq, member, limit)
-              channelReq setParent voiceChannel.getParent
-
-              val newVoiceChannel = await(channelReq.queueFuture())
-
-              {
-                ownerByChannel(newVoiceChannel) = message.getAuthor
-              }.failed.foreach { ex =>
-                APIHelper.failure("saving private channel")(ex)
-                newVoiceChannel.delete().queueFuture().failed.foreach(
-                  APIHelper.failure("deleting private channel after database error"))
-                ownerByChannel remove newVoiceChannel
-              }
-
-              val successMessage = BotMessages
-                .okay("Your channel has been created.")
-                .setTitle("Success", null)
-
-              if (limit == 0) args.trim match {
-                case mistakeRegex(mistake) =>
-                  val cutName = name.dropRight(mistake.length).trim
-                  val invocation = s"${commands.prefix}${this.name} $mistake $cutName"
-                  successMessage.addField(
-                    "Did you mean...?",
-                    s"You may have meant to type " +
-                      s"``${MessageUtils.sanitiseCode(invocation)}``, " +
-                      s"which will create a semi-public channel limited " +
-                      s"to $mistake users.",
-                    false
-                  )
-                case _ =>
-              }
-
-              channel.sendTemporary(successMessage)
-
-              APIHelper.tryRequest(
-                guild.moveVoiceMember(member, newVoiceChannel),
-                onFail = sendChannelMoveError(channel)
-              )
-            }.failed.foreach(APIHelper.loudFailure("creating private channel", channel))
-          }
-
-        for (err <- result.left)
-          message reply BotMessages.error(err)
+        createUserOwnedChannelFromMessage(message, args, name, public = true)
       }
-
-      private def addChannelPermissions(channelReq: ChannelAction[VoiceChannel], member: Member, limit: Int) = {
-        val guild = member.getGuild
-        if (limit == 0)
-        // If no limit, deny access to all users by default
-          channelReq
-            .addPermissionOverride(
-              guild.getPublicRole,
-              Collections.emptyList[Permission], util.Arrays.asList(Permission.VOICE_CONNECT)
-            )
-        else
-        // Otherwise, if there is a limit, use that and don't add extra permissions
-          channelReq
-            .setUserlimit(limit)
-
-        channelReq
-          .addPermissionOverride(
-            guild.getSelfMember,
-            SELF_PRIVATE_CHANNEL_PERMISSIONS, Collections.emptyList[Permission]
-          )
-          .addPermissionOverride(
-            member, CREATOR_PRIVATE_CHANNEL_PERMISSIONS, Collections.emptyList[Permission]
-          )
-      }
-
-      private def parseChannelDetails(args: String, originalChannel: VoiceChannel) = {
-        val trimmedArgs = args.trim
-        val (limit, name) = trimmedArgs.split(" ", 2) match {
-          case Array(limitStr, name_) => (limitStr, name_.trim)
-          case Array(maybeLimit) => (maybeLimit, "")
-        }
-
-        val maxNameLen = 100
-        limit.toIntOption
-          .filter(x => x >= 0 && x <= 99)
-          .map((_, name))
-          .getOrElse((0, trimmedArgs))
-        match {
-          case (limit_, name_) if name_.length > maxNameLen => (limit_, name_ take maxNameLen)
-          case (limit_, name_) if name_.length < 3 => (limit_, s"Private ${originalChannel.name}" take maxNameLen)
-          case x => x
-        }
-      }
-
-      private def createChannel(name: String, guild: Guild) =
-        Try(guild.createVoiceChannel(name)).toEither.left.map({
-          case _: PermissionException =>
-            "I don't have permission to create a voice channel. A server administrator will need to fix this."
-          case x =>
-            System.err.println("Printing a stack trace for failed channel creation:")
-            x.printStackTrace()
-            "Unknown error occurred when trying to create your channel."
-        })
     }
+
+    commands register accept
+    commands register invite
+    commands register privat
+    commands register public
   }
 
   private val CREATOR_PRIVATE_CHANNEL_PERMISSIONS =
@@ -321,6 +233,8 @@ class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), 
 
   private val SELF_PRIVATE_CHANNEL_PERMISSIONS =
     util.Arrays.asList(Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT)
+
+  private val mistakeRegex = """ (\d+)$""".r.unanchored
 
   private def translateChannelMoveError(ex: Throwable) = ex match {
     case _: IllegalStateException =>
@@ -334,6 +248,118 @@ class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), 
 
   private def sendChannelMoveError(chan: MessageChannel)(ex: Throwable) =
     chan sendTemporary BotMessages.error(translateChannelMoveError(ex))
+
+  private def createUserOwnedChannelFromMessage(message: Message, args: String, commandName: String, public: Boolean): Unit = {
+    val result =
+      for {
+        member <- CommandHelper(message).member
+        voiceChannel <- Option(member.getVoiceState.getChannel)
+          .toRight("You need to join voice chat before you can do this.")
+        (limit, name) = parseChannelDetails(args, voiceChannel, public)
+        guild = message.getGuild
+        channelReq <- createChannel(name, guild)
+      } yield {
+        val channel = message.getChannel
+        async {
+          addChannelPermissions(channelReq, member, limit, public)
+          channelReq setParent voiceChannel.getParent
+
+          val newVoiceChannel = await(channelReq.queueFuture())
+
+          {
+            ownerByChannel(newVoiceChannel) = message.getAuthor
+            }.failed.foreach { ex =>
+            APIHelper.failure("saving private channel")(ex)
+            newVoiceChannel.delete().queueFuture().failed.foreach(
+              APIHelper.failure("deleting private channel after database error"))
+            ownerByChannel remove newVoiceChannel
+          }
+
+          val successMessage = BotMessages
+            .okay("Your channel has been created.")
+            .setTitle("Success", null)
+
+          if (limit == 0) args.trim match {
+            case mistakeRegex(mistake) =>
+              val cutName = name.dropRight(mistake.length).trim
+              val invocation = s"${commands.prefix}$commandName $mistake $cutName"
+              successMessage.addField(
+                "Did you mean...?",
+                s"You may have meant to type " +
+                  s"``${MessageUtils.sanitiseCode(invocation)}``, " +
+                  s"which will create a semi-public channel limited " +
+                  s"to $mistake users.",
+                false
+              )
+            case _ =>
+          }
+
+          channel.sendTemporary(successMessage)
+
+          APIHelper.tryRequest(
+            guild.moveVoiceMember(member, newVoiceChannel),
+            onFail = sendChannelMoveError(channel)
+          )
+        }.failed.foreach(APIHelper.loudFailure("creating private channel", channel))
+      }
+
+    for (err <- result.left)
+      message reply BotMessages.error(err)
+  }
+
+  private def addChannelPermissions(channelReq: ChannelAction[VoiceChannel], member: Member, limit: Int, public: Boolean) = {
+    val guild = member.getGuild
+    if (limit == 0 && !public)
+    // If no limit, deny access to all users by default
+      channelReq
+        .addPermissionOverride(
+          guild.getPublicRole,
+          Collections.emptyList[Permission], util.Arrays.asList(Permission.VOICE_CONNECT)
+        )
+    else if (!public)
+    // Otherwise, if there is a limit, use that and don't add extra permissions
+      channelReq
+        .setUserlimit(limit)
+
+    channelReq
+      .addPermissionOverride(
+        guild.getSelfMember,
+        SELF_PRIVATE_CHANNEL_PERMISSIONS, Collections.emptyList[Permission]
+      )
+      .addPermissionOverride(
+        member, CREATOR_PRIVATE_CHANNEL_PERMISSIONS, Collections.emptyList[Permission]
+      )
+  }
+
+  private def parseChannelDetails(args: String, originalChannel: VoiceChannel, public: Boolean) = {
+    val trimmedArgs = args.trim
+    val (limit, name) = trimmedArgs.split(" ", 2) match {
+      case Array(limitStr, name_) => (limitStr, name_.trim)
+      case Array(maybeLimit) => (maybeLimit, "")
+    }
+
+    val maxNameLen = 100
+    limit.toIntOption
+      .filter(x => x >= 0 && x <= 99)
+      .map((_, name))
+      .getOrElse((0, trimmedArgs))
+    match {
+      case (limit_, name_) if name_.length > maxNameLen => (limit_, name_ take maxNameLen)
+      case (limit_, name_) if name_.length < 3 => (limit_, s"${if (public) "Public" else "Private"} " +
+        s"${originalChannel.name}" take maxNameLen)
+      case x => x
+    }
+  }
+
+  private def createChannel(name: String, guild: Guild) =
+    Try(guild.createVoiceChannel(name)).toEither.left.map({
+      case _: PermissionException =>
+        "I don't have permission to create a voice channel. A server administrator will need to fix this."
+      case x =>
+        System.err.println("Printing a stack trace for failed channel creation:")
+        x.printStackTrace()
+        "Unknown error occurred when trying to create your channel."
+    })
 
   override def onEvent(event: GenericEvent): Unit = event match {
     case ev: ReadyEvent =>
@@ -363,7 +389,6 @@ class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), 
         }
         await(removed) // Propagate exceptions
       }.failed.foreach(APIHelper.failure("processing initial private voice chat state"))
-
     case ev: GuildVoiceUpdateEvent =>
       Option(ev.getChannelLeft) match {
         case None => // Not a channel leave event
