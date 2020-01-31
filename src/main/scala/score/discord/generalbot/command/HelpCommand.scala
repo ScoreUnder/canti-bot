@@ -1,7 +1,8 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission._
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.{EmbedBuilder, JDA}
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -29,6 +30,11 @@ class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwne
       }).fold(BotMessages.error, identity).toMessage
     }
 
+  private def inviteLink(implicit jda: JDA) =
+    jda.getInviteUrl(
+      MANAGE_ROLES, MANAGE_CHANNEL, MESSAGE_MANAGE, VOICE_MOVE_OTHERS
+    )
+
   private def showCommandHelp(command: String) = {
     val unprefixed = command.stripPrefix(commands.prefix)
     commands.get(unprefixed)
@@ -42,6 +48,7 @@ class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwne
   }
 
   private def showHelpPage(message: Message, page: Int) = {
+    implicit val jda: JDA = message.getJDA
     val myCommands = commands.all.filter(_ checkPermission message)
     val pageOffset = pageSize * (page - 1)
     val numPages = (myCommands.length + pageSize - 1) / pageSize
@@ -59,6 +66,11 @@ class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwne
       for (command <- helpList) {
         embed appendDescription s"`${commands.prefix}${command.name}`: ${command.description}\n"
       }
+
+      embed.appendDescription(
+        "[Source code 🗒️](https://github.com/ScoreUnder/canti-bot) \\| " +
+          s"[Invite to your server 📥]($inviteLink)"
+      )
 
       Right(embed)
     }

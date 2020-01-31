@@ -68,7 +68,6 @@ class GeneralBot {
         commands register helpCommand
         commands register new PlayCommand(userId = config.owner)
         commands register new StopCommand(this, userId = config.owner)
-        commands register new BotInviteCommand
         commands register new FuriganaCommand
         commands register new BlameCommand
         commands register new BotInfoCommand(userId = config.owner)
