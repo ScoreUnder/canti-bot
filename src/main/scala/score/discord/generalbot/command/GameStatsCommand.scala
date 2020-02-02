@@ -27,11 +27,11 @@ class GameStatsCommand(implicit mo: MessageOwnership, replyCache: ReplyCache) ex
         case CHANNEL_REGEX(id) =>
           Option(message.getJDA.getTextChannelById(id))
         case "" =>
-          Option(message.getTextChannel)
+          message.textChannel
         case str =>
           val argsTrim = str.trim
           if (argsTrim.isEmpty) None
-          else Option(message.getGuild).flatMap(_.getTextChannelsByName(argsTrim, true).asScala.headOption)
+          else message.guild.flatMap(_.getTextChannelsByName(argsTrim, true).asScala.headOption)
       }
       val result = channel match {
         case None =>
@@ -57,7 +57,7 @@ class GameStatsCommand(implicit mo: MessageOwnership, replyCache: ReplyCache) ex
                   val game = MessageUtils.escapeFormatting(unescapedGame)
                   s"**$game** ($count users)" }
                 .mkString("\n"))
-              .stripMentions(message.getGuild)
+              .stripMentions(message.guild.orNull)
               .getStringBuilder
               .toString
           )

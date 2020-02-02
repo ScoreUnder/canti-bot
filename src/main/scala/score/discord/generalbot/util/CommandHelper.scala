@@ -2,13 +2,14 @@ package score.discord.generalbot.util
 
 import net.dv8tion.jda.api.entities.{Guild, Member}
 import net.dv8tion.jda.api.{MessageBuilder, entities}
+import score.discord.generalbot.wrappers.jda.Conversions._
 
 object CommandHelper {
   def apply(message: entities.Message): Message = new CommandHelper.Message(message)
 
   class Message(val _me: entities.Message) extends AnyVal {
     /** Either this message's guild, or a human-readable error */
-    def guild: Either[String, Guild] = Option(_me.getGuild).toRight("You can only use this command from within a server.")
+    def guild: Either[String, Guild] = _me.guild.toRight("You can only use this command from within a server.")
 
     /** Either this message's member, or a human-readable error */
     def member: Either[String, Member] =
@@ -37,4 +38,5 @@ object CommandHelper {
       builder.getStringBuilder.toString
     }
   }
+
 }

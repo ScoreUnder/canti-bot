@@ -27,7 +27,7 @@ object Command {
 
   trait ServerAdminOnly extends Command {
     override def checkPermission(message: Message) =
-      Option(message.getGuild).exists(_ getMember message.getAuthor hasPermission Permission.MANAGE_SERVER)
+      message.guild.exists(_ getMember message.getAuthor hasPermission Permission.MANAGE_SERVER)
 
     override def permissionMessage = "Only server admins may use this command."
   }

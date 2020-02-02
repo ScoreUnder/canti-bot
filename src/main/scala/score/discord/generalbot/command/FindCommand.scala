@@ -72,7 +72,7 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
       haystack.toLowerCase.toUpperCase.contains(searchTerm)
 
     var results: Seq[String] = Vector.empty
-    Option(message.getGuild) match {
+    message.guild match {
       case None =>
         // Private chat
         results ++= message.getChannel.participants

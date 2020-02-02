@@ -55,8 +55,6 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
       return
     }
 
-    val maybeGuild = Option(message.getGuild)
-
     async {
       message.getChannel.sendTyping().queue()
 
@@ -74,11 +72,10 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
       import net.dv8tion.jda.api.entities.Message.MentionType._
       val newMessage = new MessageBuilder()
         .append(origWithoutFuri)
-      maybeGuild match {
-        case Some(guild) =>
-          // Allow channel mentions - why not?
-          newMessage.stripMentions(guild, USER, ROLE, EVERYONE, HERE)
-        case None =>
+      message.guild.foreach { guild =>
+        // If this takes place in a guild, strip user mentions.
+        // Allow channel mentions - why not?
+        newMessage.stripMentions(guild, USER, ROLE, EVERYONE, HERE)
       }
       newMessage.getStringBuilder.insert(0, s"${message.getAuthor.mention} ")
       val newMsg = await(

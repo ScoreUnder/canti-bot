@@ -1,6 +1,6 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.{Guild, Message, TextChannel}
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -22,4 +22,12 @@ class RichMessage(val me: Message) extends AnyVal {
     me.getChannel.sendOwned(contents, me.getAuthor).tap(_.foreach { message =>
       replyCache += me.id -> message.id
     })
+
+  def guild: Option[Guild] =
+    if (me.isFromGuild) Some(me.getGuild)
+    else None
+
+  def textChannel: Option[TextChannel] =
+    if (me.isFromGuild) Some(me.getTextChannel)
+    else None
 }
