@@ -1,7 +1,9 @@
 package score.discord.generalbot.wrappers.jda
 
 import net.dv8tion.jda.api.requests.RestAction
+import score.discord.generalbot.wrappers.Scheduler
 
+import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
 
 class RichRestAction[T](val orig: RestAction[T]) extends AnyVal {
@@ -14,4 +16,7 @@ class RichRestAction[T](val orig: RestAction[T]) extends AnyVal {
     orig.queue(promise.success _, promise.failure _)
     promise.future
   }
+
+  def delay(duration: Duration)(implicit scheduler: Scheduler): RestAction[T] =
+    orig.delay(duration.length, duration.unit, scheduler.asJava)
 }

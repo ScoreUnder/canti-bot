@@ -1,5 +1,7 @@
 package score.discord.generalbot.wrappers.jda
 
+import java.util.concurrent.ScheduledExecutorService
+
 import net.dv8tion.jda.api.entities._
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.Scheduler
@@ -48,11 +50,10 @@ class RichMessageChannel(val channel: MessageChannel) extends AnyVal {
     * @param exec task scheduler
     */
   def sendTemporary(message: MessageFromX, duration: Duration = 10 seconds)(implicit exec: Scheduler): Unit =
-    channel.sendMessage(message.toMessage).queue({ message =>
-      exec.schedule(duration) {
-        message.delete().queue()
-      }
-    })
+    channel.sendMessage(message.toMessage)
+      .delay(duration)
+      .flatMap { message => message.delete() }
+      .queue()
 
   /** A list of all users in this channel */
   def participants: Seq[User] = channel match {
