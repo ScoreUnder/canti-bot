@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache, UserByVoiceChannel}
-import score.discord.generalbot.command.Command
+import score.discord.generalbot.command.{Command, ReplyingCommand}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.Scheduler
@@ -28,9 +28,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.chaining._
 import scala.util.{Failure, Success, Try}
 
-class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]], commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+class PrivateVoiceChats(
+  ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]],
+  defaultCategoryByGuild: AsyncMap[ID[Guild], ID[GuildChannel]],
+  commands: Commands,
+)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
 
   private type Timestamp = Long
@@ -222,10 +227,65 @@ class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), 
       }
     }
 
+    val defaultCategoryCmd: Command = new ReplyingCommand with Command.ServerAdminOnly {
+      override def name: String = "voicecategory"
+
+      override def aliases: Seq[String] = Vector("vccat")
+
+      override def description: String = "Set or query the default category for user-created voice chats"
+
+      override def longDescription(invocation: String): String =
+        s"""Query the default category for voice chats: `$invocation`
+           |Set the default category for voice chats: `$invocation category name` or `$invocation id`
+           |Unset the default category for voice chats: `$invocation none`
+           |""".stripMargin
+
+      override def executeAndGetMessage(message: Message, args: String): Future[Message] =
+        CommandHelper(message).guild.map { guild =>
+          args.trim match {
+            case "" => showCurrentCategory(guild)
+            case "none" => removeDefaultCategory(guild)
+            case arg => setDefaultCategory(guild, arg)
+          }
+        }.fold({e => Future.successful(BotMessages.error(e).toMessage)}, identity)
+
+      private def showCurrentCategory(guild: Guild): Future[Message] =
+        getGuildDefaultCategory(guild).map { opt =>
+          val cmd = s"${commands.prefix}$name"
+          describeCategoryBehaviour(opt)
+            .+(s"\nUse `$cmd category name` to select a category to place " +
+              s"these channels into, or `$cmd none` to undo this.")
+            .pipe(BotMessages.plain)
+            .toMessage
+        }
+
+      private def removeDefaultCategory(guild: Guild): Future[Message] =
+        defaultCategoryByGuild.remove(guild.id).map { _ =>
+          BotMessages.okay(describeCategoryBehaviour(None)).toMessage
+        }
+
+      private def setDefaultCategory(guild: Guild, categoryName: String): Future[Message] =
+        ParseUtils.findCategory(guild, categoryName)
+          .map { cat =>
+            (defaultCategoryByGuild(guild.id) = cat.id)
+              .map(_ => describeCategoryBehaviour(Some(cat)))
+          }
+          .fold(e => Future.successful(e.toMessage), _.map(s => BotMessages.okay(s).toMessage))
+
+      private def describeCategoryBehaviour(category: Option[Category]): String =
+        category.map(cat => s"User-created voice channels will be placed in <#${cat.getIdLong}> (${cat.getName}).")
+          .getOrElse("User-created voice channels will be placed in the same category as the channel they were created from.")
+
+      override def messageOwnership: MessageOwnership = PrivateVoiceChats.this.messageOwnership
+
+      override def replyCache: ReplyCache = PrivateVoiceChats.this.replyCache
+    }
+
     commands register accept
     commands register invite
     commands register privat
     commands register public
+    commands register defaultCategoryCmd
   }
 
   private val CREATOR_PRIVATE_CHANNEL_PERMISSIONS =
@@ -261,14 +321,18 @@ class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), 
       } yield {
         val channel = message.getChannel
         async {
+          val futureDefaultCategory = getGuildDefaultCategory(guild)
           addChannelPermissions(channelReq, member, limit, public)
-          channelReq setParent voiceChannel.getParent
+
+          val defaultCategory = await(futureDefaultCategory)
+          val category = defaultCategory.getOrElse(voiceChannel.getParent)
+          channelReq.setParent(category)
 
           val newVoiceChannel = await(channelReq.queueFuture())
 
           {
             ownerByChannel(newVoiceChannel) = message.getAuthor
-            }.failed.foreach { ex =>
+          }.failed.foreach { ex =>
             APIHelper.failure("saving private channel")(ex)
             newVoiceChannel.delete().queueFuture().failed.foreach(
               APIHelper.failure("deleting private channel after database error"))
@@ -359,6 +423,11 @@ class PrivateVoiceChats(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), 
         System.err.println("Printing a stack trace for failed channel creation:")
         x.printStackTrace()
         "Unknown error occurred when trying to create your channel."
+    })
+
+  private def getGuildDefaultCategory(guild: Guild): Future[Option[Category]] =
+    defaultCategoryByGuild.get(guild.id).map(_.flatMap { id =>
+      Option(guild.getCategoryById(id.value))
     })
 
   override def onEvent(event: GenericEvent): Unit = event match {

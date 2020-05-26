@@ -55,7 +55,7 @@ class GeneralBot {
         bot.addEventListeners(
           commands,
           new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000), commands),
-          new PrivateVoiceChats(userCreatedChannels, commands),
+          new PrivateVoiceChats(userCreatedChannels, new ChannelByGuild(dbConfig, "voice_default_category") withCache LruCache.empty(2000), commands),
           new DeleteOwnedMessages,
           conversations,
           new Spoilers(new StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100), commands, conversations),
