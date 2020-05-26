@@ -4,29 +4,29 @@ import java.util
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
-import net.dv8tion.jda.api.{JDA, Permission}
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
-import score.discord.generalbot.collections.{AsyncMap, ReplyCache, UserByVoiceChannel}
+import net.dv8tion.jda.api.{JDA, Permission}
+import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.{Command, ReplyingCommand}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.Scheduler
+import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.IdConversions._
-import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
 import scala.async.Async._
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.util.chaining._
 import scala.util.{Failure, Success, Try}
@@ -247,7 +247,7 @@ class PrivateVoiceChats(
             case "none" => removeDefaultCategory(guild)
             case arg => setDefaultCategory(guild, arg)
           }
-        }.fold({e => Future.successful(BotMessages.error(e).toMessage)}, identity)
+        }.fold({ e => Future.successful(BotMessages.error(e).toMessage) }, identity)
 
       private def showCurrentCategory(guild: Guild): Future[Message] =
         getGuildDefaultCategory(guild).map { opt =>
