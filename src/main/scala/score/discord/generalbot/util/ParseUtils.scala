@@ -4,10 +4,18 @@ import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.{Category, Guild, Role}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
-import scala.util.Try
 import scala.jdk.CollectionConverters._
 
 object ParseUtils {
+  private def searchGeneric[T](term: String, findOne: Long => T, findMany: String => java.util.List[T]): Seq[T] =
+    if (term.isEmpty)
+      Nil
+    else
+      term.toLongOption
+        .map(id => List(findOne(id)))
+        .getOrElse(findMany(term).asScala)
+        .toSeq
+
   /** Searches the given guild for a role by the given name/ID.
     * If the provided string is a valid Long, it will match by ID, otherwise
     * it will match by name.
@@ -18,13 +26,7 @@ object ParseUtils {
     * @return all roles that match
     */
   def searchRoles(guild: Guild, roleName: String): Seq[Role] =
-    if (roleName.isEmpty)
-      Nil
-    else
-      roleName.toLongOption
-        .map(id => List(guild.getRoleById(id)))
-        .getOrElse(guild.getRolesByName(roleName, true).asScala)
-        .toSeq
+    searchGeneric(roleName, guild.getRoleById, guild.getRolesByName(_, true))
 
   /** Searches the given guild for a single role by the given name/ID.
     * If there are multiple matches or no matches, a human-readable error
@@ -65,13 +67,7 @@ object ParseUtils {
     * @return all categories that match
     */
   def searchCategories(guild: Guild, categoryName: String): Seq[Category] =
-    if (categoryName.isEmpty)
-      Nil
-    else
-      categoryName.toLongOption
-        .map(id => List(guild.getCategoryById(id)))
-        .getOrElse(guild.getCategoriesByName(categoryName, true).asScala)
-        .toSeq
+    searchGeneric(categoryName, guild.getCategoryById, guild.getCategoriesByName(_, true))
 
   /** Searches the given guild for a single category by the given name/ID.
     * If there are multiple matches or no matches, a human-readable error
