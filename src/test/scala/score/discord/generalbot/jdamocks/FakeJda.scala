@@ -6,7 +6,7 @@ import java.util.concurrent.{ExecutorService, ScheduledExecutorService}
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.hooks.IEventManager
 import net.dv8tion.jda.api.managers.{AudioManager, DirectAudioController, Presence}
-import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.{GatewayIntent, RestAction}
 import net.dv8tion.jda.api.requests.restaction.GuildAction
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.cache.{CacheView, SnowflakeCacheView}
@@ -128,4 +128,16 @@ class FakeJda extends JDA {
   override def awaitStatus(status: JDA.Status, failOn: JDA.Status*): JDA = ???
 
   override def getUnavailableGuilds: util.Set[String] = ???
+
+  override def getGatewayIntents: util.EnumSet[GatewayIntent] = ???
+
+  override def unloadUser(userId: Long): Boolean = ???
+
+  override def cancelRequests(): Int = ???
+
+  override def retrieveUserById(id: Long, update: Boolean): RestAction[User] = ???
+
+  override def isUnavailable(guildId: Long): Boolean = ???
+
+  override def openPrivateChannelById(userId: Long): RestAction[PrivateChannel] = ???
 }

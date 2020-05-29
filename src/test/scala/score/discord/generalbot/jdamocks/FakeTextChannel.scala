@@ -105,4 +105,8 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   override def retrieveInvites(): RestAction[util.List[Invite]] = ???
 
   override def compareTo(o: GuildChannel): Int = ???
+
+  override def clearReactionsById(messageId: String, unicode: String): RestAction[Void] = ???
+
+  override def clearReactionsById(messageId: String, emote: Emote): RestAction[Void] = ???
 }

@@ -1,11 +1,12 @@
 package score.discord.generalbot.jdamocks
 
 import java.io.{File, InputStream}
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function.{BiConsumer, BooleanSupplier, Consumer}
 
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.{Message, MessageChannel, MessageEmbed}
+import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.MessageAction
 import net.dv8tion.jda.api.utils.AttachmentOption
 
@@ -53,4 +54,8 @@ class FakeMessageAction(message: Message) extends MessageAction {
   override def getJDA: JDA = ???
 
   override def submit(shouldQueue: Boolean): CompletableFuture[Message] = ???
+
+  override def deadline(timestamp: Long): MessageAction = ???
+
+  override def timeout(timeout: Long, unit: TimeUnit): MessageAction = ???
 }

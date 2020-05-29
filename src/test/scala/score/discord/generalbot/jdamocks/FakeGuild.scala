@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.requests.restaction.{AuditableRestAction, ChannelActi
 import net.dv8tion.jda.api.requests.restaction.order.{CategoryOrderAction, ChannelOrderAction, RoleOrderAction}
 import net.dv8tion.jda.api.requests.restaction.pagination.AuditLogPaginationAction
 import net.dv8tion.jda.api.utils.cache.{MemberCacheView, SnowflakeCacheView, SortedSnowflakeCacheView}
+import net.dv8tion.jda.api.utils.concurrent.Task
 import net.dv8tion.jda.api.{JDA, Region}
 
 class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
@@ -201,4 +202,18 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def retrieveMemberById(id: Long): RestAction[Member] = ???
 
   override def kick(userId: String, reason: String): AuditableRestAction[Void] = ???
+
+  override def pruneMemberCache(): Unit = ???
+
+  override def unloadMember(userId: Long): Boolean = ???
+
+  override def retrieveMetaData(): RestAction[Guild.MetaData] = ???
+
+  override def retrieveMemberById(id: Long, update: Boolean): RestAction[Member] = ???
+
+  override def retrieveMembersByIds(includePresence: Boolean, ids: Long*): Task[util.List[Member]] = ???
+
+  override def retrieveMembersByPrefix(prefix: String, limit: Int): Task[util.List[Member]] = ???
+
+  override def prune(days: Int, wait: Boolean): AuditableRestAction[Integer] = ???
 }
