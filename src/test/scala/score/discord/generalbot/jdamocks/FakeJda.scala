@@ -117,9 +117,9 @@ class FakeJda extends JDA {
 
   override def retrieveApplicationInfo(): RestAction[ApplicationInfo] = ???
 
-  override def getInviteUrl(permissions: Permission*): String = ???
+  override def getInviteUrl(permissions: Permission*): String = s"https://test.invalid/invite?perms=${permissions.map(_.name).mkString(",")}"
 
-  override def getInviteUrl(permissions: util.Collection[Permission]): String = ???
+  override def getInviteUrl(permissions: util.Collection[Permission]): String = getInviteUrl(permissions.asScala.toSeq: _*)
 
   override def getShardManager: ShardManager = ???
 

@@ -5,9 +5,6 @@ import org.scalatest._
 import score.discord.generalbot.TestFixtures
 import score.discord.generalbot.command.QuoteCommand
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-
 class QuoteCommandTest extends FlatSpec with Matchers {
   val fixture = TestFixtures.default
 
@@ -15,20 +12,12 @@ class QuoteCommandTest extends FlatSpec with Matchers {
   import implicits._
 
   val quoterChannel = botChannel
-  val quoterAuthor = commandUser
   val quoteeChannel = exampleChannel
 
-  val cmd = new QuoteCommand
+  commands.register(new QuoteCommand)
 
-  def quoteCommandTest(invocation: String, expected: String): Unit = {
-    val quotingMessage = quoterChannel.addMessage(invocation, quoterAuthor)
-
-    val future = cmd.executeFuture(quotingMessage, invocation.drop(invocation.indexOf(" ") + 1))
-    Await.result(future, Duration.Inf)
-
-    quoterChannel.retrieveMessageById(quoterChannel.getLatestMessageId).complete()
-      .getEmbeds.get(0).getDescription should include(expected)
-  }
+  def quoteCommandTest(invocation: String, expected: String): Unit =
+    testCommand(invocation).getEmbeds.get(0).getDescription should include(expected)
 
   "The &quote command" should "understand id + channel mention" in {
     quoteCommandTest(s"&quote ${quoteeMessage.getIdLong} ${quoteeChannel.getAsMention}", quoteeMessageData)

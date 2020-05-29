@@ -2,11 +2,16 @@ package score.discord.generalbot
 
 import java.util.concurrent.Executors
 
+import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.collections.{MessageCache, NullCacheBackend, ReplyCache}
+import score.discord.generalbot.command.ReplyingCommand
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.jdamocks.{FakeJda, FakeUser}
 import score.discord.generalbot.wrappers.Scheduler
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 object TestFixtures {
   def default = new {
@@ -37,6 +42,21 @@ object TestFixtures {
     val commands = {
       import implicits._
       new Commands
+    }
+
+    def testCommand(invocation: String): Message = {
+      val quotingMessage = botChannel.addMessage(invocation, commandUser)
+      val (cmdName, args) = commands.splitCommand(invocation)
+        .getOrElse(throw new IllegalArgumentException("Command does not start with prefix"))
+
+      val future = commands.get(cmdName) match {
+        case Some(cmd: ReplyingCommand) =>
+          cmd.executeFuture(quotingMessage, args)
+        case Some(_) => throw new UnsupportedOperationException("Non-ReplyingCommand being tested")
+        case None => throw new IllegalArgumentException("Bad command")
+      }
+
+      Await.result(future, Duration.Inf)
     }
   }
 }
