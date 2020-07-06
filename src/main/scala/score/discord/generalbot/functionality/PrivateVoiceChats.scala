@@ -306,7 +306,7 @@ class PrivateVoiceChats(
       "An error occurred while trying to move you to another channel."
   }
 
-  private def sendChannelMoveError(chan: MessageChannel)(ex: Throwable) =
+  private def sendChannelMoveError(chan: MessageChannel)(ex: Throwable): Unit =
     chan sendTemporary BotMessages.error(translateChannelMoveError(ex))
 
   private def createUserOwnedChannelFromMessage(message: Message, args: String, commandName: String, public: Boolean): Unit = {
