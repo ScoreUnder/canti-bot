@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
-import score.discord.generalbot.command.Command
+import score.discord.generalbot.command.{Command, ReplyingCommand}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.ParseUtils._
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper, GuildUserId}
@@ -19,6 +19,7 @@ import score.discord.generalbot.wrappers.jda.ID
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -43,29 +44,30 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     }
   }
 
-  commands register new Command.Anyone {
+  commands register new ReplyingCommand with Command.Anyone {
     override def name = "voicerole"
 
     override def aliases = List("getvoicerole")
 
     override def description = "Check the voice chat role"
 
-    override def execute(message: Message, args: String): Unit = {
+    override implicit def messageOwnership: MessageOwnership = VoiceRoles.this.messageOwnership
+
+    override implicit def replyCache: ReplyCache = VoiceRoles.this.replyCache
+
+    override def executeAndGetMessage(message: Message, args: String): Future[Message] =
       async {
         implicit val jda = message.getJDA
-        message.reply(
-          (CommandHelper(message).guild match {
-            case Left(err) => BotMessages error err
-            case Right(guild) =>
-              await(roleByGuild.get(guild.id))
-                .flatMap(_.find)
-                .toRight(BotMessages.plain("There is currently no voice chat role set."))
-                .map(role => BotMessages okay s"The voice chat role is currently set to ${role.mention}.")
-                .fold(identity, identity)
-          }).toMessage
-        )
+        (CommandHelper(message).guild match {
+          case Left(err) => BotMessages error err
+          case Right(guild) =>
+            await(roleByGuild.get(guild.id))
+              .flatMap(_.find)
+              .toRight(BotMessages.plain("There is currently no voice chat role set."))
+              .map(role => BotMessages.okay(s"The voice chat role is currently set to ${role.mention}."))
+              .fold(identity, identity)
+        }).toMessage
       }
-    }
   }
 
   commands register new Command.ServerAdminOnly {
