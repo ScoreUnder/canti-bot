@@ -2,6 +2,7 @@ package score.discord.generalbot
 
 import java.io.{File, IOException}
 import java.net.URLClassLoader
+import java.util
 import java.util.concurrent.{Executors, ScheduledExecutorService}
 
 import com.typesafe.config.ConfigFactory
@@ -20,6 +21,7 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import CacheCoordinator._
+import net.dv8tion.jda.api.requests.GatewayIntent
 import score.discord.generalbot.functionality.voicekick.VoiceKick
 
 object GeneralBot extends App {
@@ -33,11 +35,22 @@ class GeneralBot {
   def start(): Unit = {
     discord match {
       case None =>
-        val bot = new JDABuilder(AccountType.BOT)
+        val config = Config.load(rawConfig)
+        val bot = JDABuilder.create(config.token, {
+          import GatewayIntent._
+          util.Arrays.asList(
+            GUILD_EMOJIS, /* &find */
+            GUILD_MEMBERS, /* &find, probably a lot of other things too */
+            GUILD_MESSAGE_REACTIONS, /* Voice kick, &help, &spoiler, delete owned messages */
+            GUILD_MESSAGES, /* commands in general */
+            GUILD_PRESENCES, /* &find */
+            GUILD_VOICE_STATES, /* Voice kick, private voice chats */
+            DIRECT_MESSAGES, /* Same as GUILD_MESSAGES */
+            DIRECT_MESSAGE_REACTIONS, /* Same as GUILD_MESSAGE_REACTIONS */
+          )})
         val rawConfig = ConfigFactory.load(URLClassLoader.newInstance(Array(
           new File(".").toURI.toURL
         )))
-        val config = Config.load(rawConfig)
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
@@ -45,8 +58,6 @@ class GeneralBot {
         implicit val messageCache = new MessageCache
         implicit val replyCache = new ReplyCache
         val userCreatedChannels = new UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
-
-        bot.setToken(config.token)
 
         val commands = new Commands
         val quoteCommand = new QuoteCommand
