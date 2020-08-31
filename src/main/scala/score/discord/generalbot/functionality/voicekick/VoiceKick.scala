@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.managers.Manager
 import net.dv8tion.jda.api.requests.ErrorResponse._
 import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
@@ -263,11 +264,17 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
         .getOrElse((0L, 0L))
 
     if ((originalPerms._2 & Permission.VOICE_CONNECT.getRawValue) == 0) {
-      val futureReq = APIHelper.tryRequest(
-        voiceChannel.getManager.putPermissionOverride(member,
-          originalPerms._1 & ~Permission.VOICE_CONNECT.getRawValue,
-          originalPerms._2 | Permission.VOICE_CONNECT.getRawValue),
-        onFail = APIHelper.loudFailure(s"adding voice tempban permissions to ${voiceChannel.mention} for ${member.getUser.mention}", logChannel))
+      val futureReq = APIHelper.tryRequest({
+        // XXX Oh my god static mutable globals in a multithreaded environment
+        // XXX Hack: JDA seems to consistently get the wrong idea about permissions here for some reason.
+        Manager.setPermissionChecksEnabled(false)
+        try
+          voiceChannel.getManager.putPermissionOverride(member,
+            originalPerms._1 & ~Permission.VOICE_CONNECT.getRawValue,
+            originalPerms._2 | Permission.VOICE_CONNECT.getRawValue)
+        finally
+          Manager.setPermissionChecksEnabled(true)
+      }, onFail = APIHelper.loudFailure(s"adding voice tempban permissions to ${voiceChannel.mention} for ${member.getUser.mention}", logChannel))
 
       // Whether we need to explicitly grant the permission back
       val explicitGrant = (originalPerms._1 & Permission.VOICE_CONNECT.getRawValue) != 0
