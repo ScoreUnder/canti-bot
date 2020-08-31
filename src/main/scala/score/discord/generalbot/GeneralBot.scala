@@ -35,6 +35,9 @@ class GeneralBot {
   def start(): Unit = {
     discord match {
       case None =>
+        val rawConfig = ConfigFactory.load(URLClassLoader.newInstance(Array(
+          new File(".").toURI.toURL
+        )))
         val config = Config.load(rawConfig)
         val bot = JDABuilder.create(config.token, {
           import GatewayIntent._
@@ -47,9 +50,6 @@ class GeneralBot {
             DIRECT_MESSAGES, /* Same as GUILD_MESSAGES */
             DIRECT_MESSAGE_REACTIONS, /* Same as GUILD_MESSAGE_REACTIONS */
           )})
-        val rawConfig = ConfigFactory.load(URLClassLoader.newInstance(Array(
-          new File(".").toURI.toURL
-        )))
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
