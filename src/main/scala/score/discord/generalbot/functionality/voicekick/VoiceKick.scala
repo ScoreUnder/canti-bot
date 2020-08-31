@@ -1,7 +1,6 @@
 package score.discord.generalbot.functionality.voicekick
 
 import net.dv8tion.jda.api.entities._
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.managers.Manager
@@ -18,7 +17,7 @@ import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.IdConversions._
-import score.discord.generalbot.wrappers.jda.matching.Events.NonBotReact
+import score.discord.generalbot.wrappers.jda.matching.Events.{GuildVoiceUpdate, NonBotReact}
 import score.discord.generalbot.wrappers.jda.matching.React
 
 import scala.collection.mutable
@@ -416,10 +415,8 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
         vote <- getEmojiMeaning(emoji)
         member <- Option(channel.getGuild.getMember(user))
       } updateKickVote(channel, msgId, vote, member)
-    case ev: GuildVoiceUpdateEvent =>
-      for (channel <- Option(ev.getChannelLeft)) {
-        removeUserFromVote(ev.getEntity, channel)
-      }
+    case GuildVoiceUpdate(member, Some(channel), _) =>
+      removeUserFromVote(member, channel)
     case _ =>
   }
 }

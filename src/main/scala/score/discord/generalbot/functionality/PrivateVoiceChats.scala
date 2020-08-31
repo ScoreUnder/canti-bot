@@ -5,7 +5,6 @@ import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 import net.dv8tion.jda.api.entities._
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
@@ -19,6 +18,7 @@ import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.IdConversions._
+import score.discord.generalbot.wrappers.jda.matching.Events.GuildVoiceUpdate
 import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
 import scala.async.Async._
@@ -458,20 +458,15 @@ class PrivateVoiceChats(
         }
         await(removed) // Propagate exceptions
       }.failed.foreach(APIHelper.failure("processing initial private voice chat state"))
-    case ev: GuildVoiceUpdateEvent =>
-      Option(ev.getChannelLeft) match {
-        case None => // Not a channel leave event
-        case Some(channel) if channel.getMembers.isEmpty =>
-          // Last person to leave a channel
-          async {
-            val user = await(ownerByChannel(channel))
-            if (user.isDefined) {
-              await(channel.delete.queueFuture())
-              await(ownerByChannel remove channel)
-            }
-          }.failed.foreach(APIHelper.failure("deleting unused private channel"))
-        case _ => // Channel leave, but not last person
-      }
+    case GuildVoiceUpdate(_, Some(leftChannel), _) if leftChannel.getMembers.isEmpty =>
+        // Last person to leave a channel
+        async {
+          val user = await(ownerByChannel(leftChannel))
+          if (user.isDefined) {
+            await(leftChannel.delete.queueFuture())
+            await(ownerByChannel remove leftChannel)
+          }
+        }.failed.foreach(APIHelper.failure("deleting unused private channel"))
 
     case _ =>
   }

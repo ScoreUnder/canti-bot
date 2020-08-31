@@ -1,6 +1,7 @@
 package score.discord.generalbot.wrappers.jda.matching
 
 import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.api.events.message.{MessageDeleteEvent, MessageReceivedEvent, MessageUpdateEvent}
 import score.discord.generalbot.collections.MessageCache
@@ -38,6 +39,15 @@ object Events {
   object MessageDelete {
     def unapply(ev: MessageDeleteEvent): Option[ID[Message]] =
       Some(new ID[Message](ev.getMessageIdLong))
+  }
+
+  object GuildVoiceUpdate {
+    def unapply(ev: GuildVoiceUpdateEvent): Option[(Member, Option[VoiceChannel], Option[VoiceChannel])] =
+      Some((ev.getEntity, Option(ev.getChannelLeft), Option(ev.getChannelJoined)))
+
+    // To hint to the IDE what the name of each unapplied parameter is (ctrl+P in intelliJ)
+    private def apply(member: Member, leftChannel: Option[VoiceChannel], joinedChannel: Option[VoiceChannel]) =
+      throw new UnsupportedOperationException
   }
 
 }
