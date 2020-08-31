@@ -26,8 +26,6 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
        |This might find users called score in the server.
        |`$invocation blob`
        |This might find blob emotes on the server.
-       |`$invocation fortnite`
-       |This might find users playing fortnite on the server.
        |
        |So far, this searches roles, emotes, users, and games.
     """.stripMargin
@@ -90,13 +88,6 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
             containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
               Option(m.getNickname).exists(n => containsSearchTerm(s"@$n")))
           .map(m => s"**User** ${m.getUser.mentionWithName}: `${m.getUser.getId}`")
-        results ++= (for {
-          member <- guild.getMembers.asScala.view
-          activity <- member.getActivities.asScala
-          name = activity.getName
-          if containsSearchTerm(name)
-          safeName = MessageUtils.sanitise(name)
-        } yield s"**Game** ${member.getUser.mentionWithName} playing $safeName")
     }
     results
   }

@@ -43,7 +43,6 @@ class GeneralBot {
             GUILD_MEMBERS, /* &find, probably a lot of other things too */
             GUILD_MESSAGE_REACTIONS, /* Voice kick, &help, &spoiler, delete owned messages */
             GUILD_MESSAGES, /* commands in general */
-            GUILD_PRESENCES, /* &find */
             GUILD_VOICE_STATES, /* Voice kick, private voice chats */
             DIRECT_MESSAGES, /* Same as GUILD_MESSAGES */
             DIRECT_MESSAGE_REACTIONS, /* Same as GUILD_MESSAGE_REACTIONS */
@@ -82,7 +81,6 @@ class GeneralBot {
         commands register new FuriganaCommand
         commands register new BlameCommand
         commands register new BotInfoCommand(userId = config.owner)
-        commands register new GameStatsCommand
         commands register new FindCommand
         commands register quoteCommand
         val readCommand = new ReadCommand(messageCache)
