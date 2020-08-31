@@ -87,7 +87,14 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
           .filter(m =>
             containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
               Option(m.getNickname).exists(n => containsSearchTerm(s"@$n")))
-          .map(m => s"**User** ${m.getUser.mentionWithName}: `${m.getUser.getId}`")
+          .map(m => {
+            val u = m.getUser
+            val nick = Option(m.getNickname)
+              .map(MessageUtils.sanitise)
+              .map(name => s" (aka $name)")
+              .getOrElse("")
+            s"**User** ${u.mentionWithName}$nick: `${u.getId}`"
+          })
     }
     results
   }
