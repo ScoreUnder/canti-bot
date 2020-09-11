@@ -2,14 +2,18 @@ package score.discord.generalbot.command
 
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
-import score.discord.generalbot.util.{BotMessages, MessageUtils}
+import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.matching.Events.NonBotReact
+import score.discord.generalbot.wrappers.jda.matching.React
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters._
 
 class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name: String = "find"
@@ -18,7 +22,7 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
 
   override def description: String = "Finds a role, user or emoji by name"
 
-  override def longDescription(invocation: String) =
+  override def longDescription(invocation: String): String =
     s"""Usage:
        |`$invocation mod`
        |This might find the moderator roles on the server.
@@ -41,7 +45,12 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
   private def makeSearchReply(message: Message, searchTerm: String): EmbedBuilder = {
     val maxResults = 10
     val searchTermSanitised = MessageUtils.sanitiseCode(searchTerm)
-    val results = getSearchResults(message, searchTerm).take(maxResults + 1).toVector
+    val results = getSearchResults(message, searchTerm)
+      .take(maxResults + 1)
+      .zip(ReactListener.ICONS.iterator ++ Iterator.continually(""))
+      .map { case (msg, icon) => s"$icon: $msg" }
+      .toVector
+
     if (results.isEmpty) {
       BotMessages.plain(s"No results found for ``$searchTermSanitised``")
     } else {
@@ -54,10 +63,10 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
           s"__Got ${results.size} results for ``$searchTermSanitised``__"
 
       val footer =
-        if (results.size > maxResults)
-          "\n**...and more**"
+        (if (results.size > maxResults)
+          "\n**...and more**\n"
         else
-          ""
+          "\n") + ReactListener.SEARCHABLE_MESSAGE_TAG
 
       BotMessages.okay(s"$header\n${results take maxResults mkString "\n"}$footer")
     }
@@ -97,5 +106,29 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
           })
     }
     results
+  }
+
+  object ReactListener extends EventListener {
+    val ICONS = Vector("0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "\uD83D\uDD1F")
+    val SEARCHABLE_MESSAGE_TAG = "React with one of the icons above to make it easier to copy the ID on mobile"
+    val LINE_REGEX = (ICONS.mkString("(", "|", ")") + ":.*`(\\d+)`").r.unanchored
+
+    override def onEvent(event: GenericEvent): Unit = event match {
+      case NonBotReact(React.Text(react), msgId, channel, user) =>
+        implicit val jda = event.getJDA
+        val iconInd = ICONS.indexOf(react)
+        if (iconInd != -1) {
+          for {
+            Some(`user`) <- messageOwnership(msgId)
+            msg <- APIHelper.tryRequest(channel.retrieveMessageById(msgId.value), onFail = APIHelper.failure("retrieving reacted message"))
+            embed <- msg.getEmbeds.asScala
+            if embed.getDescription.contains(SEARCHABLE_MESSAGE_TAG)
+            LINE_REGEX(`react`, selected) <- embed.getDescription.split("\n")
+          } {
+            APIHelper.tryRequest(msg.editMessage(selected), onFail = APIHelper.failure("editing message for reaction"))
+          }
+        }
+      case _ =>
+    }
   }
 }

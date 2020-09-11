@@ -60,6 +60,7 @@ class GeneralBot {
 
         val commands = new Commands
         val quoteCommand = new QuoteCommand
+        val findCommand = new FindCommand
         val conversations = new Conversations
         val voiceKick = new VoiceKick(userCreatedChannels, new VoiceBanExpiryTable(dbConfig, "voice_ban_expiries"))
         bot.addEventListeners(
@@ -70,6 +71,7 @@ class GeneralBot {
           conversations,
           new Spoilers(new StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100), commands, conversations),
           new quoteCommand.GreentextListener,
+          findCommand.ReactListener,
           voiceKick,
           messageCache)
 
@@ -81,7 +83,7 @@ class GeneralBot {
         commands register new FuriganaCommand
         commands register new BlameCommand
         commands register new BotInfoCommand(userId = config.owner)
-        commands register new FindCommand
+        commands register findCommand
         commands register quoteCommand
         val readCommand = new ReadCommand(messageCache)
         if (readCommand.available) commands register readCommand
