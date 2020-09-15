@@ -1,6 +1,6 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.{EmbedBuilder, JDA}
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
@@ -111,13 +111,12 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
   object ReactListener extends EventListener {
     val ICONS = Vector("0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "\uD83D\uDD1F")
     val SEARCHABLE_MESSAGE_TAG = "React with one of the icons above to make it easier to copy the ID on mobile"
-    val LINE_REGEX = (ICONS.mkString("(", "|", ")") + ":.*`(\\d+)`").r.unanchored
+    private val LINE_REGEX = (ICONS.mkString("(", "|", ")") + ":.*`(\\d+)`").r.unanchored
 
     override def onEvent(event: GenericEvent): Unit = event match {
       case NonBotReact(React.Text(react), msgId, channel, user) =>
-        implicit val jda = event.getJDA
-        val iconInd = ICONS.indexOf(react)
-        if (iconInd != -1) {
+        implicit val jda: JDA = event.getJDA
+        if (ICONS contains react) {
           for {
             Some(`user`) <- messageOwnership(msgId)
             msg <- APIHelper.tryRequest(channel.retrieveMessageById(msgId.value), onFail = APIHelper.failure("retrieving reacted message"))
