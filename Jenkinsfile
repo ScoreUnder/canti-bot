@@ -5,14 +5,10 @@ pipeline {
             steps {
                 checkout scm
                 sh 'sbt compile'
-                stash includes: 'project/target/**', name: 'project'
-                stash includes: 'target/**', name: 'build'
             }
         }
         stage('Test') {
             steps {
-                unstash 'project'
-                unstash 'build'
                 sh 'sbt test'
             }
             post {
@@ -23,8 +19,6 @@ pipeline {
         }
         stage('Package') {
             steps {
-                unstash 'project'
-                unstash 'build'
                 sh 'sbt assembly'
             }
             post {
