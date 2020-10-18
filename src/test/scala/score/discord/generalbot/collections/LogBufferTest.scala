@@ -47,9 +47,20 @@ class LogBufferTest extends FlatSpec with Matchers {
 
   "iterator" should "return the same results as sequential apply()" in {
     val capacity = 10
-    val buf = bufWithContent(content = 1 to capacity * 4, capacity = capacity)
-    buf.iterator.zipWithIndex.map {
-      case (v, i) => v should be(buf(i))
+    val buf = new LogBuffer[Int](capacity)
+
+    def iteratorChecks(): Unit = {
+      buf.iterator.zipWithIndex.map {
+        case (v, i) => v should be(buf(i))
+      }
+      buf.iterator.toVector should equal(buf.toVector)
+      buf.iterator.size should equal(buf.size)
+    }
+
+    iteratorChecks()  // Test empty case
+    1 to capacity*4 foreach { n =>
+      buf ::= n
+      iteratorChecks()
     }
   }
 
