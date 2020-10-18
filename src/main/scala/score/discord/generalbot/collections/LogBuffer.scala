@@ -29,14 +29,17 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T] {
   }
 
   override def apply(idx: Int) =
-    buffer((idx + writePos) % buffer.length).asInstanceOf[T]
+    buffer(idxToBufferIdx(idx)).asInstanceOf[T]
 
   override def update(idx: Int, elem: T): Unit =
-    buffer((idx + writePos) % buffer.length) = elem
+    buffer(idxToBufferIdx(idx)) = elem
+
+  private def idxToBufferIdx(idx: Int) =
+    (idx + writePos) % buffer.length
 
   def findAndUpdate(condition: T => Boolean)(replace: T => T): this.type = {
     this synchronized {
-      val index = this.indexWhere(condition.asInstanceOf[Any => Boolean])
+      val index = this.indexWhere(condition)
       if (index != -1)
         this(index) = replace(this(index))
     }
