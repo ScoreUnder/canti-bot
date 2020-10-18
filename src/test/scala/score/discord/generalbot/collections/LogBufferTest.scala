@@ -28,9 +28,11 @@ class LogBufferTest extends FlatSpec with Matchers {
   }
 
   it should "fail when the buffer is empty" in {
-    assertThrows[IndexOutOfBoundsException] {
-      new LogBuffer[Int](20).head
+    val buf = new LogBuffer[Int](20)
+    assertThrows[NoSuchElementException] {
+      buf.head
     }
+    buf.headOption should be(None)
   }
 
   "last" should "be equal to the first added element, while capacity is not exceeded" in {
@@ -52,9 +54,11 @@ class LogBufferTest extends FlatSpec with Matchers {
   }
 
   it should "fail when the buffer is empty" in {
+    val buf = new LogBuffer[Int](20)
     assertThrows[IndexOutOfBoundsException] {
-      new LogBuffer[Int](20).last
+      buf.last
     }
+    buf.lastOption should be(None)
   }
 
   "apply(0)" should "be the same as head" in {

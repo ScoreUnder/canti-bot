@@ -34,8 +34,11 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T] {
   override def update(idx: Int, elem: T): Unit =
     buffer(idxToBufferIdx(idx)) = elem
 
-  private def idxToBufferIdx(idx: Int) =
+  private def idxToBufferIdx(idx: Int) = {
+    if (idx < 0 || idx >= size)
+      throw new IndexOutOfBoundsException(s"$idx out of bounds for buffer of size $size")
     (idx + writePos) % buffer.length
+  }
 
   def findAndUpdate(condition: T => Boolean)(replace: T => T): this.type = {
     val index = this.indexWhere(condition)
@@ -51,6 +54,8 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T] {
     override def hasNext: Boolean = myPos != readPos || !iterated
 
     override def next(): T = {
+      if (!hasNext)
+        throw new NoSuchElementException
       val pos = myPos
       val result = buffer(pos).asInstanceOf[T]
       myPos = pos + 1 match {
