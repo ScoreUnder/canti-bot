@@ -27,6 +27,12 @@ class LogBufferTest extends FlatSpec with Matchers {
     }
   }
 
+  it should "fail when the buffer is empty" in {
+    assertThrows[IndexOutOfBoundsException] {
+      new LogBuffer[Int](20).head
+    }
+  }
+
   "last" should "be equal to the first added element, while capacity is not exceeded" in {
     val capacity = 10
     val buf = new LogBuffer[Int](capacity)
@@ -42,6 +48,38 @@ class LogBufferTest extends FlatSpec with Matchers {
     capacity to capacity*4 foreach { n =>
       buf ::= n
       buf.last should be(n - (capacity - 1))
+    }
+  }
+
+  it should "fail when the buffer is empty" in {
+    assertThrows[IndexOutOfBoundsException] {
+      new LogBuffer[Int](20).last
+    }
+  }
+
+  "apply(0)" should "be the same as head" in {
+    val capacity = 10
+    val buf = new LogBuffer[Int](capacity)
+    1 to capacity*4 foreach { n =>
+      buf ::= n
+      buf(0) should equal(buf.head)
+    }
+  }
+
+  it should "fail when the buffer is empty" in {
+    assertThrows[IndexOutOfBoundsException] {
+      new LogBuffer[Int](20)(0)
+    }
+  }
+
+  "apply(n)" should "fail when n >= size" in {
+    val capacity = 10
+    val buf = new LogBuffer[Int](capacity)
+    1 until capacity foreach { n =>
+      buf ::= n
+      assertThrows[IndexOutOfBoundsException] {
+        buf(n)
+      }
     }
   }
 
@@ -82,6 +120,10 @@ class LogBufferTest extends FlatSpec with Matchers {
     buf should not contain 123
     buf.size should be(5)
     buf.toSeq should equal(5 to 1 by -1)
+  }
+
+  it should "not run when the collection is empty" in {
+    new LogBuffer[Int](20).findAndUpdate(_ => true)(_ => throw new AssertionError)
   }
 
   "isEmpty" should "return true when empty" in {
