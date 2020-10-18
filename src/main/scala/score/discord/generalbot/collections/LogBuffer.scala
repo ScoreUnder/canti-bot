@@ -16,7 +16,7 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T] {
 
   override def isEmpty: Boolean = isEmpty_
 
-  def ::=(elem: T): Unit = this synchronized {
+  def ::=(elem: T): Unit = {
     val nextWrite = writePos match {
       case 0 => buffer.length - 1
       case x => x - 1
@@ -38,11 +38,9 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T] {
     (idx + writePos) % buffer.length
 
   def findAndUpdate(condition: T => Boolean)(replace: T => T): this.type = {
-    this synchronized {
-      val index = this.indexWhere(condition)
-      if (index != -1)
-        this(index) = replace(this(index))
-    }
+    val index = this.indexWhere(condition)
+    if (index != -1)
+      this(index) = replace(this(index))
     this
   }
 

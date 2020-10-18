@@ -39,10 +39,15 @@ class MessageCache(capacity: Int = 2000) extends EventListener {
   override def onEvent(event: GenericEvent): Unit = {
     event match {
       case ev: MessageReceivedEvent =>
-        messages ::= toBareMessage(ev.getMessage)
+        val bareMessage = toBareMessage(ev.getMessage)
+        messages.synchronized {
+          messages ::= bareMessage
+        }
       case ev: MessageUpdateEvent =>
         val msgId = ev.getMessage.id
-        messages.findAndUpdate(_.messageId == msgId)(_.copy(text = ev.getMessage.getContentRaw))
+        messages.synchronized {
+          messages.findAndUpdate(_.messageId == msgId)(_.copy(text = ev.getMessage.getContentRaw))
+        }
       case _ =>
     }
   }
