@@ -1,9 +1,10 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.api.{EmbedBuilder, JDA}
+import com.google.re2j.{PatternSyntaxException, Pattern => RE2JPattern}
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.{EmbedBuilder, JDA}
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, MessageUtils}
@@ -14,6 +15,7 @@ import score.discord.generalbot.wrappers.jda.matching.React
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name: String = "find"
@@ -45,38 +47,44 @@ class FindCommand(implicit val messageOwnership: MessageOwnership, val replyCach
   private def makeSearchReply(message: Message, searchTerm: String): EmbedBuilder = {
     val maxResults = 10
     val searchTermSanitised = MessageUtils.sanitiseCode(searchTerm)
-    val results = getSearchResults(message, searchTerm)
-      .take(maxResults + 1)
-      .zip(ReactListener.ICONS.iterator ++ Iterator.continually(""))
-      .map { case (msg, icon) => s"$icon: $msg" }
-      .toVector
+    Try(RE2JPattern.compile(searchTerm, RE2JPattern.CASE_INSENSITIVE))
+      .map { searchPattern =>
+        val results = getSearchResults(message, searchPattern)
+          .take(maxResults + 1)
+          .zip(ReactListener.ICONS.iterator ++ Iterator.continually(""))
+          .map { case (msg, icon) => s"$icon: $msg" }
+          .toVector
 
-    if (results.isEmpty) {
-      BotMessages.plain(s"No results found for ``$searchTermSanitised``")
-    } else {
-      val header =
-        if (results.size > maxResults)
-          s"__First $maxResults results for ``$searchTermSanitised``__"
-        else if (results.size == 1)
-          s"__Got one result for ``$searchTermSanitised``__"
-        else
-          s"__Got ${results.size} results for ``$searchTermSanitised``__"
+        if (results.isEmpty) {
+          BotMessages.plain(s"No results found for ``$searchTermSanitised``")
+        } else {
+          val header =
+            if (results.size > maxResults)
+              s"__First $maxResults results for ``$searchTermSanitised``__"
+            else if (results.size == 1)
+              s"__Got one result for ``$searchTermSanitised``__"
+            else
+              s"__Got ${results.size} results for ``$searchTermSanitised``__"
 
-      val footer =
-        (if (results.size > maxResults)
-          "\n**...and more**\n"
-        else
-          "\n") + ReactListener.SEARCHABLE_MESSAGE_TAG
+          val footer =
+            (if (results.size > maxResults)
+              "\n**...and more**\n"
+            else
+              "\n") + ReactListener.SEARCHABLE_MESSAGE_TAG
 
-      BotMessages.okay(s"$header\n${results take maxResults mkString "\n"}$footer")
-    }
+          BotMessages.okay(s"$header\n${results take maxResults mkString "\n"}$footer")
+        }
+      }
+      .recover {
+        case e: PatternSyntaxException =>
+          BotMessages.error(s"Could not parse regex for $name command: ${e.getDescription}")
+      }
+      .get
   }
 
-  private def getSearchResults(message: Message, origSearchTerm: String): Seq[String] = {
-    val searchTerm = origSearchTerm.toLowerCase.toUpperCase
-
-    def containsSearchTerm(haystack: String) =
-      haystack.toLowerCase.toUpperCase.contains(searchTerm)
+  private def getSearchResults(message: Message, searchPattern: RE2JPattern): Seq[String] = {
+    @inline def containsSearchTerm(haystack: String) =
+      searchPattern.matcher(haystack).find()
 
     var results: Seq[String] = Vector.empty
     message.guild match {
