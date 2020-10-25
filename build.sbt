@@ -7,11 +7,11 @@ lazy val root = (project in file(".")).
       scalaVersion := "2.13.1",
       version      := "0.1.0-SNAPSHOT"
     )),
-    name := "generalbot",
+    name := "canti-bot",
     resolvers += "jcenter-bintray" at "https://jcenter.bintray.com",
     libraryDependencies ++= Seq(
       scalaTest % Test,
-      "net.dv8tion" % "JDA" % "4.1.1_155",
+      "net.dv8tion" % "JDA" % "4.2.0_211",
       "org.apache.commons" % "commons-lang3" % "3.5",
       "org.xerial" % "sqlite-jdbc" % "3.16.1",
       "com.typesafe.slick" %% "slick" % "3.3.2",

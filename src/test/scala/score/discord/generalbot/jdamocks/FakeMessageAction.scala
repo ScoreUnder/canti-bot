@@ -1,11 +1,12 @@
 package score.discord.generalbot.jdamocks
 
 import java.io.{File, InputStream}
+import java.util
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function.{BiConsumer, BooleanSupplier, Consumer}
 
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{Message, MessageChannel, MessageEmbed}
+import net.dv8tion.jda.api.entities.{IMentionable, Message, MessageChannel, MessageEmbed}
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.MessageAction
 import net.dv8tion.jda.api.utils.AttachmentOption
@@ -58,4 +59,12 @@ class FakeMessageAction(message: Message) extends MessageAction {
   override def deadline(timestamp: Long): MessageAction = ???
 
   override def timeout(timeout: Long, unit: TimeUnit): MessageAction = ???
+
+  override def allowedMentions(allowedMentions: util.Collection[Message.MentionType]): MessageAction = ???
+
+  override def mention(mentions: IMentionable*): MessageAction = ???
+
+  override def mentionUsers(userIds: String*): MessageAction = ???
+
+  override def mentionRoles(roleIds: String*): MessageAction = ???
 }

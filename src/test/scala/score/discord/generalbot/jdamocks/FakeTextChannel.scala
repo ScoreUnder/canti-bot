@@ -33,15 +33,13 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def deleteMessagesByIds(messageIds: util.Collection[String]): RestAction[Void] = ???
 
-  override def retrieveMessageById(messageId: Long): RestAction[Message] = new FakeMessageAction(cachedMessages(messageId))
-
   override def deleteWebhookById(id: String): AuditableRestAction[Void] = ???
 
   override def clearReactionsById(messageId: String): RestAction[Void] = ???
 
   override def removeReactionById(messageId: String, unicode: String, user: User): RestAction[Void] = ???
 
-  override def retrieveMessageById(messageId: String): RestAction[Message] = retrieveMessageById(ID.fromString(messageId).value)
+  override def retrieveMessageById(messageId: String): RestAction[Message] = new FakeMessageAction(cachedMessages(ID.fromString(messageId).value))
 
   override def canTalk: Boolean = ???
 
@@ -109,4 +107,6 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   override def clearReactionsById(messageId: String, unicode: String): RestAction[Void] = ???
 
   override def clearReactionsById(messageId: String, emote: Emote): RestAction[Void] = ???
+
+  override def isNews: Boolean = ???
 }

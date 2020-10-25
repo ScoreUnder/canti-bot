@@ -43,7 +43,7 @@ class GeneralBot {
           import GatewayIntent._
           util.Arrays.asList(
             GUILD_EMOJIS, /* &find */
-            GUILD_MEMBERS, /* &find, probably a lot of other things too */
+            GUILD_MEMBERS, /* &find, voice roles, probably other things too */
             GUILD_MESSAGE_REACTIONS, /* Voice kick, &help, &spoiler, delete owned messages */
             GUILD_MESSAGES, /* commands in general */
             GUILD_VOICE_STATES, /* Voice kick, private voice chats */

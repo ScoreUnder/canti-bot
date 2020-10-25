@@ -1,7 +1,9 @@
 package score.discord.generalbot.jdamocks
 
 import java.util
+import java.util.Locale
 import java.util.concurrent.CompletableFuture
+import java.util.function.Consumer
 
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.managers.{AudioManager, GuildManager}
@@ -147,8 +149,6 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
 
   override def modifyNickname(member: Member, nickname: String): AuditableRestAction[Void] = ???
 
-  override def prune(days: Int): AuditableRestAction[Integer] = ???
-
   override def kick(member: Member, reason: String): AuditableRestAction[Void] = ???
 
   override def ban(user: User, delDays: Int, reason: String): AuditableRestAction[Void] = ???
@@ -170,10 +170,6 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def modifyMemberRoles(member: Member, roles: util.Collection[Role]): AuditableRestAction[Void] = ???
 
   override def transferOwnership(newOwner: Member): AuditableRestAction[Void] = ???
-
-  override def createTextChannel(name: String): ChannelAction[TextChannel] = ???
-
-  override def createVoiceChannel(name: String): ChannelAction[VoiceChannel] = ???
 
   override def createCategory(name: String): ChannelAction[Category] = ???
 
@@ -199,8 +195,6 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
 
   override def retrieveMembers(): CompletableFuture[Void] = ???
 
-  override def retrieveMemberById(id: Long): RestAction[Member] = ???
-
   override def kick(userId: String, reason: String): AuditableRestAction[Void] = ???
 
   override def pruneMemberCache(): Unit = ???
@@ -215,5 +209,13 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
 
   override def retrieveMembersByPrefix(prefix: String, limit: Int): Task[util.List[Member]] = ???
 
-  override def prune(days: Int, wait: Boolean): AuditableRestAction[Integer] = ???
+  override def getLocale: Locale = ???
+
+  override def loadMembers(callback: Consumer[Member]): Task[Void] = ???
+
+  override def prune(days: Int, wait: Boolean, roles: Role*): AuditableRestAction[Integer] = ???
+
+  override def createTextChannel(name: String, parent: Category): ChannelAction[TextChannel] = ???
+
+  override def createVoiceChannel(name: String, parent: Category): ChannelAction[VoiceChannel] = ???
 }
