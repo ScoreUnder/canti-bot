@@ -1,9 +1,11 @@
 package score.discord.generalbot.command
 
-import net.dv8tion.jda.api.MessageBuilder
+import java.util.Collections
+
 import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.Furigana
 import score.discord.generalbot.collections.ReplyCache
+import score.discord.generalbot.command.FuriganaCommand.sendFuriMessage
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -11,6 +13,8 @@ import score.discord.generalbot.wrappers.jda.Conversions._
 import scala.async.Async._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.chaining._
 
 class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone {
 
@@ -67,22 +71,22 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
           commandHelper.mentionsToPlaintext(t._2))))
       }
 
-      val imageBytes = Furigana.renderPNG(furiText)
-
-      import net.dv8tion.jda.api.entities.Message.MentionType._
-      val newMessage = new MessageBuilder()
-        .append(origWithoutFuri)
-      message.guild.foreach { guild =>
-        // If this takes place in a guild, strip user mentions.
-        // Allow channel mentions - why not?
-        newMessage.stripMentions(guild, USER, ROLE, EVERYONE, HERE)
-      }
-      newMessage.getStringBuilder.insert(0, s"${message.getAuthor.mention} ")
-      val newMsg = await(
-        message.getChannel.sendFile(imageBytes, "furigana.png")
-          .append(newMessage.getStringBuilder.toString)
-          .queueFuture())
-      messageOwnership(newMsg) = message.getAuthor
+      await(sendFuriMessage(replyingTo = message, furigana = furiText, plain = origWithoutFuri))
     }.failed foreach APIHelper.loudFailure("rendering furigana", message.getChannel)
+  }
+}
+
+object FuriganaCommand {
+  def sendFuriMessage(replyingTo: Message, furigana: Iterable[(String, String)], plain: String)
+                     (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] = {
+    replyingTo.getChannel.sendFile(Furigana.renderPNG(furigana), "furigana.png")
+      .append(s"${replyingTo.getAuthor.mention} $plain")
+      .allowedMentions(Collections.emptySet)
+      .mention(replyingTo.getAuthor)
+      .queueFuture()
+      .tap(_.foreach { newMsg =>
+        messageOwnership(newMsg) = replyingTo.getAuthor
+        replyCache += replyingTo.id -> newMsg.id
+      })
   }
 }

@@ -5,10 +5,7 @@ import java.nio.CharBuffer
 import java.nio.charset.CodingErrorAction
 import java.util.concurrent.TimeUnit
 
-import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.entities.Message.MentionType
-import score.discord.generalbot.Furigana
 import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper}
@@ -34,7 +31,7 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
 
   override def description = "Show the romaji and furigana readings of Japanese text"
 
-  override def longDescription(invocation: String) =
+  override def longDescription(invocation: String): String =
     s"""When invoked alone (with no message), acts on the previous message in the channel.
        |Otherwise, give this command some text to work with.
        |Example: $invocation 藁で束ねても男一匹
@@ -59,20 +56,8 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
         val romajiFuture = queryKakasi(KAKASI_ROMAJI, input)
 
         val furigana = processFurigana(await(furiganaFuture))
-        val image = Furigana.renderPNG(furigana)
 
-        val romaji = await(romajiFuture)
-        val romajiMessage =
-          new MessageBuilder()
-            .append(message.getAuthor.mention)
-            .append(' ')
-            .append(romaji)
-            .stripMentions(message.getJDA, MentionType.EVERYONE, MentionType.HERE)
-            .getStringBuilder
-            .toString
-
-        val finalMessage = await(message.getChannel.sendFile(image, "furigana.png").append(romajiMessage).queueFuture())
-        messageOwnership(finalMessage) = message.getAuthor
+        await(FuriganaCommand.sendFuriMessage(message, furigana, await(romajiFuture)))
       }
     }.failed.foreach(APIHelper.loudFailure("displaying kakasi reading", message.getChannel))
   }
@@ -80,7 +65,7 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
   private def processFurigana(raw: String): Iterable[(String, String)] = {
     val spaces = WHITESPACE.findAllMatchIn(raw).map(_.start).toVector
     (for {
-      positions <- (List(0) ++ spaces.map(_ + 1)) zip (spaces ++ List(raw.length))
+      positions <- (0 +: spaces.map(_ + 1)) zip (spaces :+ raw.length)
       (start, end) = positions
     } yield {
       val elem = raw.slice(start, end)
@@ -98,7 +83,7 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
   private def queryKakasi(cmd: Array[String], text: String): Future[String] = {
     async {
       val withDict =
-        if (DICT_FILE.exists()) cmd ++ Array(DICT_FILE.getPath)
+        if (DICT_FILE.exists()) cmd :+ DICT_FILE.getPath
         else cmd
       val kakasi = Runtime.getRuntime.exec(withDict)
       val os = kakasi.getOutputStream
