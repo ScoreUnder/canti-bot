@@ -5,7 +5,7 @@ import java.util
 import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.wrappers.jda.ID
 
-class ReplyCache(val capacity: Int = 100) {
+class ReplyCache(capacity: Int = 100) {
   private[this] val replies = new util.LinkedHashMap[ID[Message], ID[Message]] {
     override def removeEldestEntry(eldest: util.Map.Entry[ID[Message], ID[Message]]): Boolean =
       size > capacity
