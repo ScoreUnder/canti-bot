@@ -366,7 +366,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
     }
   }
 
-  private def removeUserFromVote(member: Member, channel: VoiceChannel): Unit = Future {
+  private def removeUserFromVote(member: Member): Unit = Future {
     implicit val jda: JDA = member.getJDA
     blocking {
       pendingKicks.synchronized {
@@ -415,8 +415,8 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
         vote <- getEmojiMeaning(emoji)
         member <- Option(channel.getGuild.getMember(user))
       } updateKickVote(channel, msgId, vote, member)
-    case GuildVoiceUpdate(member, Some(channel), _) =>
-      removeUserFromVote(member, channel)
+    case GuildVoiceUpdate(member, Some(_), _) =>
+      removeUserFromVote(member)
     case _ =>
   }
 }
