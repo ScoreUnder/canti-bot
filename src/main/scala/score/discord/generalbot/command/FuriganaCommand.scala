@@ -5,19 +5,17 @@ import java.util.Collections
 import net.dv8tion.jda.api.entities.Message
 import score.discord.generalbot.Furigana
 import score.discord.generalbot.collections.ReplyCache
-import score.discord.generalbot.command.FuriganaCommand.sendFuriMessage
+import score.discord.generalbot.command.FuriganaCommand.{FURI_PATTERN, sendFuriMessage}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.async.Async._
-import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.chaining._
 
 class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone {
-
   override def name = "furigana"
 
   override def aliases = List("furi", "fg", "f")
@@ -30,28 +28,16 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
        |This will then be rendered into an image, with the furigana text on top of the corresponding kanji.
     """.stripMargin
 
-  def parseInput(args: String): Seq[(String, String)] = {
-    var input = args.trim
-    val arr = mutable.ArrayBuffer.empty[(String, String)]
-    while (!input.isEmpty) {
-      {
-        val plain = input.takeWhile(!"{｛".contains(_))
-        input = input drop (plain.length + 1)
-        if (!plain.isEmpty)
-          arr ++= plain.split("\n", -1).view.flatMap(line => List(("\n", ""), (line, ""))).tail
+  def parseInput(args: String): Seq[(String, String)] =
+    FURI_PATTERN.findAllMatchIn(args)
+      .flatMap { m =>
+        m.group("other") match {
+          case null => Seq((m.group("left"), m.group("right")))
+          case other => other.split("\n", -1).flatMap(line => Seq(("\n", ""), (line, ""))).tail
+        }
       }
-
-      {
-        val literal = input.takeWhile(!":：".contains(_))
-        input = input drop (literal.length + 1)
-        val phonetic = input.takeWhile(!"}｝".contains(_))
-        input = input drop (phonetic.length + 1)
-        if (!literal.isEmpty || !phonetic.isEmpty)
-          arr += ((literal, phonetic))
-      }
-    }
-    arr.toSeq
-  }
+      .filter(t => !t._1.isEmpty || !t._2.isEmpty)
+      .toSeq
 
   override def execute(message: Message, args: String): Unit = {
     if (args.isEmpty) {
@@ -77,6 +63,8 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
 }
 
 object FuriganaCommand {
+  private val FURI_PATTERN = raw"[｛{](?<left>[^：:]*)[：:](?<right>[^｝}]*)[｝}]|(?<other>[^{｛]+)".r
+
   def sendFuriMessage(replyingTo: Message, furigana: Iterable[(String, String)], plain: String)
                      (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] = {
     replyingTo.getChannel.sendFile(Furigana.renderPNG(furigana), "furigana.png")
