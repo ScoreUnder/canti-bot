@@ -29,7 +29,7 @@ class LogBufferTest extends FlatSpec with Matchers {
 
   it should "fail when the buffer is empty" in {
     val buf = new LogBuffer[Int](20)
-    assertThrows[NoSuchElementException] {
+    assertThrows[IndexOutOfBoundsException] {
       buf.head
     }
     buf.headOption should be(None)
