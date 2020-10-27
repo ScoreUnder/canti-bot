@@ -8,6 +8,7 @@ lazy val root = (project in file(".")).
       version      := "0.1.0-SNAPSHOT"
     )),
     name := "canti-bot",
+    scalacOptions ++= List("-deprecation", "-unchecked", "-feature", "-Xasync"),
     resolvers += "jcenter-bintray" at "https://jcenter.bintray.com",
     libraryDependencies ++= Seq(
       scalaTest % Test,
