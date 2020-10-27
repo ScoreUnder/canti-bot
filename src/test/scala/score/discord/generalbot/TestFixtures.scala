@@ -14,7 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object TestFixtures {
-  def default = new {
+  class DefaultFixture private[TestFixtures] {
     val jda = new FakeJda
     val guild = jda.makeGuild()
     val exampleChannel = guild.makeTextChannel("funny-stuff")
@@ -32,7 +32,7 @@ object TestFixtures {
     val quotee3MessageData = "Message in the same channel as the command"
     val quotee3Message = botChannel.addMessage(quotee3MessageData, secondaryUser)
 
-    val implicits = new {
+    object implicits {
       implicit val messageOwnership: MessageOwnership = new MessageOwnership(new NullCacheBackend)
       implicit val messageCache: MessageCache = new MessageCache
       implicit val replyCache: ReplyCache = new ReplyCache
@@ -59,4 +59,6 @@ object TestFixtures {
       Await.result(future, Duration.Inf)
     }
   }
+
+  def default = new DefaultFixture
 }
