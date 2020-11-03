@@ -97,7 +97,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
   }
 
   private def getMessageAsQuote(cmdMessage: Message, ch: MessageChannel, msg: Message) = {
-    val chanName = Option(ch.getName).map("#" + _).getOrElse("Untitled channel")
+    val chanName = Option(ch.getName).fold("Untitled channel")("#" + _)
     val sender = msg.getAuthor
 
     val quote = BotMessages
@@ -108,24 +108,20 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
 
     val embeds = msg.getEmbeds.asScala
 
-    embeds.flatMap(emb => Option(emb.getImage)).headOption match {
-      case Some(image) => quote.setImage(image.getUrl)
-      case None =>
-    }
-
-    // Overwrite embed preview image with uploaded image if applicable
-    // as uploaded image is "more important"
     msg.getAttachments.asScala.find(_.isImage) match {
       case Some(image) => quote.setImage(image.getUrl)
       case None =>
+        embeds.flatMap(emb => Option(emb.getImage)).headOption.foreach { image =>
+          quote.setImage(image.getUrl)
+        }
     }
 
-    for (embed <- embeds; desc <- Option(embed.getDescription)) {
-      quote.addField("[Embed description]", desc, false)
-    }
+    embeds.foreach { embed =>
+      Option(embed.getDescription).foreach { desc =>
+        quote.addField("[Embed description]", desc, false)
+      }
 
-    for (embed <- embeds; field <- embed.getFields.asScala) {
-      quote.addField(field)
+      embed.getFields.asScala.foreach(quote.addField)
     }
 
     quote
