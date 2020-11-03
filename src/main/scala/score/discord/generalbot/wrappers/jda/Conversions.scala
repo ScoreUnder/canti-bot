@@ -35,16 +35,8 @@ object Conversions {
     def toMessage = new MessageBuilder().append(me).build
   }
 
-  implicit class MessageFromMessageBuilder(me: MessageBuilder) extends MessageFromX {
-    def toMessage = new MessageBuilder().append(me).build
-  }
-
   implicit class MessageFromEmbedBuilder(me: EmbedBuilder) extends MessageFromX {
     def toMessage = new MessageBuilder().setEmbed(me.build).build
-  }
-
-  implicit class MessageFromEmbed(me: MessageEmbed) extends MessageFromX {
-    def toMessage = new MessageBuilder().setEmbed(me).build
   }
 
   implicit class MessageFromMessage(me: Message) extends MessageFromX {
