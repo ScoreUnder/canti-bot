@@ -9,20 +9,20 @@ import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import net.dv8tion.jda.api.{AccountType, JDA, JDABuilder}
+import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.{JDA, JDABuilder}
+import score.discord.generalbot.collections.CacheCoordinator._
 import score.discord.generalbot.collections._
 import score.discord.generalbot.command._
 import score.discord.generalbot.functionality._
 import score.discord.generalbot.functionality.ownership.{DeleteOwnedMessages, MessageOwnership}
+import score.discord.generalbot.functionality.voicekick.VoiceKick
 import score.discord.generalbot.wrappers.Scheduler
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import CacheCoordinator._
-import net.dv8tion.jda.api.requests.GatewayIntent
-import score.discord.generalbot.functionality.voicekick.VoiceKick
 
 object GeneralBot extends App {
   new GeneralBot().start()
