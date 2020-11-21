@@ -3,6 +3,7 @@ package score.discord.generalbot.command
 import java.time.{Duration, Instant}
 
 import net.dv8tion.jda.api.entities.Message
+import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.APIHelper
 import score.discord.generalbot.util.TimeUtils.formatTimeDiff
@@ -11,7 +12,7 @@ import score.discord.generalbot.wrappers.jda.Conversions._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
+class PingCommand(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone {
   override def name: String = "ping"
 
   override def aliases = Nil
