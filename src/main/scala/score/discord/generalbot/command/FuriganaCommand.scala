@@ -69,7 +69,7 @@ object FuriganaCommand {
                      (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] = {
     replyingTo.reply(Furigana.renderPNG(furigana), "furigana.png")
       .mentionRepliedUser(false)
-      .append(plain)
+      .append(plain.take(2000))
       .allowedMentions(Collections.emptySet)
       .queueFuture()
       .tap(_.foreach { newMsg =>
