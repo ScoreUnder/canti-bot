@@ -1,8 +1,10 @@
 package score.discord.generalbot.util
 
-import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.{Message, MessageChannel}
 import net.dv8tion.jda.api.exceptions.{ErrorResponseException, PermissionException}
 import net.dv8tion.jda.api.requests.{ErrorResponse, RestAction}
+import score.discord.generalbot.collections.ReplyCache
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -31,6 +33,22 @@ object APIHelper {
   def loudFailure(whatFailed: String, channel: MessageChannel)(exception: Throwable): Unit = {
     failure(whatFailed)(exception)
     channel ! BotMessages.error(
+      exception match {
+        case _: PermissionException => s"Error when $whatFailed: I don't have permission for that"
+        case Error(x) => s"Error when $whatFailed: ${x.getMeaning}"
+        case _ => s"Unknown error occurred when $whatFailed"
+      })
+  }
+
+  /** Similar to [[APIHelper#failure]], but also sends an "unknown error" message in chat.
+    *
+    * @param whatFailed what you were doing to cause the exception, described for the users and bot owner
+    * @param message    the message to reply with "unknown error" to
+    * @param exception  the exception to print
+    */
+  def loudFailure(whatFailed: String, message: Message)(exception: Throwable)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Unit = {
+    failure(whatFailed)(exception)
+    message ! BotMessages.error(
       exception match {
         case _: PermissionException => s"Error when $whatFailed: I don't have permission for that"
         case Error(x) => s"Error when $whatFailed: ${x.getMeaning}"

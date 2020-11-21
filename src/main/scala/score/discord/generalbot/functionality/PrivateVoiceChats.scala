@@ -363,7 +363,7 @@ class PrivateVoiceChats(
             guild.moveVoiceMember(member, newVoiceChannel),
             onFail = sendChannelMoveError(message)
           )
-        }.failed.foreach(APIHelper.loudFailure("creating private channel", message.getChannel))
+        }.failed.foreach(APIHelper.loudFailure("creating private channel", message))
       }
 
     for (err <- result.left)

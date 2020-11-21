@@ -81,7 +81,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
       async {
         await(roleByGuild remove message.getGuild.id)
         message.addReaction("👌").queue()
-      }.failed.foreach(APIHelper.loudFailure("removing voice role", message.getChannel))
+      }.failed.foreach(APIHelper.loudFailure("removing voice role", message))
     }
   }
 

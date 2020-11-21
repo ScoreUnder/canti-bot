@@ -58,7 +58,7 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
       }
 
       await(sendFuriMessage(replyingTo = message, furigana = furiText, plain = origWithoutFuri))
-    }.failed foreach APIHelper.loudFailure("rendering furigana", message.getChannel)
+    }.failed foreach APIHelper.loudFailure("rendering furigana", message)
   }
 }
 

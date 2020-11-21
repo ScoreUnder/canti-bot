@@ -50,7 +50,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, 
     override def execute(message: Message, args: String): Unit = {
       async {
         APIHelper.tryRequest(message.delete(),
-          onFail = APIHelper.loudFailure("deleting a message", message.getChannel))
+          onFail = APIHelper.loudFailure("deleting a message", message))
 
         args.trim match {
           case "" =>
@@ -58,7 +58,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, 
           case trimmed =>
             await(createSpoiler(message.getChannel, message.getAuthor, trimmed))
         }
-      }.failed.foreach(APIHelper.loudFailure("running spoiler command", message.getChannel))
+      }.failed.foreach(APIHelper.loudFailure("running spoiler command", message))
     }
 
     private def createSpoilerConversation(message: Message) = {

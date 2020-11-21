@@ -59,7 +59,7 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
 
         await(FuriganaCommand.sendFuriMessage(message, furigana, await(romajiFuture)))
       }
-    }.failed.foreach(APIHelper.loudFailure("displaying kakasi reading", message.getChannel))
+    }.failed.foreach(APIHelper.loudFailure("displaying kakasi reading", message))
   }
 
   private def processFurigana(raw: String): Iterable[(String, String)] = {

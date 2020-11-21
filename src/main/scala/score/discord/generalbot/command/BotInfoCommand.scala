@@ -32,6 +32,6 @@ class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: M
         .addField("Servers", s"${allGuilds.size}", true)
         .addField("Top servers", topGuilds.mkString("\n"), false)
         .setThumbnail(me.getIconUrl))
-    }.failed.foreach(APIHelper.loudFailure("getting bot info", message.getChannel))
+    }.failed.foreach(APIHelper.loudFailure("getting bot info", message))
   }
 }

@@ -51,6 +51,6 @@ class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.A
       _ = messageOwnership(pingMessage) = message.getAuthor
       _ <- pingMessage.editMessage(getPingMessage(timeSent, timeReallySent, timeOnServer, timeReceived)).queueFuture()
     } yield ())
-      .failed.foreach(APIHelper.loudFailure("checking ping", message.getChannel))
+      .failed.foreach(APIHelper.loudFailure("checking ping", message))
   }
 }
