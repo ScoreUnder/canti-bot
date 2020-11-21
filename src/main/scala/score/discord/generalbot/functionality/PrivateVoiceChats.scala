@@ -76,10 +76,10 @@ class PrivateVoiceChats(
           voiceMention = s"<#${voiceChannel.rawId}>"
         } yield APIHelper.tryRequest(
           message.getGuild.moveVoiceMember(member, voiceChannel),
-          onFail = sendChannelMoveError(channel)
+          onFail = sendChannelMoveError(message)
         ).foreach { _ =>
           invites.remove(GuildUserId(member))
-          channel sendTemporary BotMessages
+          message ! BotMessages
             .okay(s"Moved you into the $voiceMention channel.")
             .setTitle(s"$memberName: Success!", null)
         }
@@ -88,7 +88,7 @@ class PrivateVoiceChats(
           val errEmbed = BotMessages.error(err)
           for (member <- member)
             errEmbed.setTitle(s"${member.getEffectiveName}: Error", null)
-          channel sendTemporary errEmbed
+          message ! errEmbed
         }
       }
     }
@@ -306,8 +306,8 @@ class PrivateVoiceChats(
       "An error occurred while trying to move you to another channel."
   }
 
-  private def sendChannelMoveError(chan: MessageChannel)(ex: Throwable): Unit =
-    chan sendTemporary BotMessages.error(translateChannelMoveError(ex))
+  private def sendChannelMoveError(replyTo: Message)(ex: Throwable): Unit =
+    replyTo ! BotMessages.error(translateChannelMoveError(ex))
 
   private def createUserOwnedChannelFromMessage(message: Message, args: String, commandName: String, public: Boolean): Unit = {
     val result =
@@ -319,7 +319,6 @@ class PrivateVoiceChats(
         guild = message.getGuild
         channelReq <- createChannel(name, guild)
       } yield {
-        val channel = message.getChannel
         async {
           val futureDefaultCategory = getGuildDefaultCategory(guild)
           addChannelPermissions(channelReq, member, limit, public)
@@ -358,13 +357,13 @@ class PrivateVoiceChats(
             case _ =>
           }
 
-          channel.sendTemporary(successMessage)
+          message ! successMessage
 
           APIHelper.tryRequest(
             guild.moveVoiceMember(member, newVoiceChannel),
-            onFail = sendChannelMoveError(channel)
+            onFail = sendChannelMoveError(message)
           )
-        }.failed.foreach(APIHelper.loudFailure("creating private channel", channel))
+        }.failed.foreach(APIHelper.loudFailure("creating private channel", message.getChannel))
       }
 
     for (err <- result.left)

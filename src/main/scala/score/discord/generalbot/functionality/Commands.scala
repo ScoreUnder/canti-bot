@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.command.Command
+import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -13,7 +14,7 @@ import score.discord.generalbot.wrappers.jda.matching.Events.{NonBotMessage, Non
 import scala.collection.mutable
 import scala.util.chaining._
 
-class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache: ReplyCache) extends EventListener {
+class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache: ReplyCache, messageOwnership: MessageOwnership) extends EventListener {
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
   // Commands list excluding aliases
@@ -105,7 +106,7 @@ class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache:
   def runIfAllowed(message: Message, cmd: Command, cmdExtra: String): Either[String, Command] =
     canRunCommand(cmd, message).tap {
       case Right(_) => cmd.execute(message, cmdExtra)
-      case Left(err) => message.getChannel sendTemporary BotMessages.error(err)
+      case Left(err) => message ! BotMessages.error(err)
     }
 
   override def onEvent(event: GenericEvent): Unit = {
