@@ -18,7 +18,7 @@ class RichMessage(val me: Message) extends AnyVal {
     * @param replyCache reply cache
     * @return the new Message, wrapped in Future
     */
-  def reply(contents: MessageFromX)(implicit mo: MessageOwnership, replyCache: ReplyCache): Future[Message] =
+  def !(contents: MessageFromX)(implicit mo: MessageOwnership, replyCache: ReplyCache): Future[Message] =
     me.getChannel.sendOwned(contents, me.getAuthor).tap(_.foreach { message =>
       replyCache += me.id -> message.id
     })

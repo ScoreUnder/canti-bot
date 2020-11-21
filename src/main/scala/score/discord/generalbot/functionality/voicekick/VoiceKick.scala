@@ -137,7 +137,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
           (kickState, guildTextChannel, msg, voiceChan, mentioned)
         }
 
-        result.left.foreach { err => message reply BotMessages.error(err) }
+        result.left.foreach { err => message ! BotMessages.error(err) }
 
         for (resultRight <- result;
              (kickState, guildTextChannel, successMsg, voiceChan, mentioned) = resultRight;
@@ -146,10 +146,10 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
           ownerOption match {
             case Some(owner) if owner == message.getAuthor =>
               kickVoiceMember(voiceChan, mentioned, textChannel)
-              message reply BotMessages.okay(
+              message ! BotMessages.okay(
                 s"${mentioned.getAsMention} was forcibly kicked from #${voiceChan.name} by the owner ${owner.getAsMention}")
             case _ =>
-              for (botMsg <- message reply successMsg) {
+              for (botMsg <- message ! successMsg) {
                 // Record our message ID and initial kick state in pendingKicks
                 blocking {
                   pendingKicks.synchronized {

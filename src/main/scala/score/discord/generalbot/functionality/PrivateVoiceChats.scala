@@ -127,7 +127,7 @@ class PrivateVoiceChats(
         response.fold(
           x => Future.successful(BotMessages.error(x): MessageFromX),
           x => x.map(s => s: MessageFromX)
-        ) foreach (message reply _)
+        ) foreach (message ! _)
       }
 
       def inviteUsers(channel: VoiceChannel, inviter: User, invitees: Seq[User]): Future[String] = {
@@ -368,7 +368,7 @@ class PrivateVoiceChats(
       }
 
     for (err <- result.left)
-      message reply BotMessages.error(err)
+      message ! BotMessages.error(err)
   }
 
   private def addChannelPermissions(channelReq: ChannelAction[VoiceChannel], member: Member, limit: Int, public: Boolean) = {

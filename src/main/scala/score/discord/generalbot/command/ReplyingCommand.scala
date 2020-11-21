@@ -20,7 +20,7 @@ trait ReplyingCommand extends Command {
   def executeFuture(message: Message, args: String): Future[Message] =
     for {
       replyUnsent <- executeAndGetMessage(message, args)
-      reply <- message reply replyUnsent
+      reply <- message ! replyUnsent
     } yield reply
 
   override def execute(message: Message, args: String): Unit =

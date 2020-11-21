@@ -27,7 +27,7 @@ class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: M
         s"${guild.getName} ($memberCount users; owner: ${owner.name}#${owner.discriminator})"
       }
       val me = await(jda.retrieveApplicationInfo.queueFuture())
-      await(message reply BotMessages.plain("Some basic bot info")
+      await(message ! BotMessages.plain("Some basic bot info")
         .addField("Owner", s"<@$userId>", true)
         .addField("Servers", s"${allGuilds.size}", true)
         .addField("Top servers", topGuilds.mkString("\n"), false)

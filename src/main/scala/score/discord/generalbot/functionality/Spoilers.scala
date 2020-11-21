@@ -72,10 +72,10 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, 
         conversations.start(message.getAuthor, privateChannel) { conversation =>
           conversation.message.getContentRaw match {
             case "cancel" =>
-              conversation.message.reply("Did not create a spoiler.")
+              conversation.message.!("Did not create a spoiler.")
             case spoiler =>
               for (_ <- createSpoiler(channel, conversation.message.getAuthor, spoiler))
-                conversation.message.reply("Created your spoiler.")
+                conversation.message.!("Created your spoiler.")
           }
         }
       }

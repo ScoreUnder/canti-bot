@@ -32,7 +32,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     override def description = "Set the role automatically assigned to voice chat users"
 
     override def execute(message: Message, args: String): Unit = {
-      message.reply(
+      message.!(
         if (args.isEmpty) BotMessages.error("Please provide a role name to use as the voice role")
         else
           findRole(message.getGuild, args.trim).fold(
