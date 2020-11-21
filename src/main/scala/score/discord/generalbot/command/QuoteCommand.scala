@@ -163,7 +163,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
 }
 
 object QuoteCommand {
-  private val LINK_REGEX_STR = """https://(?:[^.]+\.)?discordapp\.com/channels/\d+/(\d+)/(\d+)"""
+  private val LINK_REGEX_STR = """https://(?:[^.]+\.)?discord(?:app)?\.com/channels/\d+/(\d+)/(\d+)"""
   private val LINK_REGEX = s"^$LINK_REGEX_STR".r.unanchored
   private val CHANNEL_REGEX = "\\s*<#(\\d+)>".r
   // To avoid false positives, trigger on message URL or 9+ digits

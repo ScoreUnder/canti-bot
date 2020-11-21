@@ -27,6 +27,10 @@ class QuoteCommandTest extends FlatSpec with Matchers {
     quoteCommandTest(s"&quote ${quoteeChannel.getIdLong}-${quoteeMessage.getIdLong}", quoteeMessageData)
   }
 
+  it should "understand URL message quotes" in {
+    quoteCommandTest(s"&quote https://canary.discord.com/channels/${guild.getId}/${quoteeChannel.getIdLong}/${quoteeMessage.getIdLong}", quoteeMessageData)
+  }
+
   it should "find cached messages" in {
     // ensure message cache is populated with the message to find
     messageCache.onEvent(new MessageReceivedEvent(jda, 0, quotee2Message))
