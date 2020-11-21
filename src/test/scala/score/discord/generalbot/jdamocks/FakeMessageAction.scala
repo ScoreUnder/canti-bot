@@ -67,4 +67,8 @@ class FakeMessageAction(message: Message) extends MessageAction {
   override def mentionUsers(userIds: String*): MessageAction = ???
 
   override def mentionRoles(roleIds: String*): MessageAction = ???
+
+  override def referenceById(messageId: Long): MessageAction = ???
+
+  override def mentionRepliedUser(mention: Boolean): MessageAction = ???
 }
