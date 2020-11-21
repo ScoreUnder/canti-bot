@@ -67,10 +67,9 @@ object FuriganaCommand {
 
   def sendFuriMessage(replyingTo: Message, furigana: Iterable[(String, String)], plain: String)
                      (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] = {
-    replyingTo.getChannel.sendFile(Furigana.renderPNG(furigana), "furigana.png")
+    replyingTo.reply(Furigana.renderPNG(furigana), "furigana.png")
       .append(s"${replyingTo.getAuthor.mention} $plain")
       .allowedMentions(Collections.emptySet)
-      .mention(replyingTo.getAuthor)
       .queueFuture()
       .tap(_.foreach { newMsg =>
         messageOwnership(newMsg) = replyingTo.getAuthor

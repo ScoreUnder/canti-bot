@@ -10,7 +10,6 @@ import score.discord.generalbot.wrappers.jda.Conversions._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.Anyone {
   override def name: String = "ping"
@@ -40,19 +39,18 @@ class PingCommand(implicit messageOwnership: MessageOwnership) extends Command.A
   }
 
   override def execute(message: Message, args: String): Unit = {
-    Future {
-      val timeSent = Instant.now()
-      var timeReallySent: Option[Instant] = None
-      for {
-        pingMessage <- message.getChannel.sendMessage(s"⏲ Checking ping...").setCheck({ () =>
-          timeReallySent = Some(Instant.now())
-          true
-        }).queueFuture()
-        timeOnServer = pingMessage.getTimeCreated.toInstant
-        timeReceived = Instant.now()
-        _ = messageOwnership(pingMessage) = message.getAuthor
-        _ <- pingMessage.editMessage(getPingMessage(timeSent, timeReallySent, timeOnServer, timeReceived)).queueFuture()
-      } yield ()
-    }.flatten.failed.foreach(APIHelper.loudFailure("checking ping", message.getChannel))
+    val timeSent = Instant.now()
+    var timeReallySent: Option[Instant] = None
+    (for {
+      pingMessage <- message.reply(s"⏲ Checking ping...").mentionRepliedUser(false).setCheck({ () =>
+        timeReallySent = Some(Instant.now())
+        true
+      }).queueFuture()
+      timeOnServer = pingMessage.getTimeCreated.toInstant
+      timeReceived = Instant.now()
+      _ = messageOwnership(pingMessage) = message.getAuthor
+      _ <- pingMessage.editMessage(getPingMessage(timeSent, timeReallySent, timeOnServer, timeReceived)).queueFuture()
+    } yield ())
+      .failed.foreach(APIHelper.loudFailure("checking ping", message.getChannel))
   }
 }
