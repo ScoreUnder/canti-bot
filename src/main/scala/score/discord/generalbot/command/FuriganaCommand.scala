@@ -68,7 +68,8 @@ object FuriganaCommand {
   def sendFuriMessage(replyingTo: Message, furigana: Iterable[(String, String)], plain: String)
                      (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] = {
     replyingTo.reply(Furigana.renderPNG(furigana), "furigana.png")
-      .append(s"${replyingTo.getAuthor.mention} $plain")
+      .mentionRepliedUser(false)
+      .append(plain)
       .allowedMentions(Collections.emptySet)
       .queueFuture()
       .tap(_.foreach { newMsg =>
