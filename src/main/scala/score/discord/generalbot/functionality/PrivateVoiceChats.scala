@@ -456,14 +456,14 @@ class PrivateVoiceChats(
         await(removed) // Propagate exceptions
       }.failed.foreach(APIHelper.failure("processing initial private voice chat state"))
     case GuildVoiceUpdate(_, Some(leftChannel), _) if leftChannel.getMembers.isEmpty =>
-        // Last person to leave a channel
-        async {
-          val user = await(ownerByChannel(leftChannel))
-          if (user.isDefined) {
-            await(leftChannel.delete.queueFuture())
-            await(ownerByChannel remove leftChannel)
-          }
-        }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+      // Last person to leave a channel
+      async {
+        val user = await(ownerByChannel(leftChannel))
+        if (user.isDefined) {
+          await(leftChannel.delete.queueFuture())
+          await(ownerByChannel remove leftChannel)
+        }
+      }.failed.foreach(APIHelper.failure("deleting unused private channel"))
 
     case _ =>
   }
