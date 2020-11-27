@@ -414,7 +414,7 @@ class PrivateVoiceChats(
   }
 
   private def createChannel(name: String, guild: Guild, category: Option[Category]) =
-    Try(guild.createVoiceChannel(name, category.orNull)).toEither.left.map({
+    Try(category.fold(guild.createVoiceChannel(name))(_.createVoiceChannel(name))).toEither.left.map({
       case _: PermissionException =>
         "I don't have permission to create a voice channel. A server administrator will need to fix this."
       case x =>
