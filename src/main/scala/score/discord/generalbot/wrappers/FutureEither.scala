@@ -18,12 +18,19 @@ class FutureEitherConverter[L, R](val value: Future[Either[L, R]]) extends AnyVa
   def flatView = new FutureEither[L, R](value)
 }
 
+class EitherFutureConverter[L, R](val value: Either[L, Future[Either[L, R]]]) extends AnyVal {
+  def toFuture: Future[Either[L, R]] = value.fold(x => Future.successful(Left(x)), identity)
+}
+
+class FutureConverter[V](val value: Future[V]) extends AnyVal {
+  def recoverToEither[L](pf: PartialFunction[Throwable, L]): Future[Either[L, V]] =
+    value.map(Right(_)).recover(pf.andThen(Left(_)))
+}
+
 object FutureEither {
   implicit def futureEitherConversion[L, R](me: Future[Either[L, R]]): FutureEitherConverter[L, R] = new FutureEitherConverter[L, R](me)
 
-  def futureFromRight[L, R](me: Either[L, Future[R]]): Future[Either[L, R]] =
-    me match {
-      case x@Left(_) => Future.successful(x.asInstanceOf[Either[L, R]])
-      case Right(x) => x.map(Right(_))
-    }
+  implicit def eitherFutureConversion[L, R](me: Either[L, Future[Either[L, R]]]): EitherFutureConverter[L, R] = new EitherFutureConverter[L, R](me)
+
+  implicit def futureConversion[V](me: Future[V]): FutureConverter[V] = new FutureConverter[V](me)
 }
