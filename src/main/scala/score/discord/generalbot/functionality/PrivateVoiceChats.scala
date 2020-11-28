@@ -333,7 +333,7 @@ class PrivateVoiceChats(
             ownerByChannel remove newVoiceChannel
           }
 
-          message ! makeCreateChannelSuccessMessage(name, limit, commandName, args)
+          message ! makeCreateChannelSuccessMessage(name, limit, public, commandName, args)
 
           await(APIHelper.tryRequest(guild.moveVoiceMember(member, newVoiceChannel))
             .recoverToEither(translateChannelMoveError))
@@ -347,12 +347,12 @@ class PrivateVoiceChats(
     }
   }
 
-  private def makeCreateChannelSuccessMessage(name: String, limit: Int, commandName: String, args: String) = {
+  private def makeCreateChannelSuccessMessage(name: String, limit: Int, public: Boolean, commandName: String, args: String) = {
     val successMessage = BotMessages
       .okay("Your channel has been created.")
       .setTitle("Success", null)
 
-    if (limit == 0) args.trim match {
+    if (limit == 0 && !public) args.trim match {
       case mistakeRegex(mistake) =>
         val cutName = name.dropRight(mistake.length).trim
         val invocation = s"${commands.prefix}$commandName $mistake $cutName"
@@ -371,17 +371,19 @@ class PrivateVoiceChats(
 
   private def addChannelPermissions(channelReq: ChannelAction[VoiceChannel], member: Member, limit: Int, public: Boolean) = {
     val guild = member.getGuild
-    if (limit == 0 && !public)
-    // If no limit, deny access to all users by default
-      channelReq
-        .addPermissionOverride(
-          guild.getPublicRole,
-          Collections.emptyList[Permission], util.Arrays.asList(Permission.VOICE_CONNECT)
-        )
-    else if (!public)
-    // Otherwise, if there is a limit, use that and don't add extra permissions
-      channelReq
-        .setUserlimit(limit)
+    if (!public) {
+      if (limit == 0)
+      // If no limit, deny access to all users by default
+        channelReq
+          .addPermissionOverride(
+            guild.getPublicRole,
+            Collections.emptyList[Permission], util.Arrays.asList(Permission.VOICE_CONNECT)
+          )
+      else
+      // Otherwise, if there is a limit, use that and don't add extra permissions
+        channelReq
+          .setUserlimit(limit)
+    }
 
     channelReq
       .addPermissionOverride(
@@ -395,10 +397,12 @@ class PrivateVoiceChats(
 
   private def parseChannelDetails(args: String, originalChannel: VoiceChannel, public: Boolean) = {
     val trimmedArgs = args.trim
-    val (limit, name) = trimmedArgs.split(" ", 2) match {
-      case Array(limitStr, name_) => (limitStr, name_.trim)
-      case Array(maybeLimit) => (maybeLimit, "")
-    }
+    val (limit, name) =
+      if (public) ("", trimmedArgs)
+      else trimmedArgs.split(" ", 2) match {
+        case Array(limitStr, name_) => (limitStr, name_.trim)
+        case Array(maybeLimit) => (maybeLimit, "")
+      }
 
     val maxNameLen = 100
     limit.toIntOption
