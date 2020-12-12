@@ -28,7 +28,7 @@ To host this bot yourself:
 2. Copy `application.conf.example` and name it `application.conf`
 3. Edit `application.conf`, filling in `token` with the bot's token from the developer portal. Quotes are required.
 4. Again edit `application.conf`, changing `owner` to your own Discord user ID. No quotes here.
-5. Run the bot with `sbt run`. If you don't have scala and sbt installed, you can instead download the jar from the [releases][releases] page and run it with `java -jar bot-prod*.jar`
+5. Run the bot with `sbt run`. If you don't have scala and sbt installed, you can instead download the jar from the [releases][releases] page and run it with `java -jar canti-bot-assembly-*.jar`
 6. Done!
 
 ## Can I report a bug?
