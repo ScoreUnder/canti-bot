@@ -1,11 +1,13 @@
 import Dependencies._
 
+enablePlugins(GitVersioning)
+
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
       organization := "score.discord",
       scalaVersion := "2.13.3",
-      version      := "0.1.0-SNAPSHOT"
+      git.useGitDescribe := true,
     )),
     name := "canti-bot",
     scalacOptions ++= List("-deprecation", "-unchecked", "-feature", "-Xasync"),
