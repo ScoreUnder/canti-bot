@@ -3,7 +3,7 @@ package score.discord.generalbot.functionality
 import java.util.concurrent.{ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom}
 
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{Guild, GuildVoiceState, Member, Message, Role}
+import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
@@ -14,34 +14,47 @@ import score.discord.generalbot.util.ParseUtils._
 import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper, GuildUserId}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
-import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.ID
+import score.discord.generalbot.wrappers.jda.IdConversions._
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.chaining.scalaUtilChainingOps
 
 class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
-  commands register new Command.ServerAdminOnly {
+  commands register new ReplyingCommand with Command.ServerAdminOnly {
     override def name = "setvoicerole"
 
-    override def aliases = Nil
+    override def aliases: List[String] = Nil
 
-    override def description = "Set the role automatically assigned to voice chat users"
+    override def description = "Set or remove the role automatically assigned to voice chat users"
 
-    override def execute(message: Message, args: String): Unit = {
-      message.!(
-        if (args.isEmpty) BotMessages.error("Please provide a role name to use as the voice role")
-        else
-          findRole(message.getGuild, args.trim).fold(
-            identity, { role =>
-              roleByGuild(message.getGuild.id) = role.id  // TODO: Handle exceptions from Future
+    override def longDescription(invocation: String): String =
+      s"""Usage: `$invocation In Voice` or `$invocation 123456789` (with a role ID)
+         |You can also remove the role with `$invocation none`""".stripMargin
+
+    override def executeAndGetMessage(message: Message, args: String): Future[Message] = async {
+      (args.trim match {
+        case "" => BotMessages.error("Please provide a role name to use as the voice role")
+        case "none" =>
+          await(roleByGuild remove message.getGuild.id)
+          BotMessages.okay(s"Turned off voice chat roles for this server")
+        case _ =>
+          (findRole(message.getGuild, args.trim) match {
+            case Left(err) => err
+            case Right(role) =>
+              await(roleByGuild(message.getGuild.id) = role.id)
               BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
-            }).addField("Requested by", message.getAuthor.mentionWithName, true)
-      )
-    }
+          }).addField("Requested by", message.getAuthor.mentionWithName, true)
+      }).toMessage
+    }.tap(_.failed.foreach(APIHelper.loudFailure("setting voice role", message)))
+
+    override implicit def messageOwnership: MessageOwnership = VoiceRoles.this.messageOwnership
+
+    override implicit def replyCache: ReplyCache = VoiceRoles.this.replyCache
   }
 
   commands register new ReplyingCommand with Command.Anyone {
@@ -57,7 +70,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
 
     override def executeAndGetMessage(message: Message, args: String): Future[Message] =
       async {
-        implicit val jda = message.getJDA
+        implicit val jda: JDA = message.getJDA
         (CommandHelper(message).guild match {
           case Left(err) => BotMessages error err
           case Right(guild) =>
@@ -68,21 +81,6 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
               .fold(identity, identity)
         }).toMessage
       }
-  }
-
-  commands register new Command.ServerAdminOnly {
-    override def name = "delvoicerole"
-
-    override def aliases = List("rmvoicerole", "removevoicerole", "clearvoicerole")
-
-    override def description = "Clear the voice chat role (i.e. stops tagging voice chat users)"
-
-    override def execute(message: Message, args: String): Unit = {
-      async {
-        await(roleByGuild remove message.getGuild.id)
-        message.addReaction("👌").queue()
-      }.failed.foreach(APIHelper.loudFailure("removing voice role", message))
-    }
   }
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit = {
