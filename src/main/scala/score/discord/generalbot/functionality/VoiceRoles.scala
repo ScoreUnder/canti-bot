@@ -11,7 +11,7 @@ import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.{Command, ReplyingCommand}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.ParseUtils._
-import score.discord.generalbot.util.{APIHelper, BotMessages, CommandHelper, GuildUserId}
+import score.discord.generalbot.util.{APIHelper, BotMessages, GuildUserId}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
 import score.discord.generalbot.wrappers.jda.ID
@@ -37,26 +37,35 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
          |You can also remove the role with `$invocation none`""".stripMargin
 
     override def executeAndGetMessage(message: Message, args: String): Future[Message] = async {
-      (args.trim match {
-        case "" =>
-          implicit val jda: JDA = message.getJDA
-          await(roleByGuild.get(message.getGuild.id))
-            .flatMap(_.find)
-            .fold(
-              BotMessages.plain("There is currently no voice chat role set."))(
-              role => BotMessages.okay(s"The voice chat role is currently set to ${role.mention}."))
-        case "none" =>
-          await(roleByGuild remove message.getGuild.id)
-          BotMessages.okay(s"Turned off voice chat roles for this server")
-        case _ =>
-          findRole(message.getGuild, args.trim) match {
-            case Left(err) => err
-            case Right(role) =>
-              await(roleByGuild(message.getGuild.id) = role.id)
-              BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
-          }
+      await(args.trim match {
+        case "" => showVoiceRole(message.getGuild)
+        case "none" => delVoiceRole(message.getGuild)
+        case _ => setVoiceRole(args.trim, message.getGuild)
       }).toMessage
     }.tap(_.failed.foreach(APIHelper.loudFailure("setting voice role", message)))
+
+    private def setVoiceRole(roleName: String, guild: Guild) = async {
+      findRole(guild, roleName) match {
+        case Left(err) => err
+        case Right(role) =>
+          await(roleByGuild(guild.id) = role.id)
+          BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
+      }
+    }
+
+    private def delVoiceRole(guild: Guild) = async {
+      await(roleByGuild remove guild.id)
+      BotMessages.okay(s"Turned off voice chat roles for this server")
+    }
+
+    private def showVoiceRole(guild: Guild) = async {
+      implicit val jda: JDA = guild.getJDA
+      await(roleByGuild.get(guild.id))
+        .flatMap(_.find)
+        .fold(
+          BotMessages.plain("There is currently no voice chat role set."))(
+          role => BotMessages.okay(s"The voice chat role is currently set to ${role.mention}."))
+    }
 
     override implicit def messageOwnership: MessageOwnership = VoiceRoles.this.messageOwnership
 
