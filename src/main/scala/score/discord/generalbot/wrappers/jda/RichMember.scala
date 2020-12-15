@@ -1,7 +1,5 @@
 package score.discord.generalbot.wrappers.jda
 
-import java.util
-
 import net.dv8tion.jda.api.entities.{Member, Role}
 import net.dv8tion.jda.internal.entities.MemberImpl
 
@@ -11,7 +9,7 @@ class RichMember(val member: Member) extends AnyVal {
     * @param role role to check
     * @return true iff they have the role
     */
-  def has(role: Role) = (member match {
+  def has(role: Role): Boolean = (member match {
     case x: MemberImpl => x.getRoleSet
     case x => x.getRoles
   }) contains role
@@ -27,7 +25,7 @@ class MemberRolesShim(val member: Member) extends AnyVal {
     *
     * @param roleReason role and reason for role change
     */
-  def +=(roleReason: (Role, String)) = member.getGuild.modifyMemberRoles(member, util.Arrays.asList(roleReason._1), null).reason(roleReason._2).queue()
+  def +=(roleReason: (Role, String)): Unit = member.getGuild.addRoleToMember(member, roleReason._1).reason(roleReason._2).queue()
 
   /** Remove a role from this member.
     *
@@ -35,5 +33,5 @@ class MemberRolesShim(val member: Member) extends AnyVal {
     *
     * @param roleReason role and reason for role change
     */
-  def -=(roleReason: (Role, String)) = member.getGuild.modifyMemberRoles(member, null, util.Arrays.asList(roleReason._1)).reason(roleReason._2).queue()
+  def -=(roleReason: (Role, String)): Unit = member.getGuild.removeRoleFromMember(member, roleReason._1).reason(roleReason._2).queue()
 }
