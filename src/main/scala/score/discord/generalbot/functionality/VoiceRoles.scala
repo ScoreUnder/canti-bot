@@ -30,7 +30,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
 
     override def aliases: List[String] = List("setvoicerole", "getvoicerole")
 
-    override def description = "Set or remove the role automatically assigned to voice chat users"
+    override def description = "Set or query the role automatically assigned to voice chat users"
 
     override def longDescription(invocation: String): String =
       s"""Usage: `$invocation In Voice` or `$invocation 123456789` (with a role ID)
