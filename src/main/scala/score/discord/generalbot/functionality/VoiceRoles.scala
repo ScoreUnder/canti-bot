@@ -43,12 +43,12 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
           await(roleByGuild remove message.getGuild.id)
           BotMessages.okay(s"Turned off voice chat roles for this server")
         case _ =>
-          (findRole(message.getGuild, args.trim) match {
+          findRole(message.getGuild, args.trim) match {
             case Left(err) => err
             case Right(role) =>
               await(roleByGuild(message.getGuild.id) = role.id)
               BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
-          }).addField("Requested by", message.getAuthor.mentionWithName, true)
+          }
       }).toMessage
     }.tap(_.failed.foreach(APIHelper.loudFailure("setting voice role", message)))
 
