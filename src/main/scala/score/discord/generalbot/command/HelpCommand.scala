@@ -3,6 +3,7 @@ package score.discord.generalbot.command
 import net.dv8tion.jda.api.Permission._
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.{EmbedBuilder, JDA}
+import score.discord.generalbot.BotMeta
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -69,7 +70,8 @@ class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwne
 
       embed.appendDescription(
         "[Source code 🗒️](https://github.com/ScoreUnder/canti-bot) \\| " +
-          s"[Invite to your server 📥]($inviteLink)"
+          s"[Invite to your server 📥]($inviteLink) \\| " +
+          s"Version ${BotMeta.VERSION}"
       )
 
       Right(embed)
