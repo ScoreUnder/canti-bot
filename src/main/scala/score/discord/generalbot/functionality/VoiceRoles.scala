@@ -26,9 +26,9 @@ import scala.util.chaining.scalaUtilChainingOps
 
 class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
   commands register new ReplyingCommand with Command.ServerAdminOnly {
-    override def name = "setvoicerole"
+    override def name = "voicerole"
 
-    override def aliases: List[String] = Nil
+    override def aliases: List[String] = List("setvoicerole", "getvoicerole")
 
     override def description = "Set or remove the role automatically assigned to voice chat users"
 
@@ -38,7 +38,13 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
 
     override def executeAndGetMessage(message: Message, args: String): Future[Message] = async {
       (args.trim match {
-        case "" => BotMessages.error("Please provide a role name to use as the voice role")
+        case "" =>
+          implicit val jda: JDA = message.getJDA
+          await(roleByGuild.get(message.getGuild.id))
+            .flatMap(_.find)
+            .fold(
+              BotMessages.plain("There is currently no voice chat role set."))(
+              role => BotMessages.okay(s"The voice chat role is currently set to ${role.mention}."))
         case "none" =>
           await(roleByGuild remove message.getGuild.id)
           BotMessages.okay(s"Turned off voice chat roles for this server")
@@ -55,32 +61,6 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     override implicit def messageOwnership: MessageOwnership = VoiceRoles.this.messageOwnership
 
     override implicit def replyCache: ReplyCache = VoiceRoles.this.replyCache
-  }
-
-  commands register new ReplyingCommand with Command.Anyone {
-    override def name = "voicerole"
-
-    override def aliases = List("getvoicerole")
-
-    override def description = "Check the voice chat role"
-
-    override implicit def messageOwnership: MessageOwnership = VoiceRoles.this.messageOwnership
-
-    override implicit def replyCache: ReplyCache = VoiceRoles.this.replyCache
-
-    override def executeAndGetMessage(message: Message, args: String): Future[Message] =
-      async {
-        implicit val jda: JDA = message.getJDA
-        (CommandHelper(message).guild match {
-          case Left(err) => BotMessages error err
-          case Right(guild) =>
-            await(roleByGuild.get(guild.id))
-              .flatMap(_.find)
-              .toRight(BotMessages.plain("There is currently no voice chat role set."))
-              .map(role => BotMessages.okay(s"The voice chat role is currently set to ${role.mention}."))
-              .fold(identity, identity)
-        }).toMessage
-      }
   }
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit = {
