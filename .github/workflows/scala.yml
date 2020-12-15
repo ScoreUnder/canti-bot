@@ -14,3 +14,10 @@ jobs:
         java-version: 1.8
     - name: Run tests
       run: sbt test
+    - name: Package assembly
+      run: sbt assembly
+    - name: Archive artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: output-jar
+        peth: target/scala-*/*-assembly-*.jar
