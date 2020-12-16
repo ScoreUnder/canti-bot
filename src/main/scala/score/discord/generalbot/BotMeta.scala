@@ -1,8 +1,13 @@
 package score.discord.generalbot
 
-import scala.util.Try
 import scala.util.control.NonFatal
 
 object BotMeta {
-  lazy val VERSION: String = Try(getClass.getPackage.getImplementationVersion).recover { case NonFatal(_) => "unknown" }.get
+  private def getPackageInfo(f: Package => String): Option[String] =
+    try Option(f(getClass.getPackage)) catch {
+      case NonFatal(_) => None
+    }
+
+  lazy val NAME: String = getPackageInfo(_.getImplementationTitle).getOrElse("bot")
+  lazy val VERSION: String = getPackageInfo(_.getImplementationVersion).getOrElse("unknown")
 }

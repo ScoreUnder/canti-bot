@@ -71,7 +71,7 @@ class HelpCommand(commands: Commands)(implicit val messageOwnership: MessageOwne
       embed.appendDescription(
         "[Source code 🗒️](https://github.com/ScoreUnder/canti-bot) \\| " +
           s"[Invite to your server 📥]($inviteLink) \\| " +
-          s"Version ${BotMeta.VERSION}"
+          s"${BotMeta.NAME} ${BotMeta.VERSION}"
       )
 
       Right(embed)
