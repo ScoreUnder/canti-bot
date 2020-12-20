@@ -6,8 +6,6 @@ import score.discord.generalbot.wrappers.jda.ID
 class PlayCommand(val userId: ID[User]) extends Command.OneUserOnly {
   override def name = "playing"
 
-  override def aliases = Nil
-
   override def description = "Set the game that this bot is currently playing"
 
   override def execute(message: Message, args: String) = {

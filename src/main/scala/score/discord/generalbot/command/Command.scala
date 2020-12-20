@@ -8,7 +8,7 @@ import score.discord.generalbot.wrappers.jda.ID
 trait Command {
   def name: String
 
-  def aliases: Seq[String]
+  def aliases: Seq[String] = Nil
 
   def description: String
 

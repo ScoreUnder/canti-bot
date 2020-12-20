@@ -15,8 +15,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class PingCommand(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone {
   override def name: String = "ping"
 
-  override def aliases = Nil
-
   override def description: String = "Check the lag from the bot to the server"
 
   def getPingMessage(timeSent: Instant, timeReallySent: Option[Instant], timeOnServer: Instant, timeReceived: Instant): String = {

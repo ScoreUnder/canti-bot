@@ -13,8 +13,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.OneUserOnly {
   override def name = "botinfo"
 
-  override def aliases = Nil
-
   override def description = "Show miscellaneous info about the bot"
 
   override def execute(message: Message, args: String): Unit = {

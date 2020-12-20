@@ -15,7 +15,6 @@ class HelpCommandTest extends FlatSpec with Matchers {
   private val dummyLongDesc = "this command is dummy"
 
   private class DummyCommand(val name: String) extends Command.Anyone {
-    override def aliases = Nil
     override def description = dummyDesc
     override def longDescription(invocation: String) = dummyLongDesc
     override def execute(message: Message, args: String): Unit = ???

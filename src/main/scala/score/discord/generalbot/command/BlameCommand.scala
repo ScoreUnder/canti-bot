@@ -17,8 +17,6 @@ import scala.util.Try
 class BlameCommand(implicit val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name = "blame"
 
-  override def aliases = Nil
-
   override def description = "Reveal the user who caused the bot to send a given message"
 
   override def longDescription(invocation: String) =
