@@ -395,6 +395,21 @@ class PrivateVoiceChats(
       )
   }
 
+  private def prefixOrUpdateNumber(name: String, prefix: String): String = {
+    if (name.startsWith(prefix)) {
+      val posBeforeNumber = name.lastIndexWhere(!Character.isDigit(_))
+      val (unnumbered, number) = name.splitAt(posBeforeNumber + 1)
+      val nextNumber = number match {
+        case "" => " 2"
+        case IntStr(n) => (n + 1).toString
+        case largeNum => s"$largeNum+1"  // too large to parse to Int
+      }
+      unnumbered + nextNumber
+    } else {
+      prefix + name
+    }
+  }
+
   private def parseChannelDetails(args: String, originalChannel: VoiceChannel, public: Boolean) = {
     val trimmedArgs = args.trim
     val (limit, name) =
@@ -411,8 +426,9 @@ class PrivateVoiceChats(
       .getOrElse((0, trimmedArgs))
     match {
       case (limit_, name_) if name_.length > maxNameLen => (limit_, name_ take maxNameLen)
-      case (limit_, name_) if name_.length < 3 => (limit_, s"${if (public) "Public" else "Private"} " +
-        s"${originalChannel.name}" take maxNameLen)
+      case (limit_, name_) if name_.length < 3 =>
+        val newName = prefixOrUpdateNumber(originalChannel.name, prefix = if (public) "Public " else "Private ")
+        (limit_, newName take maxNameLen)
       case x => x
     }
   }
