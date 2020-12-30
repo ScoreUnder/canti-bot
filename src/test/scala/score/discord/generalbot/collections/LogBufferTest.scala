@@ -1,8 +1,9 @@
 package score.discord.generalbot.collections
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
 
-class LogBufferTest extends FlatSpec with Matchers {
+class LogBufferTest extends AnyFlatSpec with should.Matchers {
   def bufWithContent[T](content: Seq[T], capacity: Int = 10): LogBuffer[T] = {
     val buf = new LogBuffer[T](capacity)
     content.foreach(buf ::= _)

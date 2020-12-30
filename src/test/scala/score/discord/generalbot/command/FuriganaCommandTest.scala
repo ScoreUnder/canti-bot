@@ -1,10 +1,10 @@
 package score.discord.generalbot.command
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
 import score.discord.generalbot.TestFixtures
-import score.discord.generalbot.command.FuriganaCommand
 
-class FuriganaCommandTest extends FlatSpec with Matchers{
+class FuriganaCommandTest extends AnyFlatSpec with should.Matchers {
   val fixture = TestFixtures.default
   import fixture.implicits._
 

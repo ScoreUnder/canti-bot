@@ -1,11 +1,11 @@
 package score.discord.generalbot.command
 
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
 import score.discord.generalbot.TestFixtures
-import score.discord.generalbot.command.QuoteCommand
 
-class QuoteCommandTest extends FlatSpec with Matchers {
+class QuoteCommandTest extends AnyFlatSpec with should.Matchers {
   val fixture = TestFixtures.default
 
   import fixture._
