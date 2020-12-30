@@ -235,7 +235,7 @@ class PrivateVoiceChats(
 
       override def longDescription(invocation: String): String =
         s"""Query the default category for voice chats: `$invocation`
-           |Set the default category for voice chats: `$invocation category name` or `$invocation id`
+           |Set the default category for voice chats: `$invocation <category name>` or `$invocation id`
            |Unset the default category for voice chats: `$invocation none`
            |""".stripMargin
 
