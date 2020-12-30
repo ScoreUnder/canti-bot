@@ -1,4 +1,4 @@
-package score.discord.generalbot.commands
+package score.discord.generalbot.command
 
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.scalatest._

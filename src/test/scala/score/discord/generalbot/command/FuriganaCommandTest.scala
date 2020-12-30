@@ -1,4 +1,4 @@
-package score.discord.generalbot.commands
+package score.discord.generalbot.command
 
 import org.scalatest.{FlatSpec, Matchers}
 import score.discord.generalbot.TestFixtures
