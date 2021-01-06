@@ -109,4 +109,6 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   override def clearReactionsById(messageId: String, emote: Emote): RestAction[Void] = ???
 
   override def isNews: Boolean = ???
+
+  override def isSynced: Boolean = ???
 }
