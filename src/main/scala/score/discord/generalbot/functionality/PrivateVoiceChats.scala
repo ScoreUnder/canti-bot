@@ -24,6 +24,7 @@ import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.matching.Events.GuildVoiceUpdate
 import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
+import java.lang.reflect.Field
 import scala.async.Async._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -46,6 +47,27 @@ class PrivateVoiceChats(
 
   private case class Invite(from: ID[User], channel: ID[VoiceChannel], expiry: Timestamp) {
     def valid = System.currentTimeMillis() < expiry
+  }
+
+  private[PrivateVoiceChats] object JDAHack {
+    lazy val field: Field = {
+      val f = classOf[ChannelActionImpl[_]].getDeclaredField("overrides")
+      f.setAccessible(true)
+      f
+    }
+
+    def removeManageRolesPerms(channelReq: ChannelAction[_]): Unit = {
+      // Work around discord API bug: channels cannot be created with MANAGE_ROLES anywhere in permissions unless you are admin
+      try {
+        val overrides = field.get(channelReq).asInstanceOf[TLongObjectHashMap[PermOverrideData]]
+        overrides.transformValues { v =>
+          val manageRoles = Permission.MANAGE_ROLES.getRawValue
+          new PermOverrideData(v.`type`, v.id, v.allow & ~manageRoles, v.deny & ~manageRoles)
+        }
+      } catch {
+        case NonFatal(_) =>
+      }
+    }
   }
 
   {
@@ -326,17 +348,7 @@ class PrivateVoiceChats(
           addChannelPermissions(channelReq, member, limit, public)
 
           // Work around discord API bug: channels cannot be created with MANAGE_ROLES anywhere in permissions unless you are admin
-          try {
-            val field = classOf[ChannelActionImpl[_]].getDeclaredField("overrides")
-            field.setAccessible(true)
-            val overrides = field.get(channelReq).asInstanceOf[TLongObjectHashMap[PermOverrideData]]
-            overrides.transformValues { v =>
-              val manageRoles = Permission.MANAGE_ROLES.getRawValue
-              new PermOverrideData(v.`type`, v.id, v.allow & ~manageRoles, v.deny & ~manageRoles)
-            }
-          } catch {
-            case NonFatal(_) =>
-          }
+          JDAHack.removeManageRolesPerms(channelReq)
 
           val newVoiceChannel = await(channelReq.queueFuture())
 
