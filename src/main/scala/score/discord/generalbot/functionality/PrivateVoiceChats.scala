@@ -1,15 +1,17 @@
 package score.discord.generalbot.functionality
 
+import gnu.trove.map.hash.TLongObjectHashMap
+
 import java.util
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
-
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
 import net.dv8tion.jda.api.{JDA, Permission}
+import net.dv8tion.jda.internal.requests.restaction.{ChannelActionImpl, PermOverrideData}
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.{Command, ReplyingCommand}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -30,6 +32,7 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.util.chaining._
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 class PrivateVoiceChats(
@@ -321,6 +324,19 @@ class PrivateVoiceChats(
       } yield {
         async {
           addChannelPermissions(channelReq, member, limit, public)
+
+          // Work around discord API bug: channels cannot be created with MANAGE_ROLES anywhere in permissions unless you are admin
+          try {
+            val field = classOf[ChannelActionImpl[_]].getDeclaredField("overrides")
+            field.setAccessible(true)
+            val overrides = field.get(channelReq).asInstanceOf[TLongObjectHashMap[PermOverrideData]]
+            overrides.transformValues { v =>
+              val manageRoles = Permission.MANAGE_ROLES.getRawValue
+              new PermOverrideData(v.`type`, v.id, v.allow & ~manageRoles, v.deny & ~manageRoles)
+            }
+          } catch {
+            case NonFatal(_) =>
+          }
 
           val newVoiceChannel = await(channelReq.queueFuture())
 
