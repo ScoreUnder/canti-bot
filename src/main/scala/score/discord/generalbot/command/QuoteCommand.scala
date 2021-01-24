@@ -82,8 +82,10 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
         Left("Can't find that message in the channel specified.")
       case Error(UNKNOWN_CHANNEL) =>
         Left("Can't find that channel.")
-      case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) | _: PermissionException =>
+      case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) =>
         Left("I don't have permission to read messages in that channel.")
+      case e: PermissionException =>
+        Left(s"I don't have permission to read messages in that channel. Missing `${e.getPermission.getName}`.")
     }
   }
 

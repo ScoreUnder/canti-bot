@@ -294,8 +294,8 @@ class PrivateVoiceChats(
   private val translateChannelMoveError: PartialFunction[Throwable, String] = {
     case _: IllegalStateException =>
       "You need to join voice chat before I can move you into a channel."
-    case _: PermissionException =>
-      "I don't have permission to move you to another voice channel. A server administrator will need to fix this."
+    case e: PermissionException =>
+      s"I don't have permission to move you to another voice channel. A server administrator will need to fix this. Missing `${e.getPermission.getName}`."
   }
 
   private def sendChannelMoveError(replyTo: Message)(ex: Throwable): Unit = {
@@ -425,8 +425,8 @@ class PrivateVoiceChats(
 
   private def createChannel(name: String, guild: Guild, category: Option[Category]) =
     Try(category.fold(guild.createVoiceChannel(name))(_.createVoiceChannel(name))).toEither.left.map({
-      case _: PermissionException =>
-        "I don't have permission to create a voice channel. A server administrator will need to fix this."
+      case e: PermissionException =>
+        s"I don't have permission to create a voice channel. A server administrator will need to fix this. Missing `${e.getPermission.getName}`."
       case x =>
         System.err.println("Printing a stack trace for failed channel creation:")
         x.printStackTrace()
