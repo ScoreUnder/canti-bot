@@ -39,7 +39,7 @@ class PrivateVoiceChats(
   private type Timestamp = Long
 
   private case class Invite(from: ID[User], channel: ID[VoiceChannel], expiry: Timestamp) {
-    def valid = System.currentTimeMillis() < expiry
+    def valid: Boolean = System.currentTimeMillis() < expiry
   }
 
   {
