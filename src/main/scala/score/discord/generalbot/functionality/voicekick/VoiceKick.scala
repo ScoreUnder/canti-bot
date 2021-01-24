@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.requests.ErrorResponse._
 import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.Command
+import score.discord.generalbot.discord.permissions.{PermissionAttachment, PermissionCollection}
 import score.discord.generalbot.functionality.Commands
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util.APIHelper.Error
@@ -227,14 +228,11 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
 
   def removeTemporaryVoiceBan(voiceChannel: VoiceChannel, member: Member, logChannel: Option[MessageChannel], explicitGrant: Boolean): Unit = {
     Option(voiceChannel.getPermissionOverride(member)).foreach { permissionOverride =>
-      val originalPerms = (permissionOverride.getAllowedRaw, permissionOverride.getDeniedRaw)
-      val permsWithoutVoiceBan =
-        (originalPerms._1, originalPerms._2 & ~Permission.VOICE_CONNECT.getRawValue)
+      val originalPerms = PermissionAttachment(permissionOverride)
+      val permsWithoutVoiceBan = originalPerms.clear(Permission.VOICE_CONNECT)
 
       APIHelper.tryRequest({
-        if ((permsWithoutVoiceBan._1 | permsWithoutVoiceBan._2) == 0) {
-          // if all permissions are inherited after removing voice ban,
-          // then remove the override
+        if (permsWithoutVoiceBan.isEmpty) {
           permissionOverride.delete()
         } else if (explicitGrant) {
           permissionOverride.getManager.grant(Permission.VOICE_CONNECT)
@@ -258,24 +256,22 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
   def addTemporaryVoiceBan(voiceChannel: VoiceChannel, member: Member, logChannel: MessageChannel): Unit = {
     val originalPerms =
       Option(voiceChannel.getPermissionOverride(member))
-        .map(p => (p.getAllowedRaw, p.getDeniedRaw))
-        .getOrElse((0L, 0L))
+        .fold(PermissionAttachment.empty)(PermissionAttachment.apply)
 
-    if ((originalPerms._2 & Permission.VOICE_CONNECT.getRawValue) == 0) {
+    if (!originalPerms.denies.contains(Permission.VOICE_CONNECT)) {
+      val permsWithVoiceBan = originalPerms.deny(Permission.VOICE_CONNECT)
       val futureReq = APIHelper.tryRequest({
         // XXX Oh my god static mutable globals in a multithreaded environment
         // XXX Hack: JDA seems to consistently get the wrong idea about permissions here for some reason.
         Manager.setPermissionChecksEnabled(false)
-        try
-          voiceChannel.getManager.putPermissionOverride(member,
-            originalPerms._1 & ~Permission.VOICE_CONNECT.getRawValue,
-            originalPerms._2 | Permission.VOICE_CONNECT.getRawValue)
-        finally
+        try {
+          voiceChannel.applyPerms(PermissionCollection(Seq(member -> permsWithVoiceBan)))
+        } finally
           Manager.setPermissionChecksEnabled(true)
       }, onFail = APIHelper.loudFailure(s"adding voice tempban permissions to ${voiceChannel.mention} for ${member.getUser.mention}", logChannel))
 
       // Whether we need to explicitly grant the permission back
-      val explicitGrant = (originalPerms._1 & Permission.VOICE_CONNECT.getRawValue) != 0
+      val explicitGrant = originalPerms.allows.contains(Permission.VOICE_CONNECT)
 
       futureReq.foreach { _ =>
         // Take note (in DB) of when the voice ban should expire

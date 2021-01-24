@@ -14,9 +14,9 @@ import score.discord.generalbot.wrappers.FutureEither._
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.collections.AsyncMapConversions._
 import score.discord.generalbot.wrappers.jda.Conversions._
+import score.discord.generalbot.wrappers.jda.ID
 import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.matching.Events.GuildVoiceUpdate
-import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.async.Async._
@@ -165,18 +165,17 @@ class PrivateVoiceChats(
 
       private def addVoicePerms(users: Seq[User], channel: VoiceChannel, guild: Guild): Future[(Seq[User], Seq[User])] = {
         try {
-          val permUpdater = ChannelPermissionUpdater(channel)
-          val addedMembers = users.map(guild.findMember).map {
-            case Some(targetMember) =>
-              permUpdater.grant(targetMember, Permission.VOICE_CONNECT)
-              Right(())
-            case None =>
-              Left("Member missing from guild")
-          }
+          val (members, notFound) = users
+            .map(user => user -> guild.findMember(user))
+            .partition(_._2.isDefined)
+          val grants = PermissionCollection(members
+            .flatMap(_._2)
+            .foldLeft(Vector.empty[(Member, PermissionAttachment)]) { (acc, member) =>
+              acc :+ member -> channel.getPermissionAttachment(member).allow(Permission.VOICE_CONNECT)
+            })
 
-          val (granted, notFound) = (addedMembers zip users).partition(_._1.isRight)
-          permUpdater.queue().transform {
-            case Success(_) => Success((granted.map(_._2), notFound.map(_._2)))
+          channel.applyPerms(grants).queueFuture().transform {
+            case Success(_) => Success((members.map(_._1), notFound.map(_._1)))
             case Failure(_) => Success((Nil, users))
           }
         } catch {
@@ -318,7 +317,7 @@ class PrivateVoiceChats(
         channelReq <- createChannel(name, guild, category)
       } yield {
         async {
-          val categoryPerms = category.fold(PermissionCollection.empty[IPermissionHolder])(_.permissionOverrides)
+          val categoryPerms = category.fold(PermissionCollection.empty[IPermissionHolder])(_.permissionAttachments)
           val channelPerms = getChannelPermissions(member, limit, public)
           val newPerms = categoryPerms.merge(channelPerms).mapValues(_.clear(Permission.MANAGE_ROLES, Permission.MANAGE_PERMISSIONS))
           channelReq.applyPerms(newPerms)
