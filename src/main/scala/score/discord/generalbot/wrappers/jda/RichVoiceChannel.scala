@@ -1,10 +1,7 @@
 package score.discord.generalbot.wrappers.jda
 
-import net.dv8tion.jda.api.entities.{Member, VoiceChannel}
-import net.dv8tion.jda.api.requests.restaction.PermissionOverrideAction
+import net.dv8tion.jda.api.entities.VoiceChannel
 import score.discord.generalbot.wrappers.jda.Conversions._
-
-import scala.util.chaining._
 
 class RichVoiceChannel(val channel: VoiceChannel) extends AnyVal {
   /** The name of this voice channel */
