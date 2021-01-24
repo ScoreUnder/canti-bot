@@ -232,10 +232,10 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
       val permsWithoutVoiceBan = originalPerms.clear(Permission.VOICE_CONNECT)
 
       APIHelper.tryRequest({
-        if (permsWithoutVoiceBan.isEmpty) {
-          permissionOverride.delete()
-        } else if (explicitGrant) {
+        if (explicitGrant) {
           permissionOverride.getManager.grant(Permission.VOICE_CONNECT)
+        } else if (permsWithoutVoiceBan.isEmpty) {
+          permissionOverride.delete()
         } else {
           permissionOverride.getManager.clear(Permission.VOICE_CONNECT)
         }
