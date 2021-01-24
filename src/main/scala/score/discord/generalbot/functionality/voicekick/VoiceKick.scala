@@ -254,9 +254,7 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
     (channel.getGuild.id, channel.id, member.getUser.id)
 
   def addTemporaryVoiceBan(voiceChannel: VoiceChannel, member: Member, logChannel: MessageChannel): Unit = {
-    val originalPerms =
-      Option(voiceChannel.getPermissionOverride(member))
-        .fold(PermissionAttachment.empty)(PermissionAttachment.apply)
+    val originalPerms = voiceChannel.getPermissionAttachment(member)
 
     if (!originalPerms.denies.contains(Permission.VOICE_CONNECT)) {
       val permsWithVoiceBan = originalPerms.deny(Permission.VOICE_CONNECT)
