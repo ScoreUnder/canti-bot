@@ -70,7 +70,6 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
       else if (failed) Some(StayVote)
       else None
 
-    // TODO: There is no actual expiry mechanic other than cosmetically
     def expired: Boolean = System.currentTimeMillis() >= expiry
 
     def ended: Boolean = passed || failed || expired
