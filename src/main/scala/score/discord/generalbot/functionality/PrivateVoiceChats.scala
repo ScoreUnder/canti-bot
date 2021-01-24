@@ -1,19 +1,13 @@
 package score.discord.generalbot.functionality
 
-import gnu.trove.map.hash.TLongObjectHashMap
-
-import java.util
-import java.util.Collections
-import java.util.concurrent.ConcurrentHashMap
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
-import net.dv8tion.jda.api.requests.restaction.ChannelAction
 import net.dv8tion.jda.api.{JDA, Permission}
-import net.dv8tion.jda.internal.requests.restaction.{ChannelActionImpl, PermOverrideData}
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.{Command, ReplyingCommand}
+import score.discord.generalbot.discord.permissions.{PermissionAttachment, PermissionCollection}
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.util._
 import score.discord.generalbot.wrappers.FutureEither._
@@ -24,7 +18,7 @@ import score.discord.generalbot.wrappers.jda.IdConversions._
 import score.discord.generalbot.wrappers.jda.matching.Events.GuildVoiceUpdate
 import score.discord.generalbot.wrappers.jda.{ChannelPermissionUpdater, ID}
 
-import java.lang.reflect.Field
+import java.util.concurrent.ConcurrentHashMap
 import scala.async.Async._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,7 +27,6 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.util.chaining._
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 class PrivateVoiceChats(
@@ -47,27 +40,6 @@ class PrivateVoiceChats(
 
   private case class Invite(from: ID[User], channel: ID[VoiceChannel], expiry: Timestamp) {
     def valid = System.currentTimeMillis() < expiry
-  }
-
-  private[PrivateVoiceChats] object JDAHack {
-    lazy val field: Field = {
-      val f = classOf[ChannelActionImpl[_]].getDeclaredField("overrides")
-      f.setAccessible(true)
-      f
-    }
-
-    def removeManageRolesPerms(channelReq: ChannelAction[_]): Unit = {
-      // Work around discord API bug: channels cannot be created with MANAGE_ROLES anywhere in permissions unless you are admin
-      try {
-        val overrides = field.get(channelReq).asInstanceOf[TLongObjectHashMap[PermOverrideData]]
-        overrides.transformValues { v =>
-          val manageRoles = Permission.MANAGE_ROLES.getRawValue
-          new PermOverrideData(v.`type`, v.id, v.allow & ~manageRoles, v.deny & ~manageRoles)
-        }
-      } catch {
-        case NonFatal(_) =>
-      }
-    }
   }
 
   {
@@ -313,10 +285,10 @@ class PrivateVoiceChats(
   }
 
   private val CREATOR_PRIVATE_CHANNEL_PERMISSIONS =
-    util.Arrays.asList(Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT, Permission.VOICE_MOVE_OTHERS)
+    Set(Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT, Permission.VOICE_MOVE_OTHERS)
 
   private val SELF_PRIVATE_CHANNEL_PERMISSIONS =
-    util.Arrays.asList(Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT)
+    Set(Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT)
 
   private val mistakeRegex = """ (\d+)$""".r.unanchored
 
@@ -342,13 +314,17 @@ class PrivateVoiceChats(
         voiceChannel <- Option(member.getVoiceState.getChannel)
           .toRight("You need to join voice chat before you can do this.")
         (limit, name) = parseChannelDetails(args, voiceChannel, public)
-        channelReq <- createChannel(name, guild, defaultCategory.orElse(Option(voiceChannel.getParent)))
+        category = defaultCategory.orElse(Option(voiceChannel.getParent))
+        channelReq <- createChannel(name, guild, category)
       } yield {
         async {
-          addChannelPermissions(channelReq, member, limit, public)
+          val categoryPerms = category.fold(PermissionCollection.empty[IPermissionHolder])(_.permissionOverrides)
+          val channelPerms = getChannelPermissions(member, limit, public)
+          val newPerms = categoryPerms.merge(channelPerms).mapValues(_.clear(Permission.MANAGE_ROLES, Permission.MANAGE_PERMISSIONS))
+          channelReq.applyPerms(newPerms)
 
-          // Work around discord API bug: channels cannot be created with MANAGE_ROLES anywhere in permissions unless you are admin
-          JDAHack.removeManageRolesPerms(channelReq)
+          if (limit != 0 && !public)
+            channelReq.setUserlimit(limit)
 
           val newVoiceChannel = await(channelReq.queueFuture())
 
@@ -397,30 +373,17 @@ class PrivateVoiceChats(
     successMessage
   }
 
-  private def addChannelPermissions(channelReq: ChannelAction[VoiceChannel], member: Member, limit: Int, public: Boolean) = {
+  private def getChannelPermissions(member: Member, limit: Int, public: Boolean): PermissionCollection[IPermissionHolder] = {
     val guild = member.getGuild
-    if (!public) {
-      if (limit == 0)
-      // If no limit, deny access to all users by default
-        channelReq
-          .addPermissionOverride(
-            guild.getPublicRole,
-            Collections.emptyList[Permission], util.Arrays.asList(Permission.VOICE_CONNECT)
-          )
-      else
-      // Otherwise, if there is a limit, use that and don't add extra permissions
-        channelReq
-          .setUserlimit(limit)
-    }
+    var collection: PermissionCollection[IPermissionHolder] = PermissionCollection.empty
 
-    channelReq
-      .addPermissionOverride(
-        guild.getSelfMember,
-        SELF_PRIVATE_CHANNEL_PERMISSIONS, Collections.emptyList[Permission]
-      )
-      .addPermissionOverride(
-        member, CREATOR_PRIVATE_CHANNEL_PERMISSIONS, Collections.emptyList[Permission]
-      )
+    if (!public && limit == 0)
+      // If no limit, deny access to all users by default
+      collection :+= guild.getPublicRole -> PermissionAttachment( denies = Set(Permission.VOICE_CONNECT))
+
+    collection :+
+      guild.getSelfMember -> PermissionAttachment(allows = SELF_PRIVATE_CHANNEL_PERMISSIONS) :+
+      member -> PermissionAttachment(allows = CREATOR_PRIVATE_CHANNEL_PERMISSIONS)
   }
 
   private def prefixOrUpdateNumber(name: String, prefix: String): String = {
