@@ -70,6 +70,8 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
       logger.debug(s"ROLE ADD: ${ev.getMember.unambiguousString}: ${ev.getRoles}")
     case ev: GuildMemberRoleRemoveEvent =>
       logger.debug(s"ROLE DEL: ${ev.getMember.unambiguousString}: ${ev.getRoles}")
+    case ev: GuildVoiceDeafenEvent =>
+      logger.debug(s"DEAFEN: ${ev.getMember.unambiguousString} isDeafened=${ev.isDeafened}")
     case _: GenericUserEvent
          | _: GenericGuildMessageEvent
          | _: GuildMemberUpdateEvent
@@ -77,6 +79,8 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
          | _: GuildVoiceSelfMuteEvent
          | _: GuildVoiceMuteEvent
          | _: GuildVoiceGuildMuteEvent
+         | _: GuildVoiceSelfDeafenEvent
+         | _: GuildVoiceGuildDeafenEvent
          | _: GuildMemberUpdateNicknameEvent
          | _: MessageEmbedEvent
          | _: HttpRequestEvent =>
