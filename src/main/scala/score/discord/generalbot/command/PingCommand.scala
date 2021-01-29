@@ -17,7 +17,7 @@ class PingCommand(implicit messageOwnership: MessageOwnership, replyCache: Reply
 
   override def description: String = "Check the lag from the bot to the server"
 
-  def getPingMessage(timeSent: Instant, timeReallySent: Option[Instant], timeOnServer: Instant, timeReceived: Instant): String = {
+  def getPingMessage(timeSent: Instant, timeReallySent: Option[Instant], timeOnServer: Instant, timeReceived: Instant, gatewayPing: Long): String = {
     var times = mutable.Buffer.empty[String]
 
     def diff(x: Instant, y: Instant) = formatTimeDiff(Duration.between(x, y))
@@ -34,6 +34,7 @@ class PingCommand(implicit messageOwnership: MessageOwnership, replyCache: Reply
       times += s"Total time (excl. rate limiting): ${diff(time, timeReceived)}"
     }
     times += s"Total time: ${diff(timeSent, timeReceived)}"
+    times += s"(Reported gateway ping: ${formatTimeDiff(Duration.ofMillis(gatewayPing))})"
     times.mkString("\n")
   }
 
@@ -48,7 +49,7 @@ class PingCommand(implicit messageOwnership: MessageOwnership, replyCache: Reply
       timeOnServer = pingMessage.getTimeCreated.toInstant
       timeReceived = Instant.now()
       _ = messageOwnership(pingMessage) = message.getAuthor
-      _ <- pingMessage.editMessage(getPingMessage(timeSent, timeReallySent, timeOnServer, timeReceived)).queueFuture()
+      _ <- pingMessage.editMessage(getPingMessage(timeSent, timeReallySent, timeOnServer, timeReceived, message.getJDA.getGatewayPing)).queueFuture()
     } yield ())
       .failed.foreach(APIHelper.loudFailure("checking ping", message))
   }
