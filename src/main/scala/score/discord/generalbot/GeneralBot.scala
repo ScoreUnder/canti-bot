@@ -1,15 +1,11 @@
 package score.discord.generalbot
 
-import java.io.{File, IOException}
-import java.net.URLClassLoader
-import java.util
-import java.util.concurrent.{Executors, ScheduledExecutorService}
-
 import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.GatewayIntent
+import net.dv8tion.jda.api.utils.cache.CacheFlag
 import net.dv8tion.jda.api.{JDA, JDABuilder}
 import score.discord.generalbot.collections.CacheCoordinator._
 import score.discord.generalbot.collections._
@@ -21,6 +17,10 @@ import score.discord.generalbot.wrappers.Scheduler
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
+import java.io.{File, IOException}
+import java.net.URLClassLoader
+import java.util
+import java.util.concurrent.{Executors, ScheduledExecutorService}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -49,7 +49,9 @@ class GeneralBot {
             GUILD_VOICE_STATES, /* Voice kick, private voice chats */
             DIRECT_MESSAGES, /* Same as GUILD_MESSAGES */
             DIRECT_MESSAGE_REACTIONS, /* Same as GUILD_MESSAGE_REACTIONS */
-          )})
+          )
+        })
+          .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS)
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
