@@ -2,6 +2,7 @@ package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.{Member, Role}
 import net.dv8tion.jda.internal.entities.MemberImpl
+import score.discord.canti.wrappers.jda.Conversions.toRichUser
 
 class RichMember(val member: Member) extends AnyVal {
   /** Check if this member has the given role.
@@ -16,6 +17,8 @@ class RichMember(val member: Member) extends AnyVal {
 
   /** Used to add/remove roles from this member */
   def roles = new MemberRolesShim(member)
+
+  def unambiguousString = s"${member.getUser.unambiguousString} @ ${member.getGuild}"
 }
 
 class MemberRolesShim(val member: Member) extends AnyVal {

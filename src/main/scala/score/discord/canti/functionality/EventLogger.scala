@@ -51,14 +51,14 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
       logger.trace(s"EDITED: ${ev.getChannel.unambiguousString} ${ev.getAuthor.unambiguousString}\n" +
         formatMessage(ev.getMessage))
     case ev: GuildVoiceJoinEvent =>
-      logger.debug(s"VOICE JOIN: ${ev.getMember.getUser.unambiguousString} in ${ev.getChannelJoined.unambiguousString}")
+      logger.debug(s"VOICE JOIN: ${ev.getMember.unambiguousString} in ${ev.getChannelJoined.unambiguousString}")
     case ev: GuildVoiceLeaveEvent =>
-      logger.debug(s"VOICE PART: ${ev.getMember.getUser.unambiguousString} from ${ev.getChannelLeft.unambiguousString}")
+      logger.debug(s"VOICE PART: ${ev.getMember.unambiguousString} from ${ev.getChannelLeft.unambiguousString}")
     case ev: GuildVoiceMoveEvent =>
-      logger.debug(s"VOICE MOVE: ${ev.getMember.getUser.unambiguousString} from " +
+      logger.debug(s"VOICE MOVE: ${ev.getMember.unambiguousString} from " +
         s"${ev.getChannelLeft.unambiguousString} to ${ev.getChannelJoined.unambiguousString}")
     case ev: GuildMemberUpdateNicknameEvent =>
-      logger.trace(s"NICK CHANGE: ${ev.getGuild.unambiguousString} ${ev.getMember.getUser.unambiguousString} " +
+      logger.trace(s"NICK CHANGE: ${ev.getGuild.unambiguousString} ${ev.getMember.unambiguousString} " +
         s"from ${ev.getOldNickname} to ${ev.getNewNickname}")
     case ev: MessageReactionAddEvent =>
       logHigherIfMyMessage(ev, s"REACT: ${ev.getUser.unambiguousString} ${ev.getReaction}")
@@ -67,9 +67,9 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
     case ev: MessageReactionRemoveAllEvent =>
       logHigherIfMyMessage(ev, s"CLEAR REACT: ${ev.getMessageId}")
     case ev: GuildMemberRoleAddEvent =>
-      logger.debug(s"ROLE ADD: ${ev.getMember.getUser.unambiguousString}: ${ev.getRoles}")
+      logger.debug(s"ROLE ADD: ${ev.getMember.unambiguousString}: ${ev.getRoles}")
     case ev: GuildMemberRoleRemoveEvent =>
-      logger.debug(s"ROLE DEL: ${ev.getMember.getUser.unambiguousString}: ${ev.getRoles}")
+      logger.debug(s"ROLE DEL: ${ev.getMember.unambiguousString}: ${ev.getRoles}")
     case _: GenericUserEvent
          | _: GenericGuildMessageEvent
          | _: GuildMemberUpdateEvent
