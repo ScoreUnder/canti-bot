@@ -10,7 +10,7 @@ lazy val root = (project in file(".")).
       git.useGitDescribe := true,
     )),
     name := "canti-bot",
-    scalacOptions ++= List("-deprecation", "-unchecked", "-feature", "-Xasync"),
+    scalacOptions ++= List("-deprecation", "-unchecked", "-feature", "-Xasync", "-opt:inline,l:method", "-opt-inline-from:**"),
     resolvers += "jcenter-bintray" at "https://jcenter.bintray.com",
     libraryDependencies ++= Seq(
       scalaTest % Test,
