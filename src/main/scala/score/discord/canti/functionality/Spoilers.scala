@@ -125,8 +125,9 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, 
         privateChannel.sendMessage(s"**Spoiler contents** from $channelName\n$text").queue()
       }
     case MessageDelete(id) =>
-      spoilerTexts.remove(id).failed.foreach(APIHelper.failure("removing spoiler"))
-      logger.info(s"Deleted spoiler $id")
+      val futureRows = spoilerTexts.remove(id)
+      futureRows.failed.foreach(APIHelper.failure("removing spoiler"))
+      futureRows.foreach(r => if (r != 0) logger.info(s"Deleted spoiler $id"))
     case _ =>
   }
 }
