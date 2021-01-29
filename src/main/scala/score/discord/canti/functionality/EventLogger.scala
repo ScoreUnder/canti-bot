@@ -4,7 +4,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events._
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent
-import net.dv8tion.jda.api.events.guild.member.{GuildMemberRoleAddEvent, GuildMemberRoleRemoveEvent, GuildMemberUpdateEvent}
+import net.dv8tion.jda.api.events.guild.member.{GuildMemberJoinEvent, GuildMemberRemoveEvent, GuildMemberRoleAddEvent, GuildMemberRoleRemoveEvent, GuildMemberUpdateEvent}
 import net.dv8tion.jda.api.events.guild.voice._
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
 import net.dv8tion.jda.api.events.message._
@@ -18,6 +18,7 @@ import score.discord.canti.util.StringUtils.{formatMessageForLog => formatMessag
 import score.discord.canti.wrappers.jda.Conversions._
 import score.discord.canti.wrappers.jda.ID
 
+import java.util
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.reflectiveCalls
 
@@ -82,11 +83,15 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
          | _: GuildVoiceSelfDeafenEvent
          | _: GuildVoiceGuildDeafenEvent
          | _: GuildMemberUpdateNicknameEvent
+         | _: GuildMemberRemoveEvent
+         | _: GuildMemberJoinEvent
          | _: MessageEmbedEvent
          | _: HttpRequestEvent =>
     // Ignored (they're pretty boring)
     case ev =>
-      logger.debug(ev.getClass.toGenericString)
+      if (!util.Arrays.stream(ev.getClass.getAnnotations).anyMatch(_.isInstanceOf[Deprecated])) {
+        logger.debug(ev.getClass.toGenericString)
+      }
   }
 
 }
