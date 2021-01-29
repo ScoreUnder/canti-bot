@@ -1,5 +1,8 @@
 package score.discord.generalbot.collections
 
+import org.slf4j.LoggerFactory
+import score.discord.generalbot.collections.CacheCoordinator.logger
+
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -57,13 +60,14 @@ class CacheCoordinator[K, V](cache: CacheLayer[K, Option[V]], backend: AsyncMap[
           case _ =>
         }
       }
-      case Some(Failure(exception)) => exception.printStackTrace()
+      case Some(Failure(exception)) => logger.error("Cache request completed with failure", exception)
       case None => throw new IllegalStateException("onRequestComplete() called for incomplete future")
     }
   }
 }
 
 object CacheCoordinator {
+  private[CacheCoordinator] val logger = LoggerFactory.getLogger(getClass)
 
   class RichAsyncMap[K, V](val me: AsyncMap[K, V]) extends AnyVal {
     def withCache(cache: CacheLayer[K, Option[V]]): CacheCoordinator[K, V] =

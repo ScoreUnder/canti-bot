@@ -3,6 +3,7 @@ package score.discord.generalbot.util
 import net.dv8tion.jda.api.entities.{Message, MessageChannel}
 import net.dv8tion.jda.api.exceptions.{ErrorResponseException, PermissionException}
 import net.dv8tion.jda.api.requests.{ErrorResponse, RestAction}
+import org.slf4j.LoggerFactory
 import score.discord.generalbot.collections.ReplyCache
 import score.discord.generalbot.functionality.ownership.MessageOwnership
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -14,14 +15,15 @@ import scala.util.chaining._
 
 /** Miscellaneous functions useful when dealing with JDA's API calls */
 object APIHelper {
+  private[this] val logger = LoggerFactory.getLogger(getClass)
+
   /** Curried function to report an exception to the console.
     *
     * @param whatFailed what you were doing to cause the exception, described for the bot owner
     * @param exception  the exception to print
     */
   def failure(whatFailed: String)(exception: Throwable): Unit = {
-    System.err.println(s"API call failed when $whatFailed")
-    exception.printStackTrace()
+    logger.error(s"API call failed when $whatFailed", exception)
   }
 
   private def describeFailure(whatFailed: String, exception: Throwable): String = {

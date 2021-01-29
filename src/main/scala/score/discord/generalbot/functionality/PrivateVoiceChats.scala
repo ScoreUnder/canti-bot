@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.{JDA, Permission}
+import org.slf4j.LoggerFactory
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.{Command, ReplyingCommand}
 import score.discord.generalbot.discord.permissions.{PermissionAttachment, PermissionCollection}
@@ -34,6 +35,8 @@ class PrivateVoiceChats(
   defaultCategoryByGuild: AsyncMap[ID[Guild], ID[GuildChannel]],
   commands: Commands,
 )(implicit scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+  private[this] val logger = LoggerFactory.getLogger(classOf[PrivateVoiceChats])
+
   private val invites = new ConcurrentHashMap[GuildUserId, Invite]()
 
   private type Timestamp = Long
@@ -428,8 +431,7 @@ class PrivateVoiceChats(
       case e: PermissionException =>
         s"I don't have permission to create a voice channel. A server administrator will need to fix this. Missing `${e.getPermission.getName}`."
       case x =>
-        System.err.println("Printing a stack trace for failed channel creation:")
-        x.printStackTrace()
+        logger.error("Failed to create channel", x)
         "Unknown error occurred when trying to create your channel."
     })
 

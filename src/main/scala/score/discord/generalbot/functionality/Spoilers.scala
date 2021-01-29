@@ -3,6 +3,7 @@ package score.discord.generalbot.functionality
 import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import org.slf4j.LoggerFactory
 import score.discord.generalbot.collections.{AsyncMap, ReplyCache}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
@@ -18,6 +19,8 @@ import scala.concurrent.Future
 import scala.util.chaining._
 
 class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+  private[this] val logger = LoggerFactory.getLogger(classOf[Spoilers])
+
   val spoilerEmote = "🔍"
 
   commands register new Command.Anyone {
@@ -102,6 +105,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, 
       }
       await(spoilerMessage.addReaction(spoilerEmote).queueFuture())
       await(spoilerDbUpdate)
+      logger.info(s"Created spoiler ${spoilerMessage.id} on behalf of ${author.unambiguousString}")
     }
   }
 
@@ -117,9 +121,12 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, 
         privateChannel <- APIHelper.tryRequest(user.openPrivateChannel(),
           onFail = APIHelper.failure(s"opening private channel with ${user.unambiguousString}"))
       } {
+        logger.debug(s"Sending spoiler id ${message.value} to ${user.unambiguousString}")
         privateChannel.sendMessage(s"**Spoiler contents** from $channelName\n$text").queue()
       }
-    case MessageDelete(id) => spoilerTexts.remove(id).failed.foreach(APIHelper.failure("removing spoiler"))
+    case MessageDelete(id) =>
+      spoilerTexts.remove(id).failed.foreach(APIHelper.failure("removing spoiler"))
+      logger.info(s"Deleted spoiler $id")
     case _ =>
   }
 }

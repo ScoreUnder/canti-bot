@@ -3,9 +3,11 @@ package score.discord.generalbot.functionality
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import org.slf4j.LoggerFactory
 import score.discord.generalbot.collections.{MessageCache, ReplyCache}
 import score.discord.generalbot.command.Command
 import score.discord.generalbot.functionality.ownership.MessageOwnership
+import score.discord.generalbot.util.StringUtils.formatMessageForLog
 import score.discord.generalbot.util.{APIHelper, BotMessages}
 import score.discord.generalbot.wrappers.Scheduler
 import score.discord.generalbot.wrappers.jda.Conversions._
@@ -15,6 +17,7 @@ import scala.collection.mutable
 import scala.util.chaining._
 
 class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache: ReplyCache, messageOwnership: MessageOwnership) extends EventListener {
+  private val logger = LoggerFactory.getLogger(classOf[Commands])
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
   // Commands list excluding aliases
@@ -109,23 +112,42 @@ class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache:
       case Left(err) => message ! BotMessages.error(err)
     }
 
+  private def logIfMaybeCommand(logPrefix: String, message: Message): Unit = {
+    if (message.getContentRaw.startsWith(prefix)) {
+      logger.debug(s"$logPrefix: ${message.rawId} ${message.getAuthor.unambiguousString} ${message.getChannel.unambiguousString}\n${formatMessageForLog(message)}")
+    }
+  }
+
+  private def logCommandInvocation(message: Message, cmd: Command): Unit = {
+    logger.debug(s"Running command '${cmd.name}' on behalf of ${message.getAuthor.unambiguousString} in ${message.getChannel.unambiguousString}")
+  }
+
   override def onEvent(event: GenericEvent): Unit = {
     event match {
       case NonBotMessage(message) =>
+        logIfMaybeCommand("COMMAND?", message)
         for ((cmd, cmdExtra) <- parseCommand(message.getContentRaw)) {
+          logCommandInvocation(message, cmd)
           runIfAllowed(message, cmd, cmdExtra)
         }
       case NonBotMessageEdit(oldMsg, newMsg) =>
+        logIfMaybeCommand("COMMAND EDIT?", newMsg)
         for ((cmd, cmdExtra) <- parseCommand(newMsg.getContentRaw)) {
           parseCommand(oldMsg.text) match {
             case None =>
+              logger.debug(s"Editing non-command to command")
+              logCommandInvocation(newMsg, cmd)
               runIfAllowed(newMsg, cmd, cmdExtra)
             case Some((`cmd`, _)) =>
+              logger.debug(s"Editing old command in $oldMsg (same command)")
+              logCommandInvocation(newMsg, cmd)
               canRunCommand(cmd, newMsg) match {
                 case Right(_) => cmd.executeForEdit(newMsg, replyCache.get(oldMsg.messageId), cmdExtra)
                 case Left(_) => // Do not print error for edits to command with no perms
               }
             case Some((_, _)) =>
+              logger.debug(s"Editing old command in $oldMsg (different command)")
+              logCommandInvocation(newMsg, cmd)
               runIfAllowed(newMsg, cmd, cmdExtra) match {
                 case Right(_) => replyCache.get(oldMsg.messageId).foreach { replyId =>
                   APIHelper.tryRequest(newMsg.getChannel.deleteMessageById(replyId.value),
