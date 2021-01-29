@@ -339,6 +339,7 @@ class PrivateVoiceChats(
             ownerByChannel remove newVoiceChannel
           }
 
+          logger.info(s"Created user-owned channel ${newVoiceChannel.unambiguousString} on behalf of ${member.unambiguousString}")
           message ! makeCreateChannelSuccessMessage(name, limit, public, commandName, args)
 
           await(APIHelper.tryRequest(guild.moveVoiceMember(member, newVoiceChannel))
@@ -440,6 +441,16 @@ class PrivateVoiceChats(
       Option(guild.getCategoryById(id.value))
     })
 
+  private def deleteUserOwnedChannel(channel: VoiceChannel) = {
+    async {
+      await(channel.delete.queueFuture())
+      logger.info(s"Deleted empty user-owned voice chat ${channel.unambiguousString} in ${channel.getGuild}")
+      // Note: Sequenced rather than parallel because the channel
+      // might not be deleted due to permissions or other reasons.
+      await(ownerByChannel remove channel)
+    }
+  }
+
   override def onEvent(event: GenericEvent): Unit = event match {
     case ev: ReadyEvent =>
       implicit val jda: JDA = ev.getJDA
@@ -452,12 +463,7 @@ class PrivateVoiceChats(
             case None =>
               toRemove += ((guildId, channelId))
             case Some(channel) if channel.getMembers.isEmpty =>
-              async {
-                await(channel.delete.queueFuture())
-                // Note: Sequenced rather than parallel because the channel
-                // might not be deleted due to permissions or other reasons.
-                await(ownerByChannel remove channel)
-              }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+              deleteUserOwnedChannel(channel).failed.foreach(APIHelper.failure("deleting unused private channel"))
             case _ =>
           }
         }
@@ -473,8 +479,7 @@ class PrivateVoiceChats(
       async {
         val user = await(ownerByChannel(leftChannel))
         if (user.isDefined) {
-          await(leftChannel.delete.queueFuture())
-          await(ownerByChannel remove leftChannel)
+          await(deleteUserOwnedChannel(leftChannel))
         }
       }.failed.foreach(APIHelper.failure("deleting unused private channel"))
 
