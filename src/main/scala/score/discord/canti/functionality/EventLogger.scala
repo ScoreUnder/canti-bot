@@ -3,6 +3,10 @@ package score.discord.canti.functionality
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events._
+import net.dv8tion.jda.api.events.channel.text.{TextChannelCreateEvent, TextChannelDeleteEvent}
+import net.dv8tion.jda.api.events.channel.text.update.{GenericTextChannelUpdateEvent, TextChannelUpdateNameEvent, TextChannelUpdateSlowmodeEvent}
+import net.dv8tion.jda.api.events.channel.voice.{VoiceChannelCreateEvent, VoiceChannelDeleteEvent}
+import net.dv8tion.jda.api.events.channel.voice.update.{GenericVoiceChannelUpdateEvent, VoiceChannelUpdateNameEvent}
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent
 import net.dv8tion.jda.api.events.guild.member.{GuildMemberJoinEvent, GuildMemberRemoveEvent, GuildMemberRoleAddEvent, GuildMemberRoleRemoveEvent, GuildMemberUpdateEvent}
 import net.dv8tion.jda.api.events.guild.voice._
@@ -73,6 +77,18 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
       logger.debug(s"ROLE DEL: ${ev.getMember.unambiguousString}: ${ev.getRoles}")
     case ev: GuildVoiceDeafenEvent =>
       logger.debug(s"DEAFEN: ${ev.getMember.unambiguousString} isDeafened=${ev.isDeafened}")
+    case ev: GenericTextChannelUpdateEvent[_] =>
+      logger.debug(s"TEXT CHANNEL UPDATE: ${ev.getPropertyIdentifier} = ${ev.getOldValue} → ${ev.getNewValue} for ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
+    case ev: GenericVoiceChannelUpdateEvent[_] =>
+      logger.debug(s"VOICE CHANNEL UPDATE: ${ev.getPropertyIdentifier} = ${ev.getOldValue} → ${ev.getNewValue} for ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
+    case ev: VoiceChannelCreateEvent =>
+      logger.debug(s"VOICE CHANNEL CREATE: ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
+    case ev: VoiceChannelDeleteEvent =>
+      logger.debug(s"VOICE CHANNEL DELETE: ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
+    case ev: TextChannelCreateEvent =>
+      logger.debug(s"TEXT CHANNEL CREATE: ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
+    case ev: TextChannelDeleteEvent =>
+      logger.debug(s"TEXT CHANNEL DELETE: ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
     case _: GenericUserEvent
          | _: GenericGuildMessageEvent
          | _: GuildMemberUpdateEvent
@@ -85,6 +101,7 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
          | _: GuildMemberUpdateNicknameEvent
          | _: GuildMemberRemoveEvent
          | _: GuildMemberJoinEvent
+         | _: GuildVoiceStreamEvent
          | _: MessageEmbedEvent
          | _: HttpRequestEvent =>
     // Ignored (they're pretty boring)
