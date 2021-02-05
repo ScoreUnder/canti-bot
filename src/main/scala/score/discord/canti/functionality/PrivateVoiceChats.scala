@@ -54,7 +54,7 @@ class PrivateVoiceChats(
       override def description = "Accept another user's invitation to join a voice channel"
 
       override def execute(message: Message, args: String): Unit = {
-        try message.delete.queue()
+        try message.delete.queueFuture()
         catch {
           case _: PermissionException =>
         }
