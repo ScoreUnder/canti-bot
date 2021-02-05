@@ -67,9 +67,9 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
       logger.trace(s"NICK CHANGE: ${ev.getGuild.unambiguousString} ${ev.getMember.unambiguousString} " +
         s"from ${ev.getOldNickname} to ${ev.getNewNickname}")
     case ev: MessageReactionAddEvent =>
-      logHigherIfMyMessage(ev, s"REACT: ${ev.getUser.unambiguousString} ${ev.getReaction}")
+      logHigherIfMyMessage(ev, s"REACT: ${Option(ev.getUser).fold(s"User?(${ev.getUserId})")(_.unambiguousString)} ${ev.getReaction}")
     case ev: MessageReactionRemoveEvent =>
-      logHigherIfMyMessage(ev, s"UNREACT: ${ev.getUser.unambiguousString} ${ev.getReaction}")
+      logHigherIfMyMessage(ev, s"UNREACT: ${Option(ev.getUser).fold(s"User?(${ev.getUserId})")(_.unambiguousString)} ${ev.getReaction}")
     case ev: MessageReactionRemoveAllEvent =>
       logHigherIfMyMessage(ev, s"CLEAR REACT: ${ev.getMessageId}")
     case ev: GuildMemberRoleAddEvent =>
