@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.events.http.HttpRequestEvent
 import net.dv8tion.jda.api.events.message._
 import net.dv8tion.jda.api.events.message.guild.GenericGuildMessageEvent
 import net.dv8tion.jda.api.events.message.react._
+import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.events.user.GenericUserEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import org.slf4j.LoggerFactory
@@ -92,6 +93,7 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
     case _: GenericUserEvent
          | _: GenericGuildMessageEvent
          | _: GuildMemberUpdateEvent
+         | _: RoleUpdatePositionEvent
          | _: GatewayPingEvent
          | _: GuildVoiceSelfMuteEvent
          | _: GuildVoiceMuteEvent
