@@ -4,12 +4,14 @@ import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL
 import net.dv8tion.jda.api.{JDA, Permission}
 import org.slf4j.LoggerFactory
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.{Command, ReplyingCommand}
 import score.discord.canti.discord.permissions.{PermissionAttachment, PermissionCollection}
 import score.discord.canti.functionality.ownership.MessageOwnership
+import score.discord.canti.util.APIHelper.Error
 import score.discord.canti.util._
 import score.discord.canti.wrappers.FutureEither._
 import score.discord.canti.wrappers.Scheduler
@@ -443,8 +445,12 @@ class PrivateVoiceChats(
 
   private def deleteUserOwnedChannel(channel: VoiceChannel) = {
     async {
-      await(channel.delete.queueFuture())
-      logger.info(s"Deleted empty user-owned voice chat ${channel.unambiguousString} in ${channel.getGuild}")
+      await(channel.delete.queueFuture().tap(_.foreach { _ =>
+        logger.info(s"Deleted empty user-owned voice chat ${channel.unambiguousString} in ${channel.getGuild}")
+      }).recover {
+        case Error(UNKNOWN_CHANNEL) =>
+          logger.info(s"Tried to delete empty user-owned voice chat ${channel.unambiguousString} in ${channel.getGuild}, but it was already gone")
+      })
       // Note: Sequenced rather than parallel because the channel
       // might not be deleted due to permissions or other reasons.
       await(ownerByChannel remove channel)
