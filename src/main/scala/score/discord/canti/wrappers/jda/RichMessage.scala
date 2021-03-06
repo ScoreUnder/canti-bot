@@ -1,6 +1,7 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.{Guild, Message, TextChannel}
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.wrappers.jda.Conversions._
@@ -19,10 +20,16 @@ class RichMessage(val me: Message) extends AnyVal {
     * @return the new Message, wrapped in Future
     */
   def !(contents: MessageFromX)(implicit mo: MessageOwnership, replyCache: ReplyCache): Future[Message] =
-    me.reply(contents.toMessage).mentionRepliedUser(false).queueFuture().tap(_.foreach { message =>
-      mo(message) = me.getAuthor
-      replyCache += me.id -> message.id
-    })
+    me.reply(contents.toMessage).mentionRepliedUser(false).queueFuture()
+      .recoverWith {
+        case ex: ErrorResponseException if ex.getMeaning.contains("Unknown message") =>
+          // TODO: once JDA gets a real ErrorResponse for this, target that instead of the "Unknown message" string
+          me.getChannel.sendMessage(contents.toMessage).queueFuture()
+      }
+      .tap(_.foreach { message =>
+        mo(message) = me.getAuthor
+        replyCache += me.id -> message.id
+      })
 
   def guild: Option[Guild] =
     if (me.isFromGuild) Some(me.getGuild)
