@@ -26,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.async.Async._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise}
 import scala.jdk.CollectionConverters._
 import scala.language.postfixOps
 import scala.util.chaining._
@@ -49,15 +49,21 @@ class PrivateVoiceChats(
     def valid: Boolean = System.currentTimeMillis() < expiry
   }
 
+  private trait MyReplyingCommand extends ReplyingCommand {
+    override implicit def messageOwnership: MessageOwnership = PrivateVoiceChats.this.messageOwnership
+
+    override implicit def replyCache: ReplyCache = PrivateVoiceChats.this.replyCache
+  }
+
   {
-    val accept: Command = new Command.Anyone {
+    val accept: Command = new Command.Anyone with MyReplyingCommand {
       override def name = "accept"
 
       override def aliases = List("acc", "accpet")
 
       override def description = "Accept another user's invitation to join a voice channel"
 
-      override def execute(message: Message, args: String): Unit = {
+      override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
         try message.delete.queueFuture()
         catch {
           case _: PermissionException =>
@@ -78,27 +84,24 @@ class PrivateVoiceChats(
           memberName = member.getEffectiveName
           voiceMention = s"<#${voiceChannel.rawId}>"
         } yield APIHelper.tryRequest(
-          message.getGuild.moveVoiceMember(member, voiceChannel),
-          onFail = sendErrorOrRetry(message) {
-            execute(message, args)
-          }
-        ).foreach { _ =>
-          invites.remove(GuildUserId(member))
-          message ! BotMessages
-            .okay(s"Moved you into the $voiceMention channel.")
-            .setTitle(s"$memberName: Success!", null)
+          message.getGuild.moveVoiceMember(member, voiceChannel)
+        ).transformWith {
+          case Success(_) =>
+            invites.remove(GuildUserId(member))
+            Future.successful(BotMessages.okay(s"Moved you into the $voiceMention channel.")
+              .setTitle(s"$memberName: Success!", null)
+              .toMessage)
+          case Failure(ex) =>
+            sendErrorOrRetry(message) {
+              executeAndGetMessage(message, args)
+            }(ex)
         }
 
-        for (err <- result.left) {
-          val errEmbed = BotMessages.error(err)
-          for (member <- member)
-            errEmbed.setTitle(s"${member.getEffectiveName}: Error", null)
-          message ! errEmbed
-        }
+        result.pipe(x => eitherToFutureMessage(x))
       }
     }
 
-    val invite: Command = new Command.Anyone {
+    val invite: Command = new Command.Anyone with MyReplyingCommand {
       override def name = "invite"
 
       override val aliases = List("inv")
@@ -116,7 +119,7 @@ class PrivateVoiceChats(
 
       val permInviteMessage: String = s"You may now enter the channel."
 
-      override def execute(message: Message, args: String): Unit = {
+      override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
         val response = for {
           member <- CommandHelper(message).member
           chan <- Option(member.getVoiceState.getChannel)
@@ -129,10 +132,7 @@ class PrivateVoiceChats(
           }
         } yield success
 
-        response.fold(
-          x => Future.successful(BotMessages.error(x): MessageFromX),
-          x => x.map(s => s: MessageFromX)
-        ) foreach (message ! _)
+        response.pipe(x => eitherToFutureMessage(x))
       }
 
       def inviteUsers(channel: VoiceChannel, inviter: User, invitees: Seq[User]): Future[String] = {
@@ -193,7 +193,7 @@ class PrivateVoiceChats(
       }
     }
 
-    val privat: Command = new Command.Anyone {
+    val privat: Command = new Command.Anyone with MyReplyingCommand {
       override def name = "private"
 
       override val aliases = List("prv", "pv", "voice")
@@ -208,12 +208,12 @@ class PrivateVoiceChats(
            |The name of the channel can be set by adding it to the end of the command.
            |e.g. `$invocation 3 Hangout number 1`""".stripMargin
 
-      override def execute(message: Message, args: String): Unit = {
+      override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
         createUserOwnedChannelFromMessage(message, args, name, public = false)
       }
     }
 
-    val public: Command = new Command.Anyone {
+    val public: Command = new Command.Anyone with MyReplyingCommand {
       override def name: String = "public"
 
       override def aliases: Seq[String] = List("pbv", "pb")
@@ -226,7 +226,7 @@ class PrivateVoiceChats(
            |The name of the channel can be set by adding it to the end of the command.
            |e.g. `$invocation Hangout number 1`""".stripMargin
 
-      override def execute(message: Message, args: String): Unit = {
+      override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
         createUserOwnedChannelFromMessage(message, args, name, public = true)
       }
     }
@@ -251,7 +251,7 @@ class PrivateVoiceChats(
             case "none" => removeDefaultCategory(guild)
             case arg => setDefaultCategory(guild, arg)
           }
-        }.fold({ e => Future.successful(BotMessages.error(e).toMessage) }, identity)
+        }.pipe(x => eitherToFutureMessage(x))
 
       private def showCurrentCategory(guild: Guild): Future[Message] =
         getGuildDefaultCategory(guild).map { opt =>
@@ -307,27 +307,37 @@ class PrivateVoiceChats(
       s"I don't have permission to move you to another voice channel. A server administrator will need to fix this. Missing `${e.getPermission.getName}`."
   }
 
-  private def sendChannelMoveError(replyTo: Message)(ex: Throwable): Unit = {
-    replyTo ! BotMessages.error(translateChannelMoveError.applyOrElse(ex, { ex: Throwable =>
+  private def eitherToFutureMessage[T](either: Either[String, Future[T]])(implicit conv: T => MessageFromX): Future[Message] =
+    either.fold(
+      err => Future.successful(BotMessages.error(err).toMessage),
+      f => f.map(success => conv(success).toMessage)
+    )
+
+  private def getChannelMoveError(ex: Throwable): Message =
+    BotMessages.error(translateChannelMoveError.applyOrElse(ex, { ex: Throwable =>
       APIHelper.failure("moving a user to a newly created channel")(ex)
       "An error occurred while trying to move you to another channel."
-    }))
-  }
+    })).toMessage
 
-  private def sendErrorOrRetry(replyTo: Message)(handler: => ())(ex: Throwable): Unit = {
-    val member = Option(replyTo.getMember)
-    val channel = member.flatMap(x => Option(x.getVoiceState.getChannel))
+  private def sendErrorOrRetry(replyTo: Message)(handler: => Future[Message])(ex: Throwable): Future[Message] = {
+    val channel = Option(replyTo.getMember).flatMap(x => Option(x.getVoiceState.getChannel))
     ex match {
-      case _: IllegalStateException if channel.isEmpty =>
-        replyTo ! BotMessages.plain("Please join voice chat. Your command has been remembered until then.")
-        eventWaiter.queue {
-          case GuildVoiceUpdate(`member`, None, Some(_)) => handler
-        }
-      case _ => sendChannelMoveError(replyTo)(ex)
+      case _: IllegalStateException if channel.isEmpty => waitForVoiceJoin(replyTo, handler)
+      case _ => Future.successful(getChannelMoveError(ex))
     }
   }
 
-  private def createUserOwnedChannelFromMessage(message: Message, args: String, commandName: String, public: Boolean): Unit = {
+  private def waitForVoiceJoin[T](replyTo: Message, handler: => Future[T]) = {
+    val member = replyTo.getMember
+    replyTo ! BotMessages.plain("Please join voice chat. Your command has been remembered until then.")
+    val promise = Promise[T]()
+    eventWaiter.queue {
+      case GuildVoiceUpdate(`member`, None, Some(_)) => promise.completeWith(handler)
+    }
+    promise.future
+  }
+
+  private def createUserOwnedChannelFromMessage(message: Message, args: String, commandName: String, public: Boolean): Future[Message] = {
     val guild = message.getGuild
     def asyncCreateChannel(member: Member, limit: Int, name: String, category: Option[Category], channelReq: ChannelAction[VoiceChannel]) = {
       async {
@@ -351,40 +361,38 @@ class PrivateVoiceChats(
         }
 
         logger.info(s"Created user-owned channel ${newVoiceChannel.unambiguousString} on behalf of ${member.unambiguousString}")
-        message ! makeCreateChannelSuccessMessage(name, limit, public, commandName, args)
 
-        await(APIHelper.tryRequest(guild.moveVoiceMember(member, newVoiceChannel))
-          .recoverToEither(translateChannelMoveError))
+        APIHelper.tryRequest(guild.moveVoiceMember(member, newVoiceChannel))
+          .recoverToEither(translateChannelMoveError)
+          .tap(_.failed.foreach(APIHelper.loudFailure("moving user to private channel", message)))
+          .foreach { result =>
+            for (err <- result.left)
+              message ! BotMessages.error(err)
+          }
+
+        makeCreateChannelSuccessMessage(name, limit, public, commandName, args).toMessage
       }
     }
 
-    for (defaultCategory <- getGuildDefaultCategory(guild)) {
-      def retryingParseAndCreateChannel(member: Member): Future[Either[String, Void]] =
+    getGuildDefaultCategory(guild).flatMap { defaultCategory =>
+      def retryingParseAndCreateChannel(member: Member): Future[Message] =
         Option(member.getVoiceState.getChannel) match {
           case Some(voiceChannel) =>
             val (limit, name) = parseChannelDetails(args, voiceChannel, public)
             val category = defaultCategory.orElse(Option(voiceChannel.getParent))
             (for {
               channelReq <- createChannel(name, guild, category)
-            } yield asyncCreateChannel(member, limit, name, category, channelReq)).toFuture
+            } yield asyncCreateChannel(member, limit, name, category, channelReq))
+              .pipe(x => eitherToFutureMessage(x))
 
           case None =>
-            val promise = Promise[Either[String, Void]]()
-            eventWaiter.queue {
-              case GuildVoiceUpdate(`member`, None, Some(_)) => promise.completeWith(retryingParseAndCreateChannel(member))
-            }
-            message ! BotMessages.plain("Please join voice chat. Your command has been remembered until then.")
-            promise.future
+            waitForVoiceJoin(message, retryingParseAndCreateChannel(member))
         }
 
       CommandHelper(message).member
         .map(retryingParseAndCreateChannel)
-        .toFuture
+        .pipe(x => eitherToFutureMessage(x))
         .tap(_.failed.foreach(APIHelper.loudFailure("creating private channel", message)))
-        .foreach { result =>
-          for (err <- result.left)
-            message ! BotMessages.error(err)
-        }
     }
   }
 
