@@ -49,6 +49,8 @@ class PrivateVoiceChats(
     def valid: Boolean = System.currentTimeMillis() < expiry
   }
 
+  private case class VoiceMove(id: ID[Member], guild: ID[Guild])
+
   private trait MyReplyingCommand extends ReplyingCommand {
     override implicit def messageOwnership: MessageOwnership = PrivateVoiceChats.this.messageOwnership
 
@@ -320,18 +322,19 @@ class PrivateVoiceChats(
     })).toMessage
 
   private def sendErrorOrRetry(replyTo: Message)(handler: => Future[Message])(ex: Throwable): Future[Message] = {
-    val channel = Option(replyTo.getMember).flatMap(x => Option(x.getVoiceState.getChannel))
+    val member = replyTo.getMember
+    val channel = Option(member.getVoiceState.getChannel)
     ex match {
-      case _: IllegalStateException if channel.isEmpty => waitForVoiceJoin(replyTo, handler)
+      case _: IllegalStateException if channel.isEmpty => waitForVoiceJoin(replyTo, VoiceMove(member.id, member.getGuild.id), handler)
       case _ => Future.successful(getChannelMoveError(ex))
     }
   }
 
-  private def waitForVoiceJoin[T](replyTo: Message, handler: => Future[T]) = {
+  private def waitForVoiceJoin[T](replyTo: Message, identifier: AnyRef, handler: => Future[T]) = {
     val member = replyTo.getMember
     replyTo ! BotMessages.plain("Please join voice chat. Your command has been remembered until then.")
     val promise = Promise[T]()
-    eventWaiter.queue {
+    eventWaiter.queue(identifier) {
       case GuildVoiceUpdate(`member`, None, Some(_)) => promise.completeWith(handler)
     }
     promise.future
@@ -386,7 +389,7 @@ class PrivateVoiceChats(
               .pipe(x => eitherToFutureMessage(x))
 
           case None =>
-            waitForVoiceJoin(message, retryingParseAndCreateChannel(member))
+            waitForVoiceJoin(message, VoiceMove(member.id, member.getGuild.id), retryingParseAndCreateChannel(member))
         }
 
       CommandHelper(message).member
