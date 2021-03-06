@@ -11,7 +11,7 @@ class PrivateVoiceChatsTest extends AnyFlatSpec with should.Matchers with Privat
   import fixture._
   import fixture.implicits._
 
-  val pvc = new PrivateVoiceChats(new NullCacheBackend, new NullCacheBackend, commands)
+  val pvc = new PrivateVoiceChats(new NullCacheBackend, new NullCacheBackend, commands, new EventWaiter)
 
   val prefixOrUpdateNumberM = PrivateMethod[String](Symbol("prefixOrUpdateNumber"))
   def prefixOrUpdateNumber(name: String, prefix: String): String = pvc.invokePrivate(prefixOrUpdateNumberM(name, prefix))

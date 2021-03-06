@@ -60,6 +60,7 @@ class CantiBot {
         implicit val replyCache = new ReplyCache
         val userCreatedChannels = new UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
 
+        val eventWaiter = new EventWaiter
         val commands = new Commands
         val quoteCommand = new QuoteCommand
         val findCommand = new FindCommand
@@ -68,13 +69,14 @@ class CantiBot {
         bot.addEventListeners(
           commands,
           new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000), commands),
-          new PrivateVoiceChats(userCreatedChannels, new ChannelByGuild(dbConfig, "voice_default_category") withCache LruCache.empty(2000), commands),
+          new PrivateVoiceChats(userCreatedChannels, new ChannelByGuild(dbConfig, "voice_default_category") withCache LruCache.empty(2000), commands, eventWaiter),
           new DeleteOwnedMessages,
           conversations,
           new Spoilers(new StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100), commands, conversations),
           new quoteCommand.GreentextListener,
           findCommand.ReactListener,
           voiceKick,
+          eventWaiter,
           messageCache)
 
         val helpCommand = new HelpCommand(commands)
