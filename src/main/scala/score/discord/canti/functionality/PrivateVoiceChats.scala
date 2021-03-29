@@ -394,8 +394,12 @@ class PrivateVoiceChats(
   }
 
   private def makeCreateChannelSuccessMessage(name: String, limit: Int, public: Boolean, commandName: String, args: String) = {
+    val message = "Your channel has been created." + (
+      if (public) ""
+      else s"\nYou can invite others with the ${commands.prefix}${InviteCommand.name} command.")
+
     val successMessage = BotMessages
-      .okay("Your channel has been created.")
+      .okay(message)
       .setTitle("Success", null)
 
     if (limit == 0 && !public) args.trim match {
