@@ -66,10 +66,11 @@ class CantiBot {
         val findCommand = new FindCommand
         val conversations = new Conversations
         val voiceKick = new VoiceKick(userCreatedChannels, new VoiceBanExpiryTable(dbConfig, "voice_ban_expiries"))
+        val privateVoiceChats = new PrivateVoiceChats(userCreatedChannels, new ChannelByGuild(dbConfig, "voice_default_category") withCache LruCache.empty(2000), commands, eventWaiter)
         bot.addEventListeners(
           commands,
           new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000), commands),
-          new PrivateVoiceChats(userCreatedChannels, new ChannelByGuild(dbConfig, "voice_default_category") withCache LruCache.empty(2000), commands, eventWaiter),
+          privateVoiceChats,
           new DeleteOwnedMessages,
           conversations,
           new Spoilers(new StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100), commands, conversations),
@@ -80,7 +81,8 @@ class CantiBot {
           messageCache)
 
         val helpCommand = new HelpCommand(commands)
-        voiceKick.registerCommands(commands)
+        privateVoiceChats.allCommands.foreach(commands.register)
+        voiceKick.allCommands.foreach(commands.register)
         commands register helpCommand
         commands register new PlayCommand(userId = config.owner)
         commands register new StopCommand(this, userId = config.owner)

@@ -9,7 +9,6 @@ import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.Command
 import score.discord.canti.discord.permissions.{PermissionAttachment, PermissionCollection}
-import score.discord.canti.functionality.Commands
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper.Error
 import score.discord.canti.util.{APIHelper, BotMessages}
@@ -79,114 +78,114 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
   private val pendingKicks = mutable.Map.empty[ID[Message], KickState]
   private val kickMessagesByMember = mutable.Map.empty[ID[Member], Set[(ID[TextChannel], ID[Message])]].withDefaultValue(Set.empty)
 
-  def registerCommands(commands: Commands): Unit = {
-    commands register new Command.Anyone {
-      override def name: String = "voicekick"
+  object VoiceKickCommand extends Command.Anyone {
+    override def name: String = "voicekick"
 
-      override def aliases: Seq[String] = Vector("votekick", "vk")
+    override def aliases: Seq[String] = Vector("votekick", "vk")
 
-      override def longDescription(invocation: String): String =
-        s"""Starts a vote to kick a user from a voice chat, or (if you own the channel) kicks immediately.
-           |The user will be temporarily unable to rejoin the channel.
-           |Usage: `$invocation @user`
-           |""".stripMargin
+    override def longDescription(invocation: String): String =
+      s"""Starts a vote to kick a user from a voice chat, or (if you own the channel) kicks immediately.
+         |The user will be temporarily unable to rejoin the channel.
+         |Usage: `$invocation @user`
+         |""".stripMargin
 
-      override def description: String = "Kicks a user from voice chat"
+    override def description: String = "Kicks a user from voice chat"
 
-      override def execute(message: Message, args: String): Unit = Future {
-        val textChannel = message.getChannel
-        val result = for {
-          member <- Option(message.getMember).toRight("You must run this command in a public server")
-          voiceState <- Option(member.getVoiceState).toRight("Internal error: no voice state cached for you")
-          voiceChan <- Option(voiceState.getChannel).toRight("You must be in a voice channel to run this command")
+    override def execute(message: Message, args: String): Unit = Future {
+      val textChannel = message.getChannel
+      val result = for {
+        member <- Option(message.getMember).toRight("You must run this command in a public server")
+        voiceState <- Option(member.getVoiceState).toRight("Internal error: no voice state cached for you")
+        voiceChan <- Option(voiceState.getChannel).toRight("You must be in a voice channel to run this command")
 
-          _ <- Either.cond(voiceChan != member.getGuild.getAfkChannel, (),
-            "You cannot kick a user from the guild AFK channel")
+        _ <- Either.cond(voiceChan != member.getGuild.getAfkChannel, (),
+          "You cannot kick a user from the guild AFK channel")
 
-          guildTextChannel <- ensureIsGuildTextChannel(textChannel)
+        guildTextChannel <- ensureIsGuildTextChannel(textChannel)
 
-          mentioned <- singleMentionedMember(message)
-          mentionedVoiceState <- Option(mentioned.getVoiceState)
-            .toRight(s"Internal error: no voice state cached for ${mentioned.getUser.mentionWithName}")
-          mentionedVoiceChan <- Option(mentionedVoiceState.getChannel)
-            .toRight(s"The user ${mentioned.getUser.mentionWithName} is not in voice chat")
+        mentioned <- singleMentionedMember(message)
+        mentionedVoiceState <- Option(mentioned.getVoiceState)
+          .toRight(s"Internal error: no voice state cached for ${mentioned.getUser.mentionWithName}")
+        mentionedVoiceChan <- Option(mentionedVoiceState.getChannel)
+          .toRight(s"The user ${mentioned.getUser.mentionWithName} is not in voice chat")
 
-          _ <- Either.cond(voiceChan == mentionedVoiceChan, (),
-            s"You are not in the same voice channel as ${mentioned.getUser.mentionWithName}!")
-          _ <- Either.cond(mentioned != member, (), "You cannot vote to kick yourself.")
-          _ <- Either.cond(!voiceState.isDeafened, (),
-            "You cannot run this command while deafened (i.e. you must be part of the voice chat)")
+        _ <- Either.cond(voiceChan == mentionedVoiceChan, (),
+          s"You are not in the same voice channel as ${mentioned.getUser.mentionWithName}!")
+        _ <- Either.cond(mentioned != member, (), "You cannot vote to kick yourself.")
+        _ <- Either.cond(!voiceState.isDeafened, (),
+          "You cannot run this command while deafened (i.e. you must be part of the voice chat)")
 
-          voteEligibleUsers = voiceChan.getMembers.asScala.toSeq
-            .filter(m => m != mentioned && Option(m.getVoiceState).exists(!_.isDeafened))
-          usersMissing = voteEligibleUsers.filter(!_.getUser.canSee(guildTextChannel))
-          _ <- Either.cond(usersMissing.isEmpty, (),
-            s"Some users cannot see this channel: ${usersMissing.map(_.getUser.mentionWithName).mkString(", ")}")
-          _ <- Either.cond(voteEligibleUsers.size >= 2, (),
-            "There are not enough people in the channel to call a vote kick.")
-        } yield {
-          val votes = voteEligibleUsers.map { mem =>
-            mem.id -> (if (mem == member) Some(KickVote) else None)
-          }.toMap
-          val kickState = KickState(
-            votes = votes,
-            target = mentioned.id,
-            channel = voiceChan.id,
-            expiry = System.currentTimeMillis() + (10 minutes).toMillis)
-          val msg = makeMessageContents(kickState, member.getGuild)
-          (kickState, guildTextChannel, msg, voiceChan, mentioned)
-        }
+        voteEligibleUsers = voiceChan.getMembers.asScala.toSeq
+          .filter(m => m != mentioned && Option(m.getVoiceState).exists(!_.isDeafened))
+        usersMissing = voteEligibleUsers.filter(!_.getUser.canSee(guildTextChannel))
+        _ <- Either.cond(usersMissing.isEmpty, (),
+          s"Some users cannot see this channel: ${usersMissing.map(_.getUser.mentionWithName).mkString(", ")}")
+        _ <- Either.cond(voteEligibleUsers.size >= 2, (),
+          "There are not enough people in the channel to call a vote kick.")
+      } yield {
+        val votes = voteEligibleUsers.map { mem =>
+          mem.id -> (if (mem == member) Some(KickVote) else None)
+        }.toMap
+        val kickState = KickState(
+          votes = votes,
+          target = mentioned.id,
+          channel = voiceChan.id,
+          expiry = System.currentTimeMillis() + (10 minutes).toMillis)
+        val msg = makeMessageContents(kickState, member.getGuild)
+        (kickState, guildTextChannel, msg, voiceChan, mentioned)
+      }
 
-        result.left.foreach { err => message ! BotMessages.error(err) }
+      result.left.foreach { err => message ! BotMessages.error(err) }
 
-        for (resultRight <- result;
-             (kickState, guildTextChannel, successMsg, voiceChan, mentioned) = resultRight;
-             ownerOption <- ownerByChannel(voiceChan)) {
+      for (resultRight <- result;
+           (kickState, guildTextChannel, successMsg, voiceChan, mentioned) = resultRight;
+           ownerOption <- ownerByChannel(voiceChan)) {
 
-          ownerOption match {
-            case Some(owner) if owner == message.getAuthor =>
-              kickVoiceMember(voiceChan, mentioned, textChannel)
-              message ! BotMessages.okay(
-                s"${mentioned.getAsMention} was forcibly kicked from #${voiceChan.name} by the owner ${owner.getAsMention}")
-            case _ =>
-              for (botMsg <- message ! successMsg) {
-                // Record our message ID and initial kick state in pendingKicks
-                blocking {
-                  pendingKicks.synchronized {
-                    pendingKicks += botMsg.id -> kickState
-                    for (member <- kickState.votes.keys) {
-                      kickMessagesByMember(member) += ((guildTextChannel.id, botMsg.id))
-                    }
-                  }
-                }
-                botMsg.addReaction(KickVote.emoji).queue()
-                botMsg.addReaction(AbstainVote.emoji).queue()
-                botMsg.addReaction(StayVote.emoji).queue()
-                scheduler.schedule((0L max (kickState.expiry - System.currentTimeMillis())) milliseconds) {
-                  pendingKicks.synchronized {
-                    for (state <- pendingKicks.get(botMsg.id))
-                      updateVoteKickMessage(botMsg.getTextChannel, state, botMsg.id)
+        ownerOption match {
+          case Some(owner) if owner == message.getAuthor =>
+            kickVoiceMember(voiceChan, mentioned, textChannel)
+            message ! BotMessages.okay(
+              s"${mentioned.getAsMention} was forcibly kicked from #${voiceChan.name} by the owner ${owner.getAsMention}")
+          case _ =>
+            for (botMsg <- message ! successMsg) {
+              // Record our message ID and initial kick state in pendingKicks
+              blocking {
+                pendingKicks.synchronized {
+                  pendingKicks += botMsg.id -> kickState
+                  for (member <- kickState.votes.keys) {
+                    kickMessagesByMember(member) += ((guildTextChannel.id, botMsg.id))
                   }
                 }
               }
-          }
+              botMsg.addReaction(KickVote.emoji).queue()
+              botMsg.addReaction(AbstainVote.emoji).queue()
+              botMsg.addReaction(StayVote.emoji).queue()
+              scheduler.schedule((0L max (kickState.expiry - System.currentTimeMillis())) milliseconds) {
+                pendingKicks.synchronized {
+                  for (state <- pendingKicks.get(botMsg.id))
+                    updateVoteKickMessage(botMsg.getTextChannel, state, botMsg.id)
+                }
+              }
+            }
         }
-      }
-
-      private def ensureIsGuildTextChannel(textChannel: MessageChannel): Either[String, TextChannel] =
-        textChannel match {
-          case c: TextChannel => Right(c)
-          case _ => Left("Internal error: Command not run from within a guild, but `message.getMember()` disagrees")
-        }
-
-      private def singleMentionedMember(message: Message): Either[String, Member] = {
-        val mentioned = message.getMentionedMembers
-        if (mentioned.size == 0) Left("You need to mention a user")
-        else if (mentioned.size > 1) Left("You should mention only one user")
-        else Right(mentioned.get(0))
       }
     }
+
+    private def ensureIsGuildTextChannel(textChannel: MessageChannel): Either[String, TextChannel] =
+      textChannel match {
+        case c: TextChannel => Right(c)
+        case _ => Left("Internal error: Command not run from within a guild, but `message.getMember()` disagrees")
+      }
+
+    private def singleMentionedMember(message: Message): Either[String, Member] = {
+      val mentioned = message.getMentionedMembers
+      if (mentioned.size == 0) Left("You need to mention a user")
+      else if (mentioned.size > 1) Left("You should mention only one user")
+      else Right(mentioned.get(0))
+    }
   }
+
+  def allCommands = Seq(VoiceKickCommand)
 
   private def makeMessageContents(kickState: KickState, guild: Guild) = {
     implicit val jda: JDA = guild.getJDA

@@ -51,248 +51,242 @@ class PrivateVoiceChats(
 
   private case class VoiceMove(id: ID[Member], guild: ID[Guild])
 
-  private trait MyReplyingCommand extends ReplyingCommand {
+  sealed trait MyReplyingCommand extends ReplyingCommand {
     override implicit def messageOwnership: MessageOwnership = PrivateVoiceChats.this.messageOwnership
 
     override implicit def replyCache: ReplyCache = PrivateVoiceChats.this.replyCache
   }
 
-  {
-    val accept: Command = new Command.Anyone with MyReplyingCommand {
-      override def name = "accept"
+  object AcceptCommand extends Command.Anyone with MyReplyingCommand {
+    override def name = "accept"
 
-      override def aliases = List("acc", "accpet")
+    override def aliases = List("acc", "accpet")
 
-      override def description = "Accept another user's invitation to join a voice channel"
+    override def description = "Accept another user's invitation to join a voice channel"
 
-      override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
-        try message.delete.queueFuture()
-        catch {
-          case _: PermissionException =>
-        }
-
-        def ensureInviteValid(inv: Invite) =
-          if (inv.valid) Right(inv)
-          else Left("Your last invite expired. Please ask for another.")
-
-        val member = CommandHelper(message).member
-        val result = for {
-          member <- member
-          inv <- Option(invites get GuildUserId(member))
-            .toRight("You don't have any pending voice chat invitations.")
-          _ <- ensureInviteValid(inv)
-          voiceChannel <- message.getGuild.findVoiceChannel(inv.channel)
-            .toRight("The voice channel you were invited to no longer exists.")
-          memberName = member.getEffectiveName
-          voiceMention = s"<#${voiceChannel.rawId}>"
-        } yield APIHelper.tryRequest(
-          message.getGuild.moveVoiceMember(member, voiceChannel)
-        ).transformWith {
-          case Success(_) =>
-            invites.remove(GuildUserId(member))
-            Future.successful(BotMessages.okay(s"Moved you into the $voiceMention channel.")
-              .setTitle(s"$memberName: Success!", null)
-              .toMessage)
-          case Failure(ex) =>
-            sendErrorOrRetry(message) {
-              executeAndGetMessage(message, args)
-            }(ex)
-        }
-
-        result.pipe(x => eitherToFutureMessage(x))
+    override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
+      try message.delete.queueFuture()
+      catch {
+        case _: PermissionException =>
       }
+
+      def ensureInviteValid(inv: Invite) =
+        if (inv.valid) Right(inv)
+        else Left("Your last invite expired. Please ask for another.")
+
+      val member = CommandHelper(message).member
+      val result = for {
+        member <- member
+        inv <- Option(invites get GuildUserId(member))
+          .toRight("You don't have any pending voice chat invitations.")
+        _ <- ensureInviteValid(inv)
+        voiceChannel <- message.getGuild.findVoiceChannel(inv.channel)
+          .toRight("The voice channel you were invited to no longer exists.")
+        memberName = member.getEffectiveName
+        voiceMention = s"<#${voiceChannel.rawId}>"
+      } yield APIHelper.tryRequest(
+        message.getGuild.moveVoiceMember(member, voiceChannel)
+      ).transformWith {
+        case Success(_) =>
+          invites.remove(GuildUserId(member))
+          Future.successful(BotMessages.okay(s"Moved you into the $voiceMention channel.")
+            .setTitle(s"$memberName: Success!", null)
+            .toMessage)
+        case Failure(ex) =>
+          sendErrorOrRetry(message) {
+            executeAndGetMessage(message, args)
+          }(ex)
+      }
+
+      result.pipe(x => eitherToFutureMessage(x))
     }
-
-    val invite: Command = new Command.Anyone with MyReplyingCommand {
-      override def name = "invite"
-
-      override val aliases = List("inv")
-
-      override def description = "Ask another user to join your current voice channel"
-
-      override def longDescription(invocation: String): String =
-        s"""Usage:
-           |`$invocation @person1 @person2`
-           |Invites the mentioned parties, in this case person1 and person2, to your current voice channel.
-         """.stripMargin.trim
-
-      lazy val inviteMessage: String = s"Please join a voice channel and " +
-        s"type `${commands.prefix}${accept.name}` to accept this invitation."
-
-      val permInviteMessage: String = s"You may now enter the channel."
-
-      override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
-        val response = for {
-          member <- CommandHelper(message).member
-          chan <- Option(member.getVoiceState.getChannel)
-            .toRight("You must be in voice chat to use this command.")
-          success <- message.getMentionedUsers.asScala.toSeq match {
-            case Seq() => Left("You must mention the users you want to join you in voice chat.")
-            case Seq(mentions@_*) =>
-              assert(message.getGuild == chan.getGuild)
-              Right(inviteUsers(channel = chan, inviter = message.getAuthor, invitees = mentions))
-          }
-        } yield success
-
-        response.pipe(x => eitherToFutureMessage(x))
-      }
-
-      def inviteUsers(channel: VoiceChannel, inviter: User, invitees: Seq[User]): Future[String] = {
-        def toMentionStr(u: User) =
-          if (u == inviter) ">(You)"
-          else u.mention
-
-        val mentioned = invitees map toMentionStr
-
-        for {
-          owner <- ownerByChannel(channel)
-          // Invite with perms if invited by private channel owner
-          // else invite with invite system
-          (permsAdded, remaining) <-
-            if (owner.exists(_.id == inviter.id) && channel.getUserLimit == 0) {
-              addVoicePerms(invitees, channel, channel.getGuild)
-            } else Future.successful(Nil, invitees)
-        } yield {
-          for (mention <- remaining)
-            invites.put(
-              GuildUserId(channel.getGuild.id, mention.id),
-              Invite(inviter.id, channel.id, System.currentTimeMillis() + (10 minutes).toMillis)
-            )
-
-          val bothInviteMessage = (permsAdded, remaining) match {
-            case (_, Seq()) => permInviteMessage
-            case (Seq(), _) => inviteMessage
-            case (_, _) =>
-              val permInvitedStr = permsAdded map toMentionStr mkString ", "
-              val remainingStr = remaining map toMentionStr mkString ", "
-              s"$permInvitedStr:\n$permInviteMessage\n$remainingStr:\n$inviteMessage"
-          }
-
-          s"""${mentioned mkString ", "}:
-             |You have been invited to join ${inviter.mention} in voice chat in ${channel.mention}.
-             |$bothInviteMessage""".stripMargin
-        }
-      }
-
-      private def addVoicePerms(users: Seq[User], channel: VoiceChannel, guild: Guild): Future[(Seq[User], Seq[User])] = {
-        try {
-          val (members, notFound) = users
-            .map(user => user -> guild.findMember(user))
-            .partition(_._2.isDefined)
-          val grants = PermissionCollection(members
-            .flatMap(_._2)
-            .foldLeft(Vector.empty[(Member, PermissionAttachment)]) { (acc, member) =>
-              acc :+ member -> channel.getPermissionAttachment(member).allow(Permission.VOICE_CONNECT)
-            })
-
-          channel.applyPerms(grants).queueFuture().transform {
-            case Success(_) => Success((members.map(_._1), notFound.map(_._1)))
-            case Failure(_) => Success((Nil, users))
-          }
-        } catch {
-          case _: PermissionException => Future.successful((Nil, users))
-        }
-      }
-    }
-
-    val privat: Command = new Command.Anyone with MyReplyingCommand {
-      override def name = "private"
-
-      override val aliases = List("prv", "pv", "voice")
-
-      override def description = "Create a private voice chat channel"
-
-      override def longDescription(invocation: String): String =
-        s"""This command creates a semi-private voice channel.
-           |You can set a user limit (e.g. `$invocation 4`), or leave it blank to make it completely closed.
-           |Any user may enter below the user limit, but after that an invite is required to enter.
-           |You may invite other users there using the `${commands.prefix}${invite.name}` command.
-           |The name of the channel can be set by adding it to the end of the command.
-           |e.g. `$invocation 3 Hangout number 1`""".stripMargin
-
-      override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
-        createUserOwnedChannelFromMessage(message, args, name, public = false)
-      }
-    }
-
-    val public: Command = new Command.Anyone with MyReplyingCommand {
-      override def name: String = "public"
-
-      override def aliases: Seq[String] = List("pbv", "pb")
-
-      override def description: String = "Create a public voice chat channel"
-
-      override def longDescription(invocation: String): String =
-        s"""This command creates a public voice channel.
-           |You may invite other users there using the `${commands.prefix}${invite.name}` command.
-           |The name of the channel can be set by adding it to the end of the command.
-           |e.g. `$invocation Hangout number 1`""".stripMargin
-
-      override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
-        createUserOwnedChannelFromMessage(message, args, name, public = true)
-      }
-    }
-
-    val defaultCategoryCmd: Command = new ReplyingCommand with Command.ServerAdminOnly {
-      override def name: String = "voicecategory"
-
-      override def aliases: Seq[String] = Vector("vccat")
-
-      override def description: String = "Set or query the default category for user-created voice chats"
-
-      override def longDescription(invocation: String): String =
-        s"""Query the default category for voice chats: `$invocation`
-           |Set the default category for voice chats: `$invocation <category name>` or `$invocation id`
-           |Unset the default category for voice chats: `$invocation none`
-           |""".stripMargin
-
-      override def executeAndGetMessage(message: Message, args: String): Future[Message] =
-        CommandHelper(message).guild.map { guild =>
-          args.trim match {
-            case "" => showCurrentCategory(guild)
-            case "none" => removeDefaultCategory(guild)
-            case arg => setDefaultCategory(guild, arg)
-          }
-        }.pipe(x => eitherToFutureMessage(x))
-
-      private def showCurrentCategory(guild: Guild): Future[Message] =
-        getGuildDefaultCategory(guild).map { opt =>
-          val cmd = s"${commands.prefix}$name"
-          describeCategoryBehaviour(opt)
-            .+(s"\nUse `$cmd category name` to select a category to place " +
-              s"these channels into, or `$cmd none` to undo this.")
-            .pipe(BotMessages.plain)
-            .toMessage
-        }
-
-      private def removeDefaultCategory(guild: Guild): Future[Message] =
-        defaultCategoryByGuild.remove(guild.id).map { _ =>
-          BotMessages.okay(describeCategoryBehaviour(None)).toMessage
-        }
-
-      private def setDefaultCategory(guild: Guild, categoryName: String): Future[Message] =
-        ParseUtils.findCategory(guild, categoryName)
-          .map { cat =>
-            (defaultCategoryByGuild(guild.id) = cat.id)
-              .map(_ => describeCategoryBehaviour(Some(cat)))
-          }
-          .fold(e => Future.successful(e.toMessage), _.map(s => BotMessages.okay(s).toMessage))
-
-      private def describeCategoryBehaviour(category: Option[Category]): String =
-        category.map(cat => s"User-created voice channels will be placed in <#${cat.getIdLong}> (${cat.getName}).")
-          .getOrElse("User-created voice channels will be placed in the same category as the channel they were created from.")
-
-      override def messageOwnership: MessageOwnership = PrivateVoiceChats.this.messageOwnership
-
-      override def replyCache: ReplyCache = PrivateVoiceChats.this.replyCache
-    }
-
-    commands register accept
-    commands register invite
-    commands register privat
-    commands register public
-    commands register defaultCategoryCmd
   }
+
+  object InviteCommand extends Command.Anyone with MyReplyingCommand {
+    override def name = "invite"
+
+    override val aliases = List("inv")
+
+    override def description = "Ask another user to join your current voice channel"
+
+    override def longDescription(invocation: String): String =
+      s"""Usage:
+         |`$invocation @person1 @person2`
+         |Invites the mentioned parties, in this case person1 and person2, to your current voice channel.
+       """.stripMargin.trim
+
+    lazy val inviteMessage: String = s"Please join a voice channel and " +
+      s"type `${commands.prefix}${AcceptCommand.name}` to accept this invitation."
+
+    val permInviteMessage: String = s"You may now enter the channel."
+
+    override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
+      val response = for {
+        member <- CommandHelper(message).member
+        chan <- Option(member.getVoiceState.getChannel)
+          .toRight("You must be in voice chat to use this command.")
+        success <- message.getMentionedUsers.asScala.toSeq match {
+          case Seq() => Left("You must mention the users you want to join you in voice chat.")
+          case Seq(mentions@_*) =>
+            assert(message.getGuild == chan.getGuild)
+            Right(inviteUsers(channel = chan, inviter = message.getAuthor, invitees = mentions))
+        }
+      } yield success
+
+      response.pipe(x => eitherToFutureMessage(x))
+    }
+
+    def inviteUsers(channel: VoiceChannel, inviter: User, invitees: Seq[User]): Future[String] = {
+      def toMentionStr(u: User) =
+        if (u == inviter) ">(You)"
+        else u.mention
+
+      val mentioned = invitees map toMentionStr
+
+      for {
+        owner <- ownerByChannel(channel)
+        // Invite with perms if invited by private channel owner
+        // else invite with invite system
+        (permsAdded, remaining) <-
+          if (owner.exists(_.id == inviter.id) && channel.getUserLimit == 0) {
+            addVoicePerms(invitees, channel, channel.getGuild)
+          } else Future.successful(Nil, invitees)
+      } yield {
+        for (mention <- remaining)
+          invites.put(
+            GuildUserId(channel.getGuild.id, mention.id),
+            Invite(inviter.id, channel.id, System.currentTimeMillis() + (10 minutes).toMillis)
+          )
+
+        val bothInviteMessage = (permsAdded, remaining) match {
+          case (_, Seq()) => permInviteMessage
+          case (Seq(), _) => inviteMessage
+          case (_, _) =>
+            val permInvitedStr = permsAdded map toMentionStr mkString ", "
+            val remainingStr = remaining map toMentionStr mkString ", "
+            s"$permInvitedStr:\n$permInviteMessage\n$remainingStr:\n$inviteMessage"
+        }
+
+        s"""${mentioned mkString ", "}:
+           |You have been invited to join ${inviter.mention} in voice chat in ${channel.mention}.
+           |$bothInviteMessage""".stripMargin
+      }
+    }
+
+    private def addVoicePerms(users: Seq[User], channel: VoiceChannel, guild: Guild): Future[(Seq[User], Seq[User])] = {
+      try {
+        val (members, notFound) = users
+          .map(user => user -> guild.findMember(user))
+          .partition(_._2.isDefined)
+        val grants = PermissionCollection(members
+          .flatMap(_._2)
+          .foldLeft(Vector.empty[(Member, PermissionAttachment)]) { (acc, member) =>
+            acc :+ member -> channel.getPermissionAttachment(member).allow(Permission.VOICE_CONNECT)
+          })
+
+        channel.applyPerms(grants).queueFuture().transform {
+          case Success(_) => Success((members.map(_._1), notFound.map(_._1)))
+          case Failure(_) => Success((Nil, users))
+        }
+      } catch {
+        case _: PermissionException => Future.successful((Nil, users))
+      }
+    }
+  }
+
+  object PrivateCommand extends Command.Anyone with MyReplyingCommand {
+    override def name = "private"
+
+    override val aliases = List("prv", "pv", "voice")
+
+    override def description = "Create a private voice chat channel"
+
+    override def longDescription(invocation: String): String =
+      s"""This command creates a semi-private voice channel.
+         |You can set a user limit (e.g. `$invocation 4`), or leave it blank to make it completely closed.
+         |Any user may enter below the user limit, but after that an invite is required to enter.
+         |You may invite other users there using the `${commands.prefix}${InviteCommand.name}` command.
+         |The name of the channel can be set by adding it to the end of the command.
+         |e.g. `$invocation 3 Hangout number 1`""".stripMargin
+
+    override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
+      createUserOwnedChannelFromMessage(message, args, name, public = false)
+    }
+  }
+
+  object PublicCommand extends Command.Anyone with MyReplyingCommand {
+    override def name: String = "public"
+
+    override def aliases: Seq[String] = List("pbv", "pb")
+
+    override def description: String = "Create a public voice chat channel"
+
+    override def longDescription(invocation: String): String =
+      s"""This command creates a public voice channel.
+         |You may invite other users there using the `${commands.prefix}${InviteCommand.name}` command.
+         |The name of the channel can be set by adding it to the end of the command.
+         |e.g. `$invocation Hangout number 1`""".stripMargin
+
+    override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
+      createUserOwnedChannelFromMessage(message, args, name, public = true)
+    }
+  }
+
+  object DefaultCategoryCommand extends ReplyingCommand with Command.ServerAdminOnly {
+    override def name: String = "voicecategory"
+
+    override def aliases: Seq[String] = Vector("vccat")
+
+    override def description: String = "Set or query the default category for user-created voice chats"
+
+    override def longDescription(invocation: String): String =
+      s"""Query the default category for voice chats: `$invocation`
+         |Set the default category for voice chats: `$invocation <category name>` or `$invocation id`
+         |Unset the default category for voice chats: `$invocation none`
+         |""".stripMargin
+
+    override def executeAndGetMessage(message: Message, args: String): Future[Message] =
+      CommandHelper(message).guild.map { guild =>
+        args.trim match {
+          case "" => showCurrentCategory(guild)
+          case "none" => removeDefaultCategory(guild)
+          case arg => setDefaultCategory(guild, arg)
+        }
+      }.pipe(x => eitherToFutureMessage(x))
+
+    private def showCurrentCategory(guild: Guild): Future[Message] =
+      getGuildDefaultCategory(guild).map { opt =>
+        val cmd = s"${commands.prefix}$name"
+        describeCategoryBehaviour(opt)
+          .+(s"\nUse `$cmd category name` to select a category to place " +
+            s"these channels into, or `$cmd none` to undo this.")
+          .pipe(BotMessages.plain)
+          .toMessage
+      }
+
+    private def removeDefaultCategory(guild: Guild): Future[Message] =
+      defaultCategoryByGuild.remove(guild.id).map { _ =>
+        BotMessages.okay(describeCategoryBehaviour(None)).toMessage
+      }
+
+    private def setDefaultCategory(guild: Guild, categoryName: String): Future[Message] =
+      ParseUtils.findCategory(guild, categoryName)
+        .map { cat =>
+          (defaultCategoryByGuild(guild.id) = cat.id)
+            .map(_ => describeCategoryBehaviour(Some(cat)))
+        }
+        .fold(e => Future.successful(e.toMessage), _.map(s => BotMessages.okay(s).toMessage))
+
+    private def describeCategoryBehaviour(category: Option[Category]): String =
+      category.map(cat => s"User-created voice channels will be placed in <#${cat.getIdLong}> (${cat.getName}).")
+        .getOrElse("User-created voice channels will be placed in the same category as the channel they were created from.")
+
+    override def messageOwnership: MessageOwnership = PrivateVoiceChats.this.messageOwnership
+
+    override def replyCache: ReplyCache = PrivateVoiceChats.this.replyCache
+  }
+
+  def allCommands = Seq(AcceptCommand, InviteCommand, PrivateCommand, PublicCommand, DefaultCategoryCommand)
 
   private val CREATOR_PRIVATE_CHANNEL_PERMISSIONS =
     Set(Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT, Permission.VOICE_MOVE_OTHERS)
