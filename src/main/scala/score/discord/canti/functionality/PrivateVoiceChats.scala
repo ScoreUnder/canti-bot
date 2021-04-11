@@ -71,8 +71,7 @@ class PrivateVoiceChats(
       }
 
       def ensureInviteValid(inv: Invite) =
-        if (inv.valid) Right(inv)
-        else Left("Your last invite expired. Please ask for another.")
+        Either.cond(inv.valid, inv, "Your last invite expired. Please ask for another.")
 
       val member = CommandHelper(message).member
       val result = for {

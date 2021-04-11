@@ -71,8 +71,7 @@ class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache:
     * @return either error or command
     */
   def canRunCommand(cmd: Command, message: Message): Either[String, Command] =
-    if (!(cmd checkPermission message)) Left(cmd.permissionMessage)
-    else Right(cmd)
+    Either.cond(cmd.checkPermission(message), cmd, cmd.permissionMessage)
 
   /** Splits a raw message into command name and arguments. No validation is
     * done to check that the name is correct in any way.

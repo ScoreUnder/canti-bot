@@ -179,9 +179,9 @@ class VoiceKick(ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]
 
     private def singleMentionedMember(message: Message): Either[String, Member] = {
       val mentioned = message.getMentionedMembers
-      if (mentioned.size == 0) Left("You need to mention a user")
-      else if (mentioned.size > 1) Left("You should mention only one user")
-      else Right(mentioned.get(0))
+      Either.cond(mentioned.size == 1, mentioned.get(0),
+        if (mentioned.isEmpty) "You need to mention a user"
+        else "You should mention only one user")
     }
   }
 
