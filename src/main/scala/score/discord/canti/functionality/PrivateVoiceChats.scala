@@ -458,8 +458,7 @@ class PrivateVoiceChats(
     val maxNameLen = 100
     limit.toIntOption
       .filter(x => x >= 0 && x <= 99)
-      .map((_, name))
-      .getOrElse((0, trimmedArgs))
+      .fold((0, trimmedArgs))((_, name))
     match {
       case (limit_, name_) if name_.length > maxNameLen => (limit_, name_ take maxNameLen)
       case (limit_, name_) if name_.length < 3 =>
