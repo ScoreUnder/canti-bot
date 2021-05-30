@@ -22,7 +22,7 @@ pipeline {
             }
             post {
                 success {
-                    archiveArtifacts artifacts: 'target/scala*/*.jar', fingerprint: true
+                    archiveArtifacts artifacts: 'target/scala*/stripped/*.jar', fingerprint: true
                 }
             }
         }
