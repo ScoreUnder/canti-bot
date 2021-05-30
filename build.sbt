@@ -1,6 +1,6 @@
 import Dependencies._
 
-enablePlugins(GitVersioning)
+enablePlugins(GitVersioning, ReproducibleBuildsPlugin)
 
 lazy val root = (project in file(".")).
   settings(
