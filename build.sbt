@@ -6,7 +6,7 @@ lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
       organization := "score.discord",
-      scalaVersion := "2.13.3",
+      scalaVersion := "2.13.6",
       git.useGitDescribe := true,
     )),
     name := "canti-bot",
