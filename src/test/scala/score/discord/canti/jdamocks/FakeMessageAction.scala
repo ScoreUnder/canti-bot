@@ -71,4 +71,6 @@ class FakeMessageAction(message: Message) extends MessageAction {
   override def referenceById(messageId: Long): MessageAction = this
 
   override def mentionRepliedUser(mention: Boolean): MessageAction = this
+
+  override def failOnInvalidReply(fail: Boolean): MessageAction = ???
 }

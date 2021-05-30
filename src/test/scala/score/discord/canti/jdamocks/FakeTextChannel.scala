@@ -111,4 +111,6 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   override def isNews: Boolean = ???
 
   override def isSynced: Boolean = ???
+
+  override def follow(targetChannelId: String): RestAction[Webhook.WebhookReference] = ???
 }

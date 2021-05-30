@@ -77,4 +77,10 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
   override def isFake: Boolean = false  // White lie
 
   override def hasTimeJoined: Boolean = ???
+
+  override def isPending: Boolean = ???
+
+  override def canSync(targetChannel: GuildChannel, syncSource: GuildChannel): Boolean = ???
+
+  override def canSync(channel: GuildChannel): Boolean = ???
 }

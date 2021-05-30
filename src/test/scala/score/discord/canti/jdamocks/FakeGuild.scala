@@ -218,4 +218,10 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def createTextChannel(name: String, parent: Category): ChannelAction[TextChannel] = ???
 
   override def createVoiceChannel(name: String, parent: Category): ChannelAction[VoiceChannel] = ???
+
+  override def getCommunityUpdatesChannel(): TextChannel = ???
+
+  override def getRulesChannel(): TextChannel = ???
+
+  override def retrieveVanityInvite(): RestAction[VanityInvite] = ???
 }

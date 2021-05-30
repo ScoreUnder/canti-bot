@@ -2,14 +2,13 @@ package score.discord.canti.jdamocks
 
 import java.util
 import java.util.concurrent.{ExecutorService, ScheduledExecutorService}
-
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.hooks.IEventManager
 import net.dv8tion.jda.api.managers.{AudioManager, DirectAudioController, Presence}
 import net.dv8tion.jda.api.requests.{GatewayIntent, RestAction}
 import net.dv8tion.jda.api.requests.restaction.GuildAction
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.api.utils.cache.{CacheView, SnowflakeCacheView}
+import net.dv8tion.jda.api.utils.cache.{CacheFlag, CacheView, SnowflakeCacheView}
 import net.dv8tion.jda.api.{AccountType, JDA, Permission}
 import okhttp3.OkHttpClient
 
@@ -140,4 +139,6 @@ class FakeJda extends JDA {
   override def isUnavailable(guildId: Long): Boolean = ???
 
   override def openPrivateChannelById(userId: Long): RestAction[PrivateChannel] = ???
+
+  override def getCacheFlags: util.EnumSet[CacheFlag] = ???
 }
