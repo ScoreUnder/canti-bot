@@ -4,9 +4,9 @@ import java.io.{File, InputStream}
 import java.util
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function.{BiConsumer, BooleanSupplier, Consumer}
-
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.{IMentionable, Message, MessageChannel, MessageEmbed}
+import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.MessageAction
 import net.dv8tion.jda.api.utils.AttachmentOption
@@ -73,4 +73,8 @@ class FakeMessageAction(message: Message) extends MessageAction {
   override def mentionRepliedUser(mention: Boolean): MessageAction = this
 
   override def failOnInvalidReply(fail: Boolean): MessageAction = ???
+
+  override def retainFilesById(ids: util.Collection[String]): MessageAction = ???
+
+  override def setActionRows(rows: ActionRow*): MessageAction = ???
 }

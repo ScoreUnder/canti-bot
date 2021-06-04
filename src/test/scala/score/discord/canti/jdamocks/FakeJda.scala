@@ -4,9 +4,11 @@ import java.util
 import java.util.concurrent.{ExecutorService, ScheduledExecutorService}
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.hooks.IEventManager
+import net.dv8tion.jda.api.interactions.commands.Command
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.managers.{AudioManager, DirectAudioController, Presence}
 import net.dv8tion.jda.api.requests.{GatewayIntent, RestAction}
-import net.dv8tion.jda.api.requests.restaction.GuildAction
+import net.dv8tion.jda.api.requests.restaction.{CommandCreateAction, CommandEditAction, CommandListUpdateAction, GuildAction}
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.cache.{CacheFlag, CacheView, SnowflakeCacheView}
 import net.dv8tion.jda.api.{AccountType, JDA, Permission}
@@ -141,4 +143,18 @@ class FakeJda extends JDA {
   override def openPrivateChannelById(userId: Long): RestAction[PrivateChannel] = ???
 
   override def getCacheFlags: util.EnumSet[CacheFlag] = ???
+
+  override def retrieveCommands(): RestAction[util.List[Command]] = ???
+
+  override def retrieveCommandById(id: String): RestAction[Command] = ???
+
+  override def upsertCommand(command: CommandData): CommandCreateAction = ???
+
+  override def updateCommands(): CommandListUpdateAction = ???
+
+  override def editCommandById(id: String): CommandEditAction = ???
+
+  override def deleteCommandById(commandId: String): RestAction[Void] = ???
+
+  override def setRequiredScopes(scopes: util.Collection[String]): JDA = ???
 }

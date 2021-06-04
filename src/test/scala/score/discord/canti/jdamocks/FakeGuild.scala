@@ -4,11 +4,13 @@ import java.util
 import java.util.Locale
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
-
 import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.interactions.commands.Command
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege
 import net.dv8tion.jda.api.managers.{AudioManager, GuildManager}
 import net.dv8tion.jda.api.requests.RestAction
-import net.dv8tion.jda.api.requests.restaction.{AuditableRestAction, ChannelAction, MemberAction, RoleAction}
+import net.dv8tion.jda.api.requests.restaction.{AuditableRestAction, ChannelAction, CommandCreateAction, CommandEditAction, CommandListUpdateAction, MemberAction, RoleAction}
 import net.dv8tion.jda.api.requests.restaction.order.{CategoryOrderAction, ChannelOrderAction, RoleOrderAction}
 import net.dv8tion.jda.api.requests.restaction.pagination.AuditLogPaginationAction
 import net.dv8tion.jda.api.utils.cache.{MemberCacheView, SnowflakeCacheView, SortedSnowflakeCacheView}
@@ -224,4 +226,24 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def getRulesChannel(): TextChannel = ???
 
   override def retrieveVanityInvite(): RestAction[VanityInvite] = ???
+
+  override def retrieveCommands(): RestAction[util.List[Command]] = ???
+
+  override def retrieveCommandById(id: String): RestAction[Command] = ???
+
+  override def upsertCommand(command: CommandData): CommandCreateAction = ???
+
+  override def updateCommands(): CommandListUpdateAction = ???
+
+  override def editCommandById(id: String): CommandEditAction = ???
+
+  override def deleteCommandById(commandId: String): RestAction[Void] = ???
+
+  override def retrieveCommandPrivilegesById(commandId: String): RestAction[util.List[CommandPrivilege]] = ???
+
+  override def retrieveCommandPrivileges(): RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
+
+  override def updateCommandPrivilegesById(id: String, privileges: util.Collection[_ <: CommandPrivilege]): RestAction[util.List[CommandPrivilege]] = ???
+
+  override def updateCommandPrivileges(privileges: util.Map[String, util.Collection[_ <: CommandPrivilege]]): RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
 }
