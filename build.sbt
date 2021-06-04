@@ -25,11 +25,11 @@ lazy val root = (project in file(".")).
       "com.google.re2j" % "re2j" % "1.6",
       "org.slf4j" % "slf4j-simple" % "1.7.30",
     ),
-    test in assembly := {},
-    assemblyMergeStrategy in assembly := {
+    assembly / test := {},
+    assembly / assemblyMergeStrategy := {
       case "module-info.class" => MergeStrategy.discard
       case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
     },
   )
