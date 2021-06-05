@@ -17,7 +17,10 @@ lazy val root = (project in file(".")).
     ),
     libraryDependencies ++= Seq(
       scalaTest % Test,
-      "net.dv8tion" % "JDA" % "4.2.1_269",
+      ("net.dv8tion" % "JDA" % "4.2.1_268")
+        .exclude("net.java.dev.jna", "jna")
+        .exclude("club.minnced", "opus-java-api")
+        .exclude("club.minnced", "opus-java-natives"),
       "org.xerial" % "sqlite-jdbc" % "3.34.0",
       "com.typesafe.slick" %% "slick" % "3.3.3",
       "com.typesafe" % "config" % "1.4.1",
