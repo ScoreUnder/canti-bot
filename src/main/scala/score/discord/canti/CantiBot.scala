@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.{JDA, JDABuilder}
 import score.discord.canti.collections.CacheCoordinator._
 import score.discord.canti.collections._
 import score.discord.canti.command._
-import score.discord.canti.command.slash.TestSlashCommand
+import score.discord.canti.command.slash.RegisterGuildSlashCommandsCommand
 import score.discord.canti.functionality._
 import score.discord.canti.functionality.ownership.{DeleteOwnedMessages, MessageOwnership}
 import score.discord.canti.functionality.voicekick.VoiceKick
@@ -68,7 +68,7 @@ class CantiBot {
         val conversations = new Conversations
         val voiceKick = new VoiceKick(userCreatedChannels, new VoiceBanExpiryTable(dbConfig, "voice_ban_expiries"))
         val privateVoiceChats = new PrivateVoiceChats(userCreatedChannels, new ChannelByGuild(dbConfig, "voice_default_category") withCache LruCache.empty(2000), commands, eventWaiter)
-        val slashCommands = new SlashCommands(Seq(new TestSlashCommand) ++ privateVoiceChats.allSlashCommands: _*)
+        val slashCommands = new SlashCommands(privateVoiceChats.allSlashCommands: _*)
         bot.addEventListeners(
           commands,
           slashCommands,
@@ -94,6 +94,7 @@ class CantiBot {
         commands register new BotInfoCommand(userId = config.owner)
         commands register findCommand
         commands register quoteCommand
+        commands register new RegisterGuildSlashCommandsCommand(userId = config.owner, slashCommands)
         val readCommand = new ReadCommand(messageCache)
         if (readCommand.available) commands register readCommand
         commands register new PingCommand

@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.interactions.InteractionHook
-import net.dv8tion.jda.api.interactions.commands.CommandInteraction
+import net.dv8tion.jda.api.interactions.commands.{CommandInteraction, OptionType}
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
@@ -68,6 +68,9 @@ class PrivateVoiceChats(
       deferred.flatMap(hook => hook.sendMessage(message).queueFuture())
         .failed.foreach(APIHelper.failure("replying to slash command"))
 
+    def memberFromInteraction(origin: CommandInteraction): Either[String, Member] =
+      Option(origin.getMember).toRight("This command must be run from within a server")
+
     override def execute(origin: CommandInteraction): Unit = {
       val deferred = origin.deferReply().queueFuture()
       executeAndGetMessage(origin, deferred).map(replyTo(deferred))
@@ -99,7 +102,7 @@ class PrivateVoiceChats(
     }
 
     override def executeAndGetMessage(origin: CommandInteraction, deferred: Future[InteractionHook]): Future[Message] = {
-      val member = Option(origin.getMember).toRight("This command must be run from within a server")
+      val member = memberFromInteraction(origin)
       def retry(): Future[Message] = executeGeneric(member, replyTo(deferred), retry)
       retry()
     }
@@ -134,7 +137,7 @@ class PrivateVoiceChats(
     }
   }
 
-  object InviteCommand extends Command.Anyone with MyReplyingCommand {
+  object InviteCommand extends Command.Anyone with MyReplyingCommand with MySlashCommand {
     override def name = "invite"
 
     override val aliases = List("inv")
@@ -152,18 +155,31 @@ class PrivateVoiceChats(
 
     val permInviteMessage: String = s"You may now enter the channel."
 
+    override def options: Seq[OptionData] = Seq(
+      new OptionData(OptionType.USER, "user", "The user to invite", true),
+    )
+
+    override def executeAndGetMessage(origin: CommandInteraction, deferred: Future[InteractionHook]): Future[Message] = {
+      executeGeneric(memberFromInteraction(origin), Seq(origin.getOption("user").getAsUser))
+    }
+
     override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
       val member = CommandHelper(message).member
+      val invitees = message.getMentionedUsers.asScala.toSeq
+      executeGeneric(member, invitees)
+    }
+
+    private def executeGeneric(member: Either[String, Member], invitees: Seq[User]) = {
       val response = for {
         member <- member
         guild = member.getGuild
         chan <- Option(member.getVoiceState.getChannel)
           .toRight("You must be in voice chat to use this command.")
-        success <- message.getMentionedUsers.asScala.toSeq match {
+        success <- invitees match {
           case Seq() => Left("You must mention the users you want to join you in voice chat.")
           case Seq(mentions@_*) =>
             assert(guild == chan.getGuild)
-            Right(inviteUsers(channel = chan, inviter = message.getAuthor, invitees = mentions))
+            Right(inviteUsers(channel = chan, inviter = member.getUser, invitees = mentions))
         }
       } yield success
 
@@ -228,7 +244,7 @@ class PrivateVoiceChats(
     }
   }
 
-  object PrivateCommand extends Command.Anyone with MyReplyingCommand {
+  object PrivateCommand extends Command.Anyone with MyReplyingCommand with MySlashCommand {
     override def name = "private"
 
     override val aliases = List("prv", "pv", "voice")
@@ -243,12 +259,28 @@ class PrivateVoiceChats(
          |The name of the channel can be set by adding it to the end of the command.
          |e.g. `$invocation 3 Hangout number 1`""".stripMargin
 
+    override def options: Seq[OptionData] = Seq(
+      new OptionData(OptionType.INTEGER, "limit", "The number of users allowed in the channel"),
+      new OptionData(OptionType.STRING, "name", "The name of the channel to create"),
+    )
+
     override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
       createUserOwnedChannelFromMessage(message, args, name, public = false)
     }
+
+    override def executeAndGetMessage(origin: CommandInteraction, deferred: Future[InteractionHook]): Future[Message] = {
+      createUserOwnedChannel(
+        public = false,
+        limit = Option(origin.getOption("limit")).fold(0)(_.getAsLong.toInt),
+        member = memberFromInteraction(origin),
+        reply = replyTo(deferred),
+        chosenName = Option(origin.getOption("name")).fold("")(_.getAsString),
+        commandName = "",
+        args = "")
+    }
   }
 
-  object PublicCommand extends Command.Anyone with MyReplyingCommand {
+  object PublicCommand extends Command.Anyone with MyReplyingCommand with MySlashCommand {
     override def name: String = "public"
 
     override def aliases: Seq[String] = List("pbv", "pb")
@@ -261,8 +293,23 @@ class PrivateVoiceChats(
          |The name of the channel can be set by adding it to the end of the command.
          |e.g. `$invocation Hangout number 1`""".stripMargin
 
+    override def options: Seq[OptionData] = Seq(
+      new OptionData(OptionType.STRING, "name", "The name of the channel to create"),
+    )
+
     override def executeAndGetMessage(message: Message, args: String): Future[Message] = {
       createUserOwnedChannelFromMessage(message, args, name, public = true)
+    }
+
+    override def executeAndGetMessage(origin: CommandInteraction, deferred: Future[InteractionHook]): Future[Message] = {
+      createUserOwnedChannel(
+        public = true,
+        limit = 0,
+        member = memberFromInteraction(origin),
+        reply = replyTo(deferred),
+        chosenName = Option(origin.getOption("name")).fold("")(_.getAsString),
+        commandName = "",
+        args = "")
     }
   }
 
@@ -322,7 +369,7 @@ class PrivateVoiceChats(
 
   def allCommands: Seq[Command] = Seq(AcceptCommand, InviteCommand, PrivateCommand, PublicCommand, DefaultCategoryCommand)
 
-  def allSlashCommands: Seq[SlashCommand] = Seq(AcceptCommand)
+  def allSlashCommands: Seq[SlashCommand] = Seq(AcceptCommand, InviteCommand, PrivateCommand, PublicCommand)
 
   private val CREATOR_PRIVATE_CHANNEL_PERMISSIONS =
     Set(Permission.MANAGE_CHANNEL, Permission.VOICE_CONNECT, Permission.VOICE_MOVE_OTHERS)
@@ -369,8 +416,14 @@ class PrivateVoiceChats(
   }
 
   private def createUserOwnedChannelFromMessage(message: Message, args: String, commandName: String, public: Boolean): Future[Message] = {
-    val guild = message.getGuild
+    val member = CommandHelper(message).member
+    val reply: Message => Unit = message ! _
+    val (limit, name) = parseChannelDetails(args, public)
 
+    createUserOwnedChannel(public, limit, member, reply, name, commandName, args)
+  }
+
+  private def createUserOwnedChannel(public: Boolean, limit: Int, member: Either[String, Member], reply: Message => Unit, chosenName: String, commandName: String, args: String) = {
     def asyncCreateChannel(member: Member, limit: Int, name: String, category: Option[Category], channelReq: ChannelAction[VoiceChannel]) = {
       async {
         val categoryPerms = category.fold(PermissionCollection.empty[IPermissionHolder])(_.permissionAttachments)
@@ -384,7 +437,7 @@ class PrivateVoiceChats(
         val newVoiceChannel = await(channelReq.queueFuture())
 
         {
-          ownerByChannel(newVoiceChannel) = message.getAuthor
+          ownerByChannel(newVoiceChannel) = member.getUser
         }.failed.foreach { ex =>
           APIHelper.failure("saving private channel")(ex)
           newVoiceChannel.delete().queueFuture().failed.foreach(
@@ -394,38 +447,43 @@ class PrivateVoiceChats(
 
         logger.info(s"Created user-owned channel ${newVoiceChannel.unambiguousString} on behalf of ${member.unambiguousString}")
 
-        APIHelper.tryRequest(guild.moveVoiceMember(member, newVoiceChannel))
+        APIHelper.tryRequest(member.getGuild.moveVoiceMember(member, newVoiceChannel))
           .recoverToEither(translateChannelMoveError)
-          .tap(_.failed.foreach(APIHelper.loudFailure("moving user to private channel", message)))
+          .tap(_.failed.foreach(APIHelper.loudFailure("moving user to private channel", reply)))
           .foreach { result =>
             for (err <- result.left)
-              message ! BotMessages.error(err)
+              reply(BotMessages.error(err).toMessage)
           }
 
         makeCreateChannelSuccessMessage(name, limit, public, commandName, args).toMessage
       }
     }
 
-    getGuildDefaultCategory(guild).flatMap { defaultCategory =>
-      def retryingParseAndCreateChannel(member: Member): Future[Message] =
-        Option(member.getVoiceState.getChannel) match {
-          case Some(voiceChannel) =>
-            val (limit, name) = parseChannelDetails(args, voiceChannel, public)
-            val category = defaultCategory.orElse(Option(voiceChannel.getParent))
-            (for {
-              channelReq <- createChannel(name, guild, category)
-            } yield asyncCreateChannel(member, limit, name, category, channelReq))
-              .pipe(x => eitherToFutureMessage(x))
+    def retryingParseAndCreateChannel(member: Member): Future[Message] = {
+      getGuildDefaultCategory(member.getGuild).flatMap { defaultCategory =>
+        def aux(): Future[Message] = {
+          Option(member.getVoiceState.getChannel) match {
+            case Some(voiceChannel) =>
+              val name = if (chosenName.nonEmpty) chosenName else genericChannelName(voiceChannel, public)
+              val category = defaultCategory.orElse(Option(voiceChannel.getParent))
+              (for {
+                channelReq <- createChannel(name, member.getGuild, category)
+              } yield asyncCreateChannel(member, limit, name, category, channelReq))
+                .pipe(x => eitherToFutureMessage(x))
 
-          case None =>
-            waitForVoiceJoin(member, message ! _, VoiceMove(member.id, member.getGuild.id), retryingParseAndCreateChannel(member))
+            case None =>
+              waitForVoiceJoin(member, reply, VoiceMove(member.id, member.getGuild.id), aux())
+          }
         }
 
-      CommandHelper(message).member
-        .map(retryingParseAndCreateChannel)
-        .pipe(x => eitherToFutureMessage(x))
-        .tap(_.failed.foreach(APIHelper.loudFailure("creating private channel", message)))
+        aux()
+      }
     }
+
+    member
+      .map(retryingParseAndCreateChannel)
+      .pipe(x => eitherToFutureMessage(x))
+      .tap(_.failed.foreach(APIHelper.loudFailure("creating private channel", reply)))
   }
 
   private def makeCreateChannelSuccessMessage(name: String, limit: Int, public: Boolean, commandName: String, args: String) = {
@@ -482,7 +540,9 @@ class PrivateVoiceChats(
     }
   }
 
-  private def parseChannelDetails(args: String, originalChannel: VoiceChannel, public: Boolean) = {
+  private val maxNameLen = 100
+
+  private def parseChannelDetails(args: String, public: Boolean) = {
     val trimmedArgs = args.trim
     val (limit, name) =
       if (public) ("", trimmedArgs)
@@ -491,17 +551,19 @@ class PrivateVoiceChats(
         case Array(maybeLimit) => (maybeLimit, "")
       }
 
-    val maxNameLen = 100
     limit.toIntOption
       .filter(x => x >= 0 && x <= 99)
       .fold((0, trimmedArgs))((_, name))
     match {
       case (limit_, name_) if name_.length > maxNameLen => (limit_, name_ take maxNameLen)
-      case (limit_, name_) if name_.length < 3 =>
-        val newName = prefixOrUpdateNumber(originalChannel.name, prefix = if (public) "Public " else "Private ")
-        (limit_, newName take maxNameLen)
+      case (limit_, name_) if name_.length < 3 => (limit_, "")
       case x => x
     }
+  }
+
+  private def genericChannelName(originalChannel: VoiceChannel, public: Boolean) ={
+    val newName = prefixOrUpdateNumber(originalChannel.name, prefix = if (public) "Public " else "Private ")
+    newName take maxNameLen
   }
 
   private def createChannel(name: String, guild: Guild, category: Option[Category]) =

@@ -1,6 +1,5 @@
 package score.discord.canti.functionality
 
-import net.dv8tion.jda.api.events.guild.GuildReadyEvent
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
@@ -24,10 +23,8 @@ class SlashCommands(commands: SlashCommand*) extends EventListener {
     what.addCommands(commands.map(_.data): _*)
 
   override def onEvent(event: GenericEvent): Unit = event match {
-    //case ev: ReadyEvent =>
-    //  registerCommands(ev.getJDA.updateCommands()).queueFuture()
-    case ev: GuildReadyEvent =>
-      registerCommands(ev.getGuild.updateCommands()).queueFuture()
+    case ev: ReadyEvent =>
+      registerCommands(ev.getJDA.updateCommands()).queueFuture()
     case ev: SlashCommandEvent =>
       val name = normaliseCommandName(ev.getName)
       commandsMap.get(name) match {

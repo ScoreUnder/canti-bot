@@ -37,13 +37,22 @@ object APIHelper {
   /** Similar to [[APIHelper#failure]], but also sends an "unknown error" message in chat.
     *
     * @param whatFailed what you were doing to cause the exception, described for the users and bot owner
+    * @param reply      a function which accepts the "unknown error" message to queue as a reply somewhere
+    * @param exception  the exception to print
+    */
+  def loudFailure(whatFailed: String, reply: Message => Unit)(exception: Throwable): Unit = {
+    failure(whatFailed)(exception)
+    reply(BotMessages.error(describeFailure(whatFailed, exception)).toMessage)
+  }
+
+  /** Similar to [[APIHelper#failure]], but also sends an "unknown error" message in chat.
+    *
+    * @param whatFailed what you were doing to cause the exception, described for the users and bot owner
     * @param channel    the channel to send the "unknown error" message to
     * @param exception  the exception to print
     */
-  def loudFailure(whatFailed: String, channel: MessageChannel)(exception: Throwable): Unit = {
-    failure(whatFailed)(exception)
-    channel ! BotMessages.error(describeFailure(whatFailed, exception))
-  }
+  def loudFailure(whatFailed: String, channel: MessageChannel)(exception: Throwable): Unit =
+    loudFailure(whatFailed, channel ! _)(exception)
 
   /** Similar to [[APIHelper#failure]], but also sends an "unknown error" message in chat.
     *
@@ -51,10 +60,8 @@ object APIHelper {
     * @param message    the message to reply with "unknown error" to
     * @param exception  the exception to print
     */
-  def loudFailure(whatFailed: String, message: Message)(exception: Throwable)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Unit = {
-    failure(whatFailed)(exception)
-    message ! BotMessages.error(describeFailure(whatFailed, exception))
-  }
+  def loudFailure(whatFailed: String, message: Message)(exception: Throwable)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Unit =
+    loudFailure(whatFailed, message ! _)(exception)
 
   /** Similar to loudFailure with a MessageChannel, but uses
     * [[APIHelper#failure]] if no MessageChannel is provided.
