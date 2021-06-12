@@ -5,12 +5,8 @@ import net.dv8tion.jda.api.entities.{ISnowflake, Message, User}
 import score.discord.canti.wrappers.jda.Conversions._
 import score.discord.canti.wrappers.jda.ID
 
-trait Command {
-  def name: String
-
+trait Command extends BaseCommand {
   def aliases: Seq[String] = Nil
-
-  def description: String
 
   def longDescription(invocation: String): String = ""
 

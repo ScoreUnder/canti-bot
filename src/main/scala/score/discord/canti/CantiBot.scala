@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.{JDA, JDABuilder}
 import score.discord.canti.collections.CacheCoordinator._
 import score.discord.canti.collections._
 import score.discord.canti.command._
+import score.discord.canti.command.slash.TestSlashCommand
 import score.discord.canti.functionality._
 import score.discord.canti.functionality.ownership.{DeleteOwnedMessages, MessageOwnership}
 import score.discord.canti.functionality.voicekick.VoiceKick
@@ -67,8 +68,10 @@ class CantiBot {
         val conversations = new Conversations
         val voiceKick = new VoiceKick(userCreatedChannels, new VoiceBanExpiryTable(dbConfig, "voice_ban_expiries"))
         val privateVoiceChats = new PrivateVoiceChats(userCreatedChannels, new ChannelByGuild(dbConfig, "voice_default_category") withCache LruCache.empty(2000), commands, eventWaiter)
+        val slashCommands = new SlashCommands(Seq(new TestSlashCommand) ++ privateVoiceChats.allSlashCommands: _*)
         bot.addEventListeners(
           commands,
+          slashCommands,
           new VoiceRoles(new RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000), commands),
           privateVoiceChats,
           new DeleteOwnedMessages,
@@ -100,6 +103,7 @@ class CantiBot {
             case ev: ReadyEvent =>
               // TODO: Make configurable?
               ev.getJDA.getPresence.setActivity(Activity playing s"Usage: ${commands.prefix}${helpCommand.name}")
+              ev.getJDA.setRequiredScopes("bot", "applications.commands")
             case _ =>
           }: EventListener,
           new EventLogger)
