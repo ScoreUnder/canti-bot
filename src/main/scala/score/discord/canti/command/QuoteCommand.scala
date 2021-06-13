@@ -5,19 +5,22 @@ import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.interactions.components.Button
 import net.dv8tion.jda.api.requests.ErrorResponse
+import net.dv8tion.jda.api.requests.restaction.MessageAction
 import score.discord.canti.collections.{MessageCache, ReplyCache}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.wrappers.jda.Conversions._
-import score.discord.canti.wrappers.jda.IdConversions._
 import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.IdConversions._
 import score.discord.canti.wrappers.jda.matching.Events.NonBotMessage
 
 import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
+import scala.util.chaining._
 
 class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
   override def name: String = "quote"
@@ -37,27 +40,58 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
        |`>>12341234`
     """.stripMargin
 
-  def executeAndGetMessage(cmdMessage: Message, args: String): Future[Message] = {
+  def executeAndGetMessage(cmdMessage: Message, args: String): Future[Message] =
+    executeAndGetMessageWithUrl(cmdMessage, args).map(_._1)
+
+  def executeAndGetMessageWithUrl(cmdMessage: Message, args: String): Future[(Message, Option[String])] =
     async {
-      (parseQuoteIDs(args) match {
+      val quotedMsg = await(retrieveQuoteMessageByArg(cmdMessage, args))
+      val replyMsg = quotedMsg
+        .map(message => getMessageAsQuote(cmdMessage, message.getChannel, message))
+        .fold(BotMessages.error, identity).toMessage
+      (replyMsg, quotedMsg.toOption.map(_.getJumpUrl))
+    }
+
+  private def retrieveQuoteMessageByArg(cmdMessage: Message, args: String): Future[Either[String, Message]] =
+    async {
+      parseQuoteIDs(args) match {
         case Some((quoteId, specifiedChannel)) =>
           val channel = channelOrBestGuess(cmdMessage, quoteId, specifiedChannel)
           checkChannelVisibility(channel, cmdMessage.getAuthor) match {
             case Right(ch) =>
-              val foundMessage = await(APIHelper
+              await(APIHelper
                 .tryRequest(ch retrieveMessageById quoteId.value)
                 .map(Right(_))
                 .recover(stringifyMessageRetrievalError(specifiedChannel)))
-
-              for (message <- foundMessage)
-                yield getMessageAsQuote(cmdMessage, ch, message)
             case Left(e) => Left(e)
           }
         case None =>
           Left("You need to give a message ID to quote")
-      }).fold(BotMessages.error, identity).toMessage
+      }
     }
-  }
+
+  def addLink(action: MessageAction, link: Option[String]): MessageAction =
+    link match {
+      case None => action
+      case Some(link) => action.setActionRow(Button.link(link, "Go to message"))
+    }
+
+  override def executeFuture(message: Message, args: String): Future[Message] =
+    for {
+      (replyUnsent, url) <- executeAndGetMessageWithUrl(message, args)
+      reply <-
+        message.reply(replyUnsent)
+          .mentionRepliedUser(false)
+          .pipe(addLink(_, url))
+          .queueFuture()
+          .tap(message.registerReply)
+    } yield reply
+
+  override def executeForEdit(message: Message, myMessageOption: Option[ID[Message]], args: String): Unit =
+    for (oldMessage <- myMessageOption; (myReply, url) <- executeAndGetMessageWithUrl(message, args)) {
+      APIHelper.tryRequest(message.getChannel.editMessageById(oldMessage.value, myReply).pipe(addLink(_, url)),
+        onFail = APIHelper.failure("executing a command for edited message"))
+    }
 
   private def channelOrBestGuess(context: Message, quoteId: ID[Message], specifiedChannel: Option[ID[MessageChannel]]): Option[MessageChannel] = {
     implicit val jda: JDA = context.getJDA
@@ -103,7 +137,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
     val sender = msg.getAuthor
 
     val quote = BotMessages
-      .plain(s"[🔗 Go to message ↦](${msg.getJumpUrl})\n${msg.getContentRaw}")
+      .plain(msg.getContentRaw)
       .setAuthor(sender.getName, null, sender.getAvatarUrl)
       .setTimestamp(msg.getTimeCreated)
       .setFooter(s"$chanName | Requested by ${cmdMessage.getAuthor.mentionAsText}", null)

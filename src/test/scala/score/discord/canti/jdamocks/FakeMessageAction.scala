@@ -76,5 +76,5 @@ class FakeMessageAction(message: Message) extends MessageAction {
 
   override def retainFilesById(ids: util.Collection[String]): MessageAction = ???
 
-  override def setActionRows(rows: ActionRow*): MessageAction = ???
+  override def setActionRows(rows: ActionRow*): MessageAction = this
 }
