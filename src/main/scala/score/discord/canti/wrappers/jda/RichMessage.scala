@@ -19,10 +19,13 @@ class RichMessage(val me: Message) extends AnyVal {
     * @return the new Message, wrapped in Future
     */
   def !(contents: MessageFromX)(implicit mo: MessageOwnership, replyCache: ReplyCache): Future[Message] =
-    me.reply(contents.toMessage).mentionRepliedUser(false).queueFuture().tap(_.foreach { message =>
+    me.reply(contents.toMessage).mentionRepliedUser(false).queueFuture().tap(registerReply)
+
+  def registerReply(future: Future[Message])(implicit mo: MessageOwnership, replyCache: ReplyCache): Future[Unit] =
+    future.map { message =>
       mo(message) = me.getAuthor
       replyCache += me.id -> message.id
-    })
+    }
 
   def guild: Option[Guild] =
     if (me.isFromGuild) Some(me.getGuild)
