@@ -20,9 +20,8 @@ import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
-import scala.util.chaining._
 
-class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand {
+class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with DataReplyingCommand[Option[String]] {
   override def name: String = "quote"
 
   override val aliases: Seq[String] = List("q")
@@ -40,10 +39,7 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
        |`>>12341234`
     """.stripMargin
 
-  def executeAndGetMessage(cmdMessage: Message, args: String): Future[Message] =
-    executeAndGetMessageWithUrl(cmdMessage, args).map(_._1)
-
-  def executeAndGetMessageWithUrl(cmdMessage: Message, args: String): Future[(Message, Option[String])] =
+  override def executeAndGetMessageWithData(cmdMessage: Message, args: String): Future[(Message, Option[String])] =
     async {
       val quotedMsg = await(retrieveQuoteMessageByArg(cmdMessage, args))
       val replyMsg = quotedMsg
@@ -70,27 +66,10 @@ class QuoteCommand(implicit messageCache: MessageCache, val messageOwnership: Me
       }
     }
 
-  def addLink(action: MessageAction, link: Option[String]): MessageAction =
-    link match {
+  override def tweakMessageAction(action: MessageAction, data: Option[String]): MessageAction =
+    data match {
       case None => action
       case Some(link) => action.setActionRow(Button.link(link, "Go to message"))
-    }
-
-  override def executeFuture(message: Message, args: String): Future[Message] =
-    for {
-      (replyUnsent, url) <- executeAndGetMessageWithUrl(message, args)
-      reply <-
-        message.reply(replyUnsent)
-          .mentionRepliedUser(false)
-          .pipe(addLink(_, url))
-          .queueFuture()
-          .tap(message.registerReply)
-    } yield reply
-
-  override def executeForEdit(message: Message, myMessageOption: Option[ID[Message]], args: String): Unit =
-    for (oldMessage <- myMessageOption; (myReply, url) <- executeAndGetMessageWithUrl(message, args)) {
-      APIHelper.tryRequest(message.getChannel.editMessageById(oldMessage.value, myReply).pipe(addLink(_, url)),
-        onFail = APIHelper.failure("executing a command for edited message"))
     }
 
   private def channelOrBestGuess(context: Message, quoteId: ID[Message], specifiedChannel: Option[ID[MessageChannel]]): Option[MessageChannel] = {
