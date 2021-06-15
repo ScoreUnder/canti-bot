@@ -5,6 +5,7 @@ import java.util.Locale
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.entities.templates.Template
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege
@@ -246,4 +247,8 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def updateCommandPrivilegesById(id: String, privileges: util.Collection[_ <: CommandPrivilege]): RestAction[util.List[CommandPrivilege]] = ???
 
   override def updateCommandPrivileges(privileges: util.Map[String, util.Collection[_ <: CommandPrivilege]]): RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
+
+  override def createTemplate(name: String, description: String): RestAction[Template] = ???
+
+  override def retrieveTemplates(): RestAction[util.List[Template]] = ???
 }

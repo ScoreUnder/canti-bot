@@ -157,4 +157,6 @@ class FakeJda extends JDA {
   override def deleteCommandById(commandId: String): RestAction[Void] = ???
 
   override def setRequiredScopes(scopes: util.Collection[String]): JDA = ???
+
+  override def createGuildFromTemplate(code: String, name: String, icon: Icon): RestAction[Void] = ???
 }
