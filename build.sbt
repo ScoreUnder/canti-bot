@@ -26,7 +26,7 @@ lazy val root = (project in file(".")).
       "com.typesafe" % "config" % "1.4.1",
       "org.scala-lang.modules" %% "scala-async" % "1.0.0-M1",
       "com.google.re2j" % "re2j" % "1.6",
-      "org.slf4j" % "slf4j-simple" % "1.7.30",
+      "org.slf4j" % "slf4j-simple" % "1.7.31",
     ),
     assembly / assemblyMergeStrategy := {
       case "module-info.class" => MergeStrategy.discard
