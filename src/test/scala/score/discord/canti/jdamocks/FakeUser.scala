@@ -29,8 +29,6 @@ class FakeUser(name: String, id: Long) extends User {
 
   override def getAsMention: String = ???
 
-  override def isFake: Boolean = ???
-
   override def getAsTag: String = ???
 
   override def getFlags: util.EnumSet[User.UserFlag] = ???

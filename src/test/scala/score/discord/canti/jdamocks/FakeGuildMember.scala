@@ -74,8 +74,6 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getActiveClients: util.EnumSet[ClientType] = ???
 
-  override def isFake: Boolean = false  // White lie
-
   override def hasTimeJoined: Boolean = ???
 
   override def isPending: Boolean = ???
