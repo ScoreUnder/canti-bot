@@ -21,7 +21,7 @@ lazy val root = (project in file(".")).
         .exclude("net.java.dev.jna", "jna")
         .exclude("club.minnced", "opus-java-api")
         .exclude("club.minnced", "opus-java-natives"),
-      "org.xerial" % "sqlite-jdbc" % "3.34.0",
+      "org.xerial" % "sqlite-jdbc" % "3.36.0",
       "com.typesafe.slick" %% "slick" % "3.3.3",
       "com.typesafe" % "config" % "1.4.1",
       "org.scala-lang.modules" %% "scala-async" % "1.0.0-M1",
