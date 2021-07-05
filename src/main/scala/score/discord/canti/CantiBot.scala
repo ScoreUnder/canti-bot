@@ -52,7 +52,10 @@ class CantiBot {
             DIRECT_MESSAGE_REACTIONS, /* Same as GUILD_MESSAGE_REACTIONS */
           )
         })
-          .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS)
+          .disableCache({
+            import CacheFlag._
+            util.Arrays.asList(ACTIVITY, CLIENT_STATUS, ONLINE_STATUS, ROLE_TAGS)
+          })
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
         implicit val scheduler = new Scheduler(executor)
