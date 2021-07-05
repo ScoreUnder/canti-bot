@@ -2,6 +2,7 @@ package score.discord.canti.collections
 
 import net.dv8tion.jda.api.entities.{Guild, Role}
 import score.discord.canti.util.DBUtils
+import score.discord.canti.wrappers.database.IDMapping._
 import score.discord.canti.wrappers.jda.ID
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
