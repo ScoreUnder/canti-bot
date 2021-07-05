@@ -84,7 +84,7 @@ object APIHelper {
     * @tparam T type of object returned by API call
     * @return Future corresponding to the success/failure of the API call
     */
-  def tryRequest[T](apiCall: => RestAction[T], onFail: Throwable => Unit): Future[T] =
+  def tryRequest[T](apiCall: => RestAction[_ <: T], onFail: Throwable => Unit): Future[T] =
     tryRequest(apiCall).tap(_.failed.foreach(onFail))
 
   /** Tries to run apiCall, then queues the result if successful.
@@ -93,7 +93,7 @@ object APIHelper {
     * @tparam T type of object returned by API call
     * @return Future corresponding to the success/failure of the API call
     */
-  def tryRequest[T](apiCall: => RestAction[T]): Future[T] =
+  def tryRequest[T](apiCall: => RestAction[_ <: T]): Future[T] =
     Try(apiCall).fold(Future.failed, _.queueFuture())
 
   object Error {

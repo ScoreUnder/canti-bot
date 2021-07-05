@@ -1,5 +1,7 @@
 package score.discord.canti.functionality
 
+import cps._
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
@@ -13,7 +15,6 @@ import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.matching.Events.{MessageDelete, NonBotReact}
 import score.discord.canti.wrappers.jda.matching.React
 
-import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.chaining._

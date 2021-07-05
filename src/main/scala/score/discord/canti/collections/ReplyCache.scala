@@ -8,7 +8,7 @@ import score.discord.canti.wrappers.jda.ID
 class ReplyCache(capacity: Int = 100) {
   private[this] val replies = new util.LinkedHashMap[ID[Message], ID[Message]] {
     override def removeEldestEntry(eldest: util.Map.Entry[ID[Message], ID[Message]]): Boolean =
-      size > capacity
+      size > ReplyCache.this.capacity
   }
 
   def +=(reply: (ID[Message], ID[Message])): Unit = replies.synchronized {

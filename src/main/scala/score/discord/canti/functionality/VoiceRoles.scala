@@ -1,7 +1,7 @@
 package score.discord.canti.functionality
 
-import java.util.concurrent.{ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom}
-
+import cps._
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
@@ -17,7 +17,7 @@ import score.discord.canti.wrappers.jda.Conversions._
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.IdConversions._
 
-import scala.async.Async._
+import java.util.concurrent.{ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._

@@ -1,5 +1,7 @@
 package score.discord.canti.command
 
+import cps._
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.collections.ReplyCache
@@ -9,7 +11,6 @@ import score.discord.canti.wrappers.FutureEither._
 import score.discord.canti.wrappers.jda.Conversions._
 import score.discord.canti.wrappers.jda.ID
 
-import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
@@ -29,7 +30,7 @@ class BlameCommand(implicit val messageOwnership: MessageOwnership, val replyCac
       implicit val jda: JDA = message.getJDA
       val resultText = await(for {
         id <- Future.successful(
-          Try(ID fromString[Message] args).fold(_ => Left("Expecting a message ID; got something else"), Right(_))
+          Try(ID.fromString[Message](args)).fold(_ => Left("Expecting a message ID; got something else"), Right(_))
         ).flatView
         owner <- messageOwnership(id).map(_.toRight("No ownership info available for that message")).flatView
       } yield s"That message is owned by ${owner.mentionWithName}.")

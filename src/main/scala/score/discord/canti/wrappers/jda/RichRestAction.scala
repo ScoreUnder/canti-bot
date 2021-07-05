@@ -13,7 +13,7 @@ class RichRestAction[T](val orig: RestAction[T]) extends AnyVal {
     */
   def queueFuture(): Future[T] = {
     val promise = Promise[T]()
-    orig.queue(promise.success _, promise.failure _)
+    orig.queue(promise.success(_), promise.failure(_))
     promise.future
   }
 

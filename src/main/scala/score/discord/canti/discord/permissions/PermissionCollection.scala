@@ -2,7 +2,7 @@ package score.discord.canti.discord.permissions
 
 import net.dv8tion.jda.api.entities.IPermissionHolder
 
-case class PermissionCollection[+T <: IPermissionHolder] private(values: Seq[(T, PermissionAttachment)]) {
+case class PermissionCollection[+T <: IPermissionHolder](values: Seq[(T, PermissionAttachment)]) {
   def :+[U >: T <: IPermissionHolder](value: (U, PermissionAttachment)): PermissionCollection[U] = copy(values = values :+ value)
 
   def merge[U >: T <: IPermissionHolder](other: PermissionCollection[U]): PermissionCollection[U] = {

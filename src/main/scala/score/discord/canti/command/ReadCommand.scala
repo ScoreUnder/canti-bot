@@ -1,17 +1,17 @@
 package score.discord.canti.command
 
-import java.io.{File, IOException}
-import java.nio.CharBuffer
-import java.nio.charset.CodingErrorAction
-import java.util.concurrent.TimeUnit
-
+import cps._
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.collections.{MessageCache, ReplyCache}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.canti.wrappers.jda.Conversions._
 
-import scala.async.Async._
+import java.io.{File, IOException}
+import java.nio.CharBuffer
+import java.nio.charset.CodingErrorAction
+import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future, TimeoutException, blocking}
@@ -21,7 +21,7 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".split(" ")
   private val DICT_FILE = new File("extra_words")
-  private implicit val CODEC = Codec("EUC-JP").onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE)
+  private given Codec = Codec("EUC-JP").onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE)
   private val WHITESPACE = "\\s".r
   private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
 
@@ -88,7 +88,7 @@ class ReadCommand(messageCache: MessageCache)(implicit messageOwnership: Message
       val kakasi = Runtime.getRuntime.exec(withDict)
       val os = kakasi.getOutputStream
       Future {
-        val encoded = CODEC.encoder.encode(CharBuffer.wrap(text))
+        val encoded = summon[Codec].encoder.encode(CharBuffer.wrap(text))
         val encodedArr = new Array[Byte](encoded.remaining())
         encoded.get(encodedArr)
         blocking {

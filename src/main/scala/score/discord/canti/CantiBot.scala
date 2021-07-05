@@ -55,10 +55,10 @@ class CantiBot {
           .disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS)
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
-        implicit val scheduler = new Scheduler(executor)
-        implicit val messageOwnership = new MessageOwnership(new UserByMessage(dbConfig, "message_ownership") withCache LruCache.empty(20000))
-        implicit val messageCache = new MessageCache
-        implicit val replyCache = new ReplyCache
+        given Scheduler = new Scheduler(executor)
+        given MessageOwnership = new MessageOwnership(new UserByMessage(dbConfig, "message_ownership") withCache LruCache.empty(20000))
+        given MessageCache = new MessageCache
+        given ReplyCache = new ReplyCache
         val userCreatedChannels = new UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
 
         val eventWaiter = new EventWaiter
@@ -81,7 +81,7 @@ class CantiBot {
           findCommand.ReactListener,
           voiceKick,
           eventWaiter,
-          messageCache)
+          summon[MessageCache])
 
         val helpCommand = new HelpCommand(commands)
         privateVoiceChats.allCommands.foreach(commands.register)
@@ -95,7 +95,7 @@ class CantiBot {
         commands register findCommand
         commands register quoteCommand
         commands register new RegisterGuildSlashCommandsCommand(userId = config.owner, slashCommands)
-        val readCommand = new ReadCommand(messageCache)
+        val readCommand = new ReadCommand(summon[MessageCache])
         if (readCommand.available) commands register readCommand
         commands register new PingCommand
 

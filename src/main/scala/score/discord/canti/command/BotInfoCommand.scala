@@ -1,13 +1,14 @@
 package score.discord.canti.command
 
+import cps._
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.{Message, User}
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
-import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.Conversions._
+import score.discord.canti.wrappers.jda.ID
 
-import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class BotInfoCommand(override val userId: ID[User])(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.OneUserOnly {

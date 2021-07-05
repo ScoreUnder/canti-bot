@@ -1,5 +1,7 @@
 package score.discord.canti.command
 
+import cps._
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.GenericEvent
@@ -16,7 +18,6 @@ import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.IdConversions._
 import score.discord.canti.wrappers.jda.matching.Events.NonBotMessage
 
-import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._

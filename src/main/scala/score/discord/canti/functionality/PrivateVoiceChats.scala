@@ -1,12 +1,14 @@
 package score.discord.canti.functionality
 
+import cps._
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities._
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.interactions.InteractionHook
-import net.dv8tion.jda.api.interactions.commands.{CommandInteraction, OptionType}
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import net.dv8tion.jda.api.interactions.commands.{CommandInteraction, OptionType}
 import net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
 import net.dv8tion.jda.api.{JDA, Permission}
@@ -27,7 +29,6 @@ import score.discord.canti.wrappers.jda.IdConversions._
 import score.discord.canti.wrappers.jda.matching.Events.GuildVoiceUpdate
 
 import java.util.concurrent.ConcurrentHashMap
-import scala.async.Async._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -103,7 +104,9 @@ class PrivateVoiceChats(
 
     override def executeAndGetMessage(origin: CommandInteraction, deferred: Future[InteractionHook]): Future[Message] = {
       val member = memberFromInteraction(origin)
+
       def retry(): Future[Message] = executeGeneric(member, replyTo(deferred), retry)
+
       retry()
     }
 
@@ -393,7 +396,7 @@ class PrivateVoiceChats(
     )
 
   private def getChannelMoveError(ex: Throwable): Message =
-    BotMessages.error(translateChannelMoveError.applyOrElse(ex, { ex: Throwable =>
+    BotMessages.error(translateChannelMoveError.applyOrElse(ex, { ex =>
       APIHelper.failure("moving a user to a newly created channel")(ex)
       "An error occurred while trying to move you to another channel."
     })).toMessage
@@ -561,7 +564,7 @@ class PrivateVoiceChats(
     }
   }
 
-  private def genericChannelName(originalChannel: VoiceChannel, public: Boolean) ={
+  private def genericChannelName(originalChannel: VoiceChannel, public: Boolean) = {
     val newName = prefixOrUpdateNumber(originalChannel.name, prefix = if (public) "Public " else "Private ")
     newName take maxNameLen
   }
