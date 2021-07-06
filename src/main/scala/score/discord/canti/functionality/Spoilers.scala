@@ -1,5 +1,7 @@
 package score.discord.canti.functionality
 
+import cps.*
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
@@ -8,22 +10,31 @@ import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.Command
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
-import score.discord.canti.wrappers.jda.Conversions._
 import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.RichMessage.!
+import score.discord.canti.wrappers.jda.RichMessageChannel.{mention, sendOwned}
+import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
+import score.discord.canti.wrappers.jda.RichSnowflake.id
+import score.discord.canti.wrappers.jda.RichUser.{mentionWithName, unambiguousString}
 import score.discord.canti.wrappers.jda.matching.Events.{MessageDelete, NonBotReact}
 import score.discord.canti.wrappers.jda.matching.React
 
-import scala.async.Async._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.chaining._
+import scala.language.implicitConversions
+import scala.util.chaining.*
 
-class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, conversations: Conversations)(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener {
+class Spoilers(
+  spoilerTexts: AsyncMap[ID[Message], String],
+  commands: Commands,
+  conversations: Conversations
+)(using MessageOwnership, ReplyCache)
+    extends EventListener:
   private[this] val logger = LoggerFactory.getLogger(classOf[Spoilers])
 
   val spoilerEmote = "🔍"
 
-  commands register new Command.Anyone {
+  commands register new Command.Anyone:
     override def name = "spoiler"
 
     override val aliases = List("sp", "spoil", "hide")
@@ -50,84 +61,88 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], commands: Commands, 
          |```
       """.stripMargin
 
-    override def execute(message: Message, args: String): Unit = {
+    override def execute(message: Message, args: String): Unit =
       async {
-        APIHelper.tryRequest(message.delete(),
-          onFail = APIHelper.loudFailure("deleting a message", message))
+        APIHelper.tryRequest(
+          message.delete(),
+          onFail = APIHelper.loudFailure("deleting a message", message)
+        )
 
-        args.trim match {
+        args.trim match
           case "" =>
             await(createSpoilerConversation(message))
           case trimmed =>
             await(createSpoiler(message.getChannel, message.getAuthor, trimmed))
-        }
       }.failed.foreach(APIHelper.loudFailure("running spoiler command", message))
-    }
 
-    private def createSpoilerConversation(message: Message) = {
+    private def createSpoilerConversation(message: Message) =
       val channel = message.getChannel
-      for {
+      for
         privateChannel <- message.getAuthor.openPrivateChannel().queueFuture()
-        _ <- privateChannel.sendMessage(
-          s"Please enter your spoiler contents for ${channel.mention}, or reply with 'cancel' to cancel."
-        ).queueFuture()
-      } yield {
-        conversations.start(message.getAuthor, privateChannel) { conversation =>
-          conversation.message.getContentRaw match {
-            case "cancel" =>
-              conversation.message.!("Did not create a spoiler.")
-            case spoiler =>
-              for (_ <- createSpoiler(channel, conversation.message.getAuthor, spoiler))
-                conversation.message.!("Created your spoiler.")
-          }
-        }
+        _ <- privateChannel
+          .sendMessage(
+            s"Please enter your spoiler contents for ${channel.mention}, or reply with 'cancel' to cancel."
+          )
+          .queueFuture()
+      yield conversations.start(message.getAuthor, privateChannel) { conversation =>
+        conversation.message.getContentRaw match
+          case "cancel" =>
+            conversation.message.!("Did not create a spoiler.")
+          case spoiler =>
+            for _ <- createSpoiler(channel, conversation.message.getAuthor, spoiler) do
+              conversation.message.!("Created your spoiler.")
       }
-    }
-  }
 
-  private def createSpoiler(spoilerChannel: MessageChannel, author: User, args: String): Future[Unit] = {
+  private def createSpoiler(
+    spoilerChannel: MessageChannel,
+    author: User,
+    args: String
+  ): Future[Unit] =
     async {
       // Must be lowercase (to allow case insensitive string comparison)
       val hintPrefix = "hint:"
       val Array(hintText, spoilerText) =
-        if (args.take(hintPrefix.length) equalsIgnoreCase hintPrefix) {
+        if args.take(hintPrefix.length) equalsIgnoreCase hintPrefix then
           (args drop hintPrefix.length).split("\n", 2)
-        } else {
-          Array("spoilers", args)
-        }
+        else Array("spoilers", args)
 
-      val spoilerMessage = await(spoilerChannel.sendOwned(BotMessages.okay(
-        s"**Click the magnifying glass** to see ${hintText.trim} (from ${author.mentionWithName})"
-      ), owner = author))
+      val spoilerMessage = await(
+        spoilerChannel.sendOwned(
+          BotMessages.okay(
+            s"**Click the magnifying glass** to see ${hintText.trim} (from ${author.mentionWithName})"
+          ),
+          owner = author
+        )
+      )
 
-      val spoilerDbUpdate = {
+      val spoilerDbUpdate =
         spoilerTexts(spoilerMessage.id) = spoilerText.trim
-      }
       await(spoilerMessage.addReaction(spoilerEmote).queueFuture())
       await(spoilerDbUpdate)
       logger.info(s"Created spoiler ${spoilerMessage.id} on behalf of ${author.unambiguousString}")
     }
-  }
 
-  override def onEvent(event: GenericEvent): Unit = event match {
+  override def onEvent(event: GenericEvent): Unit = event match
     case NonBotReact(React.Text(`spoilerEmote`), message, channel, user) =>
-      val channelName = channel match {
+      val channelName = channel match
         case ch: TextChannel => ch.getAsMention
-        case ch => Option(ch.getName).getOrElse("unnamed group chat")
-      }
-      for {
-        maybeText <- spoilerTexts.get(message).tap(_.failed.foreach(APIHelper.failure("displaying spoiler")))
+        case ch              => Option(ch.getName).getOrElse("unnamed group chat")
+
+      for
+        maybeText <- spoilerTexts
+          .get(message)
+          .tap(_.failed.foreach(APIHelper.failure("displaying spoiler")))
         text <- maybeText
-        privateChannel <- APIHelper.tryRequest(user.openPrivateChannel(),
-          onFail = APIHelper.failure(s"opening private channel with ${user.unambiguousString}"))
-      } {
+        privateChannel <- APIHelper.tryRequest(
+          user.openPrivateChannel(),
+          onFail = APIHelper.failure(s"opening private channel with ${user.unambiguousString}")
+        )
+      do
         logger.debug(s"Sending spoiler id ${message.value} to ${user.unambiguousString}")
         privateChannel.sendMessage(s"**Spoiler contents** from $channelName\n$text").queue()
-      }
     case MessageDelete(id) =>
       val futureRows = spoilerTexts.remove(id)
       futureRows.failed.foreach(APIHelper.failure("removing spoiler"))
-      futureRows.foreach(r => if (r != 0) logger.info(s"Deleted spoiler $id"))
+      futureRows.foreach(r => if r != 0 then logger.info(s"Deleted spoiler $id"))
     case _ =>
-  }
-}
+end Spoilers

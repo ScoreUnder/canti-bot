@@ -4,10 +4,9 @@ import net.dv8tion.jda.api.interactions.commands.CommandInteraction
 import net.dv8tion.jda.api.interactions.commands.build.{CommandData, OptionData}
 import score.discord.canti.command.BaseCommand
 
-trait SlashCommand extends BaseCommand {
+trait SlashCommand extends BaseCommand:
   def options: Seq[OptionData]
 
-  def data = new CommandData(name, description).addOptions(options: _*)
+  def data = CommandData(name, description).addOptions(options*)
 
   def execute(origin: CommandInteraction): Unit
-}

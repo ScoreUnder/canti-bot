@@ -6,12 +6,11 @@ import org.scalatest.PrivateMethodTester
 import score.discord.canti.TestFixtures
 import score.discord.canti.collections.NullCacheBackend
 
-class PrivateVoiceChatsTest extends AnyFlatSpec with should.Matchers with PrivateMethodTester {
+class PrivateVoiceChatsTest extends AnyFlatSpec with should.Matchers with PrivateMethodTester:
   val fixture = TestFixtures.default
-  import fixture._
-  import fixture.implicits._
+  import fixture.{*, given}
 
-  val pvc = new PrivateVoiceChats(new NullCacheBackend, new NullCacheBackend, commands, new EventWaiter)
+  val pvc = PrivateVoiceChats(NullCacheBackend(), NullCacheBackend(), commands, EventWaiter())
 
   val prefixOrUpdateNumberM = PrivateMethod[String](Symbol("prefixOrUpdateNumber"))
   def prefixOrUpdateNumber(name: String, prefix: String): String = pvc.invokePrivate(prefixOrUpdateNumberM(name, prefix))
@@ -32,4 +31,3 @@ class PrivateVoiceChatsTest extends AnyFlatSpec with should.Matchers with Privat
     val orig = "2345345378927468532154869879645439802349802349802439832409"
     prefixOrUpdateNumber(orig, "") should not equal orig
   }
-}

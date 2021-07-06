@@ -12,23 +12,22 @@ import score.discord.canti.wrappers.jda.matching.React
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends EventListener {
+class DeleteOwnedMessages(using messageOwnership: MessageOwnership) extends EventListener:
   private def getOwnership(user: User, channel: MessageChannel, messageId: ID[Message]) =
-    if (channel.getType == ChannelType.PRIVATE)
-      Future.successful(Some(user))
-    else {
-      implicit val jda: JDA = user.getJDA
+    if channel.getType == ChannelType.PRIVATE then Future.successful(Some(user))
+    else
+      given JDA = user.getJDA
       messageOwnership(messageId)
-    }
 
-  override def onEvent(ev: GenericEvent): Unit = {
-    ev match {
+  override def onEvent(ev: GenericEvent): Unit =
+    ev match
       case NonBotReact(react @ React.Text("❌" | "🚮"), messageId, channel, user) =>
         getOwnership(user, channel, messageId).foreach {
           case Some(`user`) =>
             APIHelper.tryRequest(
               channel.deleteMessageById(messageId.value),
-              onFail = APIHelper.failure("deleting an owned message"))
+              onFail = APIHelper.failure("deleting an owned message")
+            )
           case Some(_) =>
             react.removeReaction(user).queue()
           case None =>
@@ -36,6 +35,3 @@ class DeleteOwnedMessages(implicit messageOwnership: MessageOwnership) extends E
       case MessageDelete(message) =>
         messageOwnership.remove(message)
       case _ =>
-    }
-  }
-}

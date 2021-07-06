@@ -4,24 +4,23 @@ import java.util
 import java.util.Collections
 
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.managers.ChannelManager
 import net.dv8tion.jda.api.requests.RestAction
-import net.dv8tion.jda.api.requests.restaction._
+import net.dv8tion.jda.api.requests.restaction.*
 import score.discord.canti.wrappers.jda.ID
 
 import scala.util.Try
 
-class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChannel {
+class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChannel:
   private var cachedMessages = Map.empty[Long, Message]
   private var lastMessage: Long = 0L
 
-  def addMessage(content: String, author: User, embeds: util.List[MessageEmbed] = Collections.emptyList[MessageEmbed]): FakeMessage = {
-    val message = new FakeMessage(channel = this, id = guild.fakeJda.nextId, content = content, author = author, embeds = embeds)
+  def addMessage(content: String, author: User, embeds: util.List[MessageEmbed] = Collections.emptyList[MessageEmbed]): FakeMessage =
+    val message = FakeMessage(channel = this, id = guild.fakeJda.nextId, content = content, author = author, embeds = embeds)
     cachedMessages += message.getIdLong -> message
     lastMessage = message.getIdLong
     message
-  }
 
   override def getTopic: String = ???
 
@@ -39,7 +38,7 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def removeReactionById(messageId: String, unicode: String, user: User): RestAction[Void] = ???
 
-  override def retrieveMessageById(messageId: String): RestAction[Message] = new FakeMessageAction(cachedMessages(ID.fromString(messageId).value))
+  override def retrieveMessageById(messageId: String): RestAction[Message] = FakeMessageAction(cachedMessages(ID.fromString(messageId).value))
 
   override def canTalk: Boolean = ???
 
@@ -60,7 +59,7 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   override def getMemberPermissionOverrides: util.List[PermissionOverride] = ???
 
   override def sendMessage(msg: Message): MessageAction =
-    new FakeMessageAction(
+    FakeMessageAction(
       addMessage(content = msg.getContentRaw, author = Try(msg.getAuthor).toOption.orNull, embeds = msg.getEmbeds)
     )
 
@@ -113,4 +112,3 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   override def isSynced: Boolean = ???
 
   override def follow(targetChannelId: String): RestAction[Webhook.WebhookReference] = ???
-}

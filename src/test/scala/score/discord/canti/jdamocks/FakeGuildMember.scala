@@ -4,11 +4,11 @@ import java.awt.Color
 import java.time.OffsetDateTime
 import java.util
 
-import net.dv8tion.jda.api.Permission._
+import net.dv8tion.jda.api.Permission.*
 import net.dv8tion.jda.api.{JDA, OnlineStatus, Permission}
-import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.entities.*
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class FakeGuildMember(guild: Guild, user: User) extends Member {
   val myPerms = Vector.empty[Permission]
@@ -54,11 +54,11 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getPermissions: util.EnumSet[Permission] = util.EnumSet.copyOf(myPerms.asJava)
 
-  override def hasPermission(permissions: Permission*): Boolean = getPermissions.containsAll(permissions.asJava)
+  override def hasPermission(permissions: Array[_ <: Permission]): Boolean = getPermissions.containsAll(util.Arrays.asList(permissions: _*))
 
   override def hasPermission(permissions: util.Collection[Permission]): Boolean = getPermissions.containsAll(permissions)
 
-  override def hasPermission(channel: GuildChannel, permissions: Permission*): Boolean = getPermissions(channel).containsAll(permissions.asJava)
+  override def hasPermission(channel: GuildChannel, permissions: Array[_ <: Permission]): Boolean = getPermissions(channel).containsAll(util.Arrays.asList(permissions: _*))
 
   override def hasPermission(channel: GuildChannel, permissions: util.Collection[Permission]): Boolean = getPermissions(channel).containsAll(permissions)
 

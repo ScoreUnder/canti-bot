@@ -5,11 +5,6 @@ import score.discord.canti.wrappers.jda.ID
 
 class Config(val token: String, val owner: ID[User])
 
-object Config {
-  def load(config: com.typesafe.config.Config) = {
-    new Config(
-      token = config.getString("token"),
-      owner = new ID[User](config.getLong("owner"))
-    )
-  }
-}
+object Config:
+  def load(config: com.typesafe.config.Config) =
+    Config(token = config.getString("token"), owner = ID[User](config.getLong("owner")))

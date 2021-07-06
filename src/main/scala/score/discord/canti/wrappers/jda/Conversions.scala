@@ -1,50 +1,26 @@
 package score.discord.canti.wrappers.jda
 
-import net.dv8tion.jda.api.entities._
-import net.dv8tion.jda.api.requests.RestAction
-import net.dv8tion.jda.api.requests.restaction.ChannelAction
-import net.dv8tion.jda.api.{EmbedBuilder, JDA, MessageBuilder}
+object Conversions:
+  given richChannelAction: RichChannelAction.type = RichChannelAction
 
-import scala.language.implicitConversions
+  given richGuild: RichGuild.type = RichGuild
 
-object Conversions {
-  implicit final def toRichGuildChannel(channel: GuildChannel): RichGuildChannel = new RichGuildChannel(channel)
+  given richGuildChannel: RichGuildChannel.type = RichGuildChannel
 
-  implicit final def toRichVoiceChannel(channel: VoiceChannel): RichVoiceChannel = new RichVoiceChannel(channel)
+  given richJDA: RichJDA.type = RichJDA
 
-  implicit final def toRichMessageChannel(channel: MessageChannel): RichMessageChannel = new RichMessageChannel(channel)
+  given richMember: RichMember.type = RichMember
 
-  implicit final def toRichMessage(message: Message): RichMessage = new RichMessage(message)
+  given richMessage: RichMessage.type = RichMessage
 
-  implicit final def toRichMember(member: Member): RichMember = new RichMember(member)
+  given richMessageChannel: RichMessageChannel.type = RichMessageChannel
 
-  implicit final def toRichJDA(jDA: JDA): RichJDA = new RichJDA(jDA)
+  given richRestAction: RichRestAction.type = RichRestAction
 
-  implicit final def toRichGuild(guild: Guild): RichGuild = new RichGuild(guild)
+  given richRole: RichRole.type = RichRole
 
-  implicit final def toRichUser(user: User): RichUser = new RichUser(user)
+  given richSnowflake: RichSnowflake.type = RichSnowflake
 
-  implicit final def toRichSnowflake[T <: ISnowflake](snowflake: T): RichSnowflake[T] = new RichSnowflake[T](snowflake)
+  given richUser: RichUser.type = RichUser
 
-  implicit final def toRichRole(role: Role): RichRole = new RichRole(role)
-
-  implicit final def toRichChannelAction[T <: GuildChannel](channelAction: ChannelAction[T]): RichChannelAction[T] = new RichChannelAction[T](channelAction)
-
-  implicit final def toRichRestAction[T](restAction: RestAction[T]): RichRestAction[T] = new RichRestAction[T](restAction)
-
-  trait MessageFromX {
-    def toMessage: Message
-  }
-
-  implicit class MessageFromString(me: String) extends MessageFromX {
-    def toMessage = new MessageBuilder().append(me).build
-  }
-
-  implicit class MessageFromEmbedBuilder(me: EmbedBuilder) extends MessageFromX {
-    def toMessage = new MessageBuilder().setEmbed(me.build).build
-  }
-
-  implicit class MessageFromMessage(me: Message) extends MessageFromX {
-    def toMessage = me
-  }
-}
+  given richVoiceChannel: RichVoiceChannel.type = RichVoiceChannel

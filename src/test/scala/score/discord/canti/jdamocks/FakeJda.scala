@@ -2,7 +2,7 @@ package score.discord.canti.jdamocks
 
 import java.util
 import java.util.concurrent.{ExecutorService, ScheduledExecutorService}
-import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.hooks.IEventManager
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
@@ -14,7 +14,7 @@ import net.dv8tion.jda.api.utils.cache.{CacheFlag, CacheView, SnowflakeCacheView
 import net.dv8tion.jda.api.{AccountType, JDA, Permission}
 import okhttp3.OkHttpClient
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class FakeJda extends JDA {
   private var guilds = Map.empty[Long, Guild]
@@ -26,7 +26,7 @@ class FakeJda extends JDA {
   }
 
   def makeGuild(): FakeGuild = {
-    val guild = new FakeGuild(this, nextId)
+    val guild = FakeGuild(this, nextId)
     guilds += guild.getIdLong -> guild
     guild
   }
@@ -35,9 +35,9 @@ class FakeJda extends JDA {
 
   override def setEventManager(manager: IEventManager): Unit = ???
 
-  override def addEventListener(listeners: Object*): Unit = ???
+  override def addEventListener(listeners: Array[_ <: Object]): Unit = ???
 
-  override def removeEventListener(listeners: Object*): Unit = ???
+  override def removeEventListener(listeners: Array[_ <: Object]): Unit = ???
 
   override def getRegisteredListeners: util.List[AnyRef] = ???
 
@@ -47,7 +47,7 @@ class FakeJda extends JDA {
 
   override def getUserCache: SnowflakeCacheView[User] = ???
 
-  override def getMutualGuilds(users: User*): util.List[Guild] = ???
+  override def getMutualGuilds(users: Array[_ <: User]): util.List[Guild] = ???
 
   override def getMutualGuilds(users: util.Collection[User]): util.List[Guild] = ???
 
@@ -62,7 +62,7 @@ class FakeJda extends JDA {
   override def getCategoryCache: SnowflakeCacheView[Category] = ???
 
   override def getTextChannelCache: SnowflakeCacheView[TextChannel] =
-    new ScalaSnowflakeCacheView[GuildChannel, TextChannel](
+    ScalaSnowflakeCacheView[GuildChannel, TextChannel](
       guilds.values.flatMap(_.getTextChannels.asScala).groupBy(_.getIdLong).view.mapValues(_.head).toMap,
       _.getName)
 
@@ -118,15 +118,15 @@ class FakeJda extends JDA {
 
   override def retrieveApplicationInfo(): RestAction[ApplicationInfo] = ???
 
-  override def getInviteUrl(permissions: Permission*): String = s"https://test.invalid/invite?perms=${permissions.map(_.name).mkString(",")}"
+  override def getInviteUrl(permissions: Array[_ <: Permission]): String = s"https://test.invalid/invite?perms=${permissions.map(_.name).mkString(",")}"
 
-  override def getInviteUrl(permissions: util.Collection[Permission]): String = getInviteUrl(permissions.asScala.toSeq: _*)
+  override def getInviteUrl(permissions: util.Collection[Permission]): String = getInviteUrl(permissions.asScala.toArray)
 
   override def getShardManager: ShardManager = ???
 
   override def retrieveWebhookById(webhookId: String): RestAction[Webhook] = ???
 
-  override def awaitStatus(status: JDA.Status, failOn: JDA.Status*): JDA = ???
+  override def awaitStatus(status: JDA.Status, failOn: Array[_ <: JDA.Status]): JDA = ???
 
   override def getUnavailableGuilds: util.Set[String] = ???
 

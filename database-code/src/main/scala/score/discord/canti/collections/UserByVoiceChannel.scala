@@ -2,7 +2,7 @@ package score.discord.canti.collections
 
 import net.dv8tion.jda.api.entities._
 import score.discord.canti.util.DBUtils
-import score.discord.canti.wrappers.jda.Conversions._
+import score.discord.canti.wrappers.database.IDMapping._
 import score.discord.canti.wrappers.jda.ID
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -41,8 +41,11 @@ class UserByVoiceChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
     dbConfig.db.run(userByChannelTable.insertOrUpdate(guild, channel, value))
   }
 
+  // Duplicated here so as not to pull "conversions" object any higher
+  private def idHack[T <: ISnowflake](s: T) = new ID[T](s.getIdLong)
+
   def remove(channel: VoiceChannel): Future[Int] =
-    dbConfig.db.run(lookupQuery(channel.getGuild.id, channel.id).delete)
+    dbConfig.db.run(lookupQuery(idHack(channel.getGuild), idHack(channel)).delete)
 
   override def remove(key: (ID[Guild], ID[VoiceChannel])): Future[Int] = {
     val (guild, channel) = key
