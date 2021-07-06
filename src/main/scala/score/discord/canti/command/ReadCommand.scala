@@ -68,20 +68,22 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
 
   private def processFurigana(raw: String): Iterable[(String, String)] =
     val spaces = WHITESPACE.findAllMatchIn(raw).map(_.start).toVector
-    (for
+    for
       positions <- (0 +: spaces.map(_ + 1)) zip (spaces :+ raw.length)
       (start, end) = positions
-    yield
-      val elem = raw.slice(start, end)
-      val splitAt =
-        if elem.endsWith("]") then elem.lastIndexOf("[")
-        else -1
-      val furigana =
-        if splitAt == -1 then (elem, "")
-        else (elem take splitAt, elem.substring(splitAt + 1, elem.length - 1))
-      val space = raw.slice(end, end + 1)
-      List(furigana, (space, ""))
-    ).flatten
+      item <-
+        val rawFuri = raw.slice(start, end)
+        val furigana = parseSingleFurigana(rawFuri)
+        val space = raw.slice(end, end + 1)
+        List(furigana, (space, ""))
+    yield item
+
+  private def parseSingleFurigana(elem: String): (String, String) =
+    val splitAt =
+      if elem.endsWith("]") then elem.lastIndexOf("[")
+      else -1
+    if splitAt == -1 then (elem, "")
+    else (elem take splitAt, elem.substring(splitAt + 1, elem.length - 1))
 
   private def queryKakasi(cmd: Array[String], text: String): Future[String] =
     async {
