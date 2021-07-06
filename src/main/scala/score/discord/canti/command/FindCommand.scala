@@ -111,7 +111,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
     message: Message,
     searchPattern: RE2JPattern
   ): Seq[(String, String)] =
-    @inline def containsSearchTerm(haystack: String) =
+    inline def containsSearchTerm(haystack: String) =
       searchPattern.matcher(haystack).find()
 
     var results: Seq[(String, String)] = Vector.empty
