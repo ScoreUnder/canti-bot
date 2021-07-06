@@ -25,7 +25,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService}
 import scala.concurrent.duration.*
 import scala.language.postfixOps
 
-object CantiBot extends App:
+@main def main() =
   CantiBot().start()
 
 class CantiBot:
