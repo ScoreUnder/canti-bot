@@ -52,7 +52,7 @@ class CantiBot:
           )
         })
           .disableCache({
-            import CacheFlag._
+            import CacheFlag.*
             util.Arrays.asList(ACTIVITY, CLIENT_STATUS, ONLINE_STATUS, ROLE_TAGS)
           })
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
