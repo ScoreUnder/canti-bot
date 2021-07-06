@@ -2,12 +2,12 @@ package score.discord.canti.util
 
 import net.dv8tion.jda.api.entities.{Guild, Member}
 import net.dv8tion.jda.api.{MessageBuilder, entities}
-import score.discord.canti.wrappers.jda.Conversions._
+import score.discord.canti.wrappers.jda.RichMessage.guild
 
-object CommandHelper {
-  def apply(message: entities.Message): Message = new CommandHelper.Message(message)
+object CommandHelper:
+  def apply(message: entities.Message): Message = CommandHelper.Message(message)
 
-  class Message(val _me: entities.Message) extends AnyVal {
+  class Message(val _me: entities.Message) extends AnyVal:
     /** Either this message's guild, or a human-readable error */
     def guild: Either[String, Guild] = _me.guild.toRight("You can only use this command from within a server.")
 
@@ -26,17 +26,13 @@ object CommandHelper {
       * @param input text to sanitise
       * @return sanitised text
       */
-    def mentionsToPlaintext(input: String = _me.getContentRaw): String = {
-      import net.dv8tion.jda.api.entities.Message.MentionType._
-      val builder = new MessageBuilder().append(input)
-      guild match {
+    def mentionsToPlaintext(input: String = _me.getContentRaw): String =
+      import net.dv8tion.jda.api.entities.Message.MentionType.*
+      val builder = MessageBuilder().append(input)
+      guild match
         case Right(guild) =>
           builder.stripMentions(guild, USER, ROLE, CHANNEL)
         case Left(_) =>
           builder.stripMentions(_me.getJDA, USER, ROLE, CHANNEL)
-      }
       builder.getStringBuilder.toString
-    }
-  }
-
-}
+  

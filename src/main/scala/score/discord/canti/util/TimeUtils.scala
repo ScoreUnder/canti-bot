@@ -3,9 +3,9 @@ package score.discord.canti.util
 import java.text.NumberFormat
 import java.time.Duration
 
-import scala.util.chaining._
+import scala.util.chaining.given
 
-object TimeUtils {
+object TimeUtils:
   val timeUnits = Vector(
     "ns" -> 1L,
     "µs" -> 1000L,
@@ -28,12 +28,9 @@ object TimeUtils {
     * @param length duration to format
     * @return human-readable version of duration
     */
-  def formatTimeDiff(length: Duration): String = {
+  def formatTimeDiff(length: Duration): String =
     val nanos = length.toNanos
     val absNanos = Math.abs(nanos)
-    timeUnits.reverseIterator.find { absNanos >= _._2 } match {
+    timeUnits.reverseIterator.find { absNanos >= _._2 } match
       case Some((unit, size)) => s"${decimalFormat.format(nanos.toDouble / size.toDouble)}$unit"
       case None => nanos.toString
-    }
-  }
-}

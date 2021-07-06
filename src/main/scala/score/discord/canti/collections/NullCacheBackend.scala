@@ -1,7 +1,7 @@
 package score.discord.canti.collections
 import scala.concurrent.Future
 
-class NullCacheBackend[K, V] extends AsyncMap[K, V] {
+class NullCacheBackend[K, V] extends AsyncMap[K, V]:
   private val futureNone = Future.successful(None)
 
   override def get(key: K): Future[Option[Nothing]] = futureNone
@@ -11,4 +11,3 @@ class NullCacheBackend[K, V] extends AsyncMap[K, V] {
   override def remove(key: K): Future[Int] = Future.never
 
   override val items: Future[Seq[Nothing]] = Future.successful(Nil)
-}

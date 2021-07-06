@@ -6,26 +6,24 @@ import org.scalatest.matchers.should
 import score.discord.canti.TestFixtures
 import score.discord.canti.util.BotMessages
 
-class HelpCommandTest extends AnyFlatSpec with should.Matchers {
+class HelpCommandTest extends AnyFlatSpec with should.Matchers:
   val fixture = TestFixtures.default
-  import fixture._
-  import fixture.implicits._
+  import fixture.{*, given}
 
   private val dummyDesc = "dummy command"
   private val dummyLongDesc = "this command is dummy"
 
-  private class DummyCommand(val name: String) extends Command.Anyone {
+  private class DummyCommand(val name: String) extends Command.Anyone:
     override def description = dummyDesc
     override def longDescription(invocation: String) = dummyLongDesc
     override def execute(message: Message, args: String): Unit = ???
-  }
 
   (1 to 100)
     .map(n => s"cmd$n")
-    .map(new DummyCommand(_))
+    .map(DummyCommand(_))
     .foreach(commands.register)
 
-  private val cmd = new HelpCommand(commands)
+  private val cmd = HelpCommand(commands)
   commands.register(cmd)
 
   "The &help command" should "reject negative page numbers" in {
@@ -56,4 +54,3 @@ class HelpCommandTest extends AnyFlatSpec with should.Matchers {
     val embed = testCommand("&help 3").getEmbeds.get(0)
     embed.getDescription should include("github.com/")
   }
-}
