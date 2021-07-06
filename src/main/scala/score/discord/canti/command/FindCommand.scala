@@ -138,8 +138,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
             containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
               Option(m.getNickname).exists(n => containsSearchTerm(s"@$n"))
           )
-          .map(
-          m =>
+          .map(m =>
             val u = m.getUser
             val nick = Option(m.getNickname)
               .map(MessageUtils.sanitise)
