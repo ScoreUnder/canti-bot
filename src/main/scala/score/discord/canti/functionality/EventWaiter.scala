@@ -9,33 +9,32 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class EventWaiter extends EventListener {
+class EventWaiter extends EventListener:
   type Instant = Long // nanoTime
   type EventHandler = PartialFunction[GenericEvent, Unit]
 
-  case class ExpiringEvent(expiry: Instant = System.nanoTime() + 10.minutes.toNanos, identifier: AnyRef, handler: EventHandler) {
+  case class ExpiringEvent(
+    expiry: Instant = System.nanoTime() + 10.minutes.toNanos,
+    identifier: AnyRef,
+    handler: EventHandler
+  ):
     def expired: Boolean = expiry <= System.nanoTime()
-  }
 
   private[this] val queuedEvents = mutable.ArrayBuffer.empty[ExpiringEvent]
 
-  def queue(identifier: AnyRef)(handler: EventHandler): Unit = {
+  def queue(identifier: AnyRef)(handler: EventHandler): Unit =
     queuedEvents.synchronized {
       queuedEvents.filterInPlace(_.identifier != identifier)
       queuedEvents += ExpiringEvent(identifier = identifier, handler = handler)
     }
-  }
 
-  def cleanupOneEvent(): Unit = {
+  def cleanupOneEvent(): Unit =
     queuedEvents.synchronized {
-      if (queuedEvents.nonEmpty && queuedEvents(0).expired) {
-        queuedEvents.remove(index = 0)
-      }
+      if queuedEvents.nonEmpty && queuedEvents(0).expired then queuedEvents.remove(index = 0)
     }
-  }
 
-  override def onEvent(event: GenericEvent): Unit = {
-    if (queuedEvents.nonEmpty) {
+  override def onEvent(event: GenericEvent): Unit =
+    if queuedEvents.nonEmpty then
       val activeHandlers = queuedEvents.synchronized {
         cleanupOneEvent()
         val activeHandlers = queuedEvents.filter(ev => ev.handler.isDefinedAt(event)).toSet
@@ -43,11 +42,7 @@ class EventWaiter extends EventListener {
         activeHandlers
       }
 
-      for (ev@ExpiringEvent(_, _, handler) <- activeHandlers if !ev.expired) {
+      for ev @ ExpiringEvent(_, _, handler) <- activeHandlers if !ev.expired do
         Future {
           handler(event)
         }.failed.foreach(APIHelper.failure("processing delayed event"))
-      }
-    }
-  }
-}

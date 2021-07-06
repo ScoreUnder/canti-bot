@@ -10,8 +10,8 @@ import score.discord.canti.SnowflakeOrdering
 
 class FakeMessage(channel: MessageChannel, id: Long, content: String, author: User, embeds: util.List[MessageEmbed])
   extends AbstractMessage(content, "dummy nonce", false)
-  with SnowflakeOrdering
-{
+  with SnowflakeOrdering:
+
   override def getJumpUrl: String = s"https://dummy.jump.url/$id"
 
   override def unsupported(): Unit = ???
@@ -29,4 +29,3 @@ class FakeMessage(channel: MessageChannel, id: Long, content: String, author: Us
   override def getIdLong: Long = id
 
   override def getActivity: MessageActivity = ???
-}

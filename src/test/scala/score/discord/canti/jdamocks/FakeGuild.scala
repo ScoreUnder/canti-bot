@@ -4,7 +4,7 @@ import java.util
 import java.util.Locale
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
-import net.dv8tion.jda.api.entities._
+import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.templates.Template
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
@@ -18,21 +18,19 @@ import net.dv8tion.jda.api.utils.cache.{MemberCacheView, SnowflakeCacheView, Sor
 import net.dv8tion.jda.api.utils.concurrent.Task
 import net.dv8tion.jda.api.{JDA, Region}
 
-class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
+class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
   var channels = Map.empty[Long, GuildChannel]
   var members = Map.empty[Long, Member]
 
-  def makeTextChannel(name: String): FakeTextChannel = {
-    val channel = new FakeTextChannel(guild = this, id = fakeJda.nextId, name = name)
+  def makeTextChannel(name: String): FakeTextChannel =
+    val channel = FakeTextChannel(guild = this, id = fakeJda.nextId, name = name)
     channels += channel.getIdLong -> channel
     channel
-  }
 
-  def registerMember(user: User): Member = {
-    val member = new FakeGuildMember(guild = this, user = user)
+  def registerMember(user: User): Member =
+    val member = FakeGuildMember(guild = this, user = user)
     members += user.getIdLong -> member
     member
-  }
 
   override def getName: String = ???
 
@@ -62,7 +60,7 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
 
   override def getCategoryCache: SortedSnowflakeCacheView[Category] = ???
 
-  override def getTextChannelCache: SortedSnowflakeCacheView[TextChannel] = new ScalaSnowflakeCacheView[GuildChannel, TextChannel](channels.collect {
+  override def getTextChannelCache: SortedSnowflakeCacheView[TextChannel] = ScalaSnowflakeCacheView[GuildChannel, TextChannel](channels.collect {
     case (id, c: TextChannel) => id -> c
   }, _.getName)
 
@@ -208,7 +206,7 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
 
   override def retrieveMemberById(id: Long, update: Boolean): RestAction[Member] = ???
 
-  override def retrieveMembersByIds(includePresence: Boolean, ids: Long*): Task[util.List[Member]] = ???
+  override def retrieveMembersByIds(includePresence: Boolean, ids: Array[_ <: Long]): Task[util.List[Member]] = ???
 
   override def retrieveMembersByPrefix(prefix: String, limit: Int): Task[util.List[Member]] = ???
 
@@ -216,7 +214,7 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
 
   override def loadMembers(callback: Consumer[Member]): Task[Void] = ???
 
-  override def prune(days: Int, wait: Boolean, roles: Role*): AuditableRestAction[Integer] = ???
+  override def prune(days: Int, wait: Boolean, roles: Array[_ <: Role]): AuditableRestAction[Integer] = ???
 
   override def createTextChannel(name: String, parent: Category): ChannelAction[TextChannel] = ???
 
@@ -251,4 +249,3 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild {
   override def createTemplate(name: String, description: String): RestAction[Template] = ???
 
   override def retrieveTemplates(): RestAction[util.List[Template]] = ???
-}

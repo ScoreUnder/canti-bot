@@ -6,12 +6,13 @@ import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
 import org.slf4j.LoggerFactory
 import score.discord.canti.command.slash.SlashCommand
-import score.discord.canti.wrappers.jda.Conversions.toRichRestAction
+import score.discord.canti.wrappers.jda.Conversions.{richGuild, richMessageChannel, richUser}
+import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SlashCommands(commands: SlashCommand*) extends EventListener {
+class SlashCommands(commands: SlashCommand*) extends EventListener:
   private val logger = LoggerFactory.getLogger(classOf[SlashCommands])
 
   val commandsMap: Map[String, SlashCommand] =
@@ -20,19 +21,21 @@ class SlashCommands(commands: SlashCommand*) extends EventListener {
   private def normaliseCommandName(name: String): String = name.toLowerCase
 
   def registerCommands(what: CommandListUpdateAction): CommandListUpdateAction =
-    what.addCommands(commands.map(_.data): _*)
+    what.addCommands(commands.map(_.data)*)
 
-  override def onEvent(event: GenericEvent): Unit = event match {
+  override def onEvent(event: GenericEvent): Unit = event match
     case ev: ReadyEvent =>
       registerCommands(ev.getJDA.updateCommands()).queueFuture()
     case ev: SlashCommandEvent =>
       val name = normaliseCommandName(ev.getName)
-      commandsMap.get(name) match {
+      commandsMap.get(name) match
         case None => logger.warn(s"Got unknown slash command from API: $name")
-        case Some(cmd) => Future {
-          cmd.execute(ev)
-        }
-      }
+        case Some(cmd) =>
+          val guildStr = Option(ev.getGuild).fold("no guild")(_.unambiguousString)
+          logger.debug(
+            s"Running slash command ${cmd.name} on behalf of user ${ev.getUser.unambiguousString} in ${ev.getChannel.unambiguousString} ($guildStr)"
+          )
+          Future {
+            cmd.execute(ev)
+          }
     case _ =>
-  }
-}

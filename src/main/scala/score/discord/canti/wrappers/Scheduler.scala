@@ -4,12 +4,11 @@ import java.util.concurrent.{Callable, ScheduledExecutorService, ScheduledFuture
 
 import scala.concurrent.duration.Duration
 
-class Scheduler(me: ScheduledExecutorService) {
+class Scheduler(me: ScheduledExecutorService):
   def asJava: ScheduledExecutorService = me
 
   def schedule[T](delay: Duration)(f: => T): ScheduledFuture[T] =
     me.schedule((() => f): Callable[T], delay.length, delay.unit)
 
-  def schedule[T](initialDelay: Duration, delay: Duration)(f: => Unit): ScheduledFuture[_] =
+  def schedule[T](initialDelay: Duration, delay: Duration)(f: => Unit): ScheduledFuture[?] =
     me.scheduleWithFixedDelay(() => f, initialDelay.toNanos, delay.toNanos, TimeUnit.NANOSECONDS)
-}

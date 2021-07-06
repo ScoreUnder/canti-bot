@@ -1,45 +1,37 @@
 package score.discord.canti.wrappers.jda
 
+import scala.annotation.targetName
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{Guild, Member, MessageChannel, Role, TextChannel, User, VoiceChannel}
-
-import scala.language.implicitConversions
-
-object IdConversions {
-  implicit def toRichMessageChannelId(id: ID[MessageChannel]): RichMessageChannelId = new RichMessageChannelId(id.value)
-  implicit def toRichGuildId(id: ID[Guild]): RichGuildId = new RichGuildId(id.value)
-  implicit def toRichVoiceChannelId(id: ID[VoiceChannel]): RichVoiceChannelId = new RichVoiceChannelId(id.value)
-  implicit def toRichTextChannelId(id: ID[TextChannel]): RichTextChannelId = new RichTextChannelId(id.value)
-  implicit def toRichUserId(id: ID[User]): RichUserId = new RichUserId(id.value)
-  implicit def toRichMemberId(id: ID[Member]): RichMemberId = new RichMemberId(id.value)
-  implicit def toRichRoleId(id: ID[Role]): RichRoleId = new RichRoleId(id.value)
+import net.dv8tion.jda.api.entities.{
+  Guild, Member, MessageChannel, Role, TextChannel, User, VoiceChannel
 }
 
-class RichMessageChannelId(val me: Long) extends AnyVal {
-  def find(implicit jda: JDA): Option[MessageChannel] =
-    Option(jda.getTextChannelById(me)).orElse(Option(jda.getPrivateChannelById(me)))
-}
+object IdConversions:
+  extension (me: ID[MessageChannel])
+    @targetName("find_ID_MessageChannel")
+    def find(using jda: JDA): Option[MessageChannel] =
+      Option(jda.getTextChannelById(me.value)).orElse(Option(jda.getPrivateChannelById(me.value)))
 
-class RichGuildId(val me: Long) extends AnyVal {
-  def find(implicit jda: JDA): Option[Guild] = Option(jda.getGuildById(me))
-}
+  extension (me: ID[Guild])
+    @targetName("find_ID_Guild")
+    def find(using jda: JDA): Option[Guild] = Option(jda.getGuildById(me.value))
 
-class RichVoiceChannelId(val me: Long) extends AnyVal {
-  def find(implicit jda: JDA): Option[VoiceChannel] = Option(jda.getVoiceChannelById(me))
-}
+  extension (me: ID[VoiceChannel])
+    @targetName("find_ID_VoiceChannel")
+    def find(using jda: JDA): Option[VoiceChannel] = Option(jda.getVoiceChannelById(me.value))
 
-class RichTextChannelId(val me: Long) extends AnyVal {
-  def find(implicit jda: JDA): Option[TextChannel] = Option(jda.getTextChannelById(me))
-}
+  extension (me: ID[TextChannel])
+    @targetName("find_ID_TextChannel")
+    def find(using jda: JDA): Option[TextChannel] = Option(jda.getTextChannelById(me.value))
 
-class RichUserId(val me: Long) extends AnyVal {
-  def find(implicit jda: JDA): Option[User] = Option(jda.getUserById(me))
-}
+  extension (me: ID[User])
+    @targetName("find_ID_User")
+    def find(using jda: JDA): Option[User] = Option(jda.getUserById(me.value))
 
-class RichMemberId(val me: Long) extends AnyVal {
-  def find(guild: Guild): Option[Member] = Option(guild.getMemberById(me))
-}
+  extension (me: ID[Member])
+    @targetName("find_ID_Member")
+    def find(guild: Guild): Option[Member] = Option(guild.getMemberById(me.value))
 
-class RichRoleId(val me: Long) extends AnyVal {
-  def find(implicit jda: JDA): Option[Role] = Option(jda.getRoleById(me))
-}
+  extension (me: ID[Role])
+    @targetName("find_ID_Role")
+    def find(using jda: JDA): Option[Role] = Option(jda.getRoleById(me.value))
