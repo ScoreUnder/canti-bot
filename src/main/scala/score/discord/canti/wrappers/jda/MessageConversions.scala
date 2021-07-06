@@ -11,7 +11,7 @@ object MessageConversions:
     def toMessage = MessageBuilder().append(me).build
 
   class MessageFromEmbedBuilder(me: EmbedBuilder) extends MessageFromX:
-    def toMessage = MessageBuilder().setEmbed(me.build).build
+    def toMessage = MessageBuilder().setEmbeds(me.build).build
 
   class MessageFromMessage(me: Message) extends MessageFromX:
     def toMessage = me
