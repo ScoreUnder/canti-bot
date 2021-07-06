@@ -106,7 +106,7 @@ class PrivateVoiceChats(
       def retry(): Future[Message] = executeGeneric(member, reply, retry)
 
       try message.delete.queueFuture()
-      catch case _: PermissionException =>
+      catch case _: PermissionException => ()
 
       retry()
 
