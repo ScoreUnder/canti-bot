@@ -24,6 +24,8 @@ lazy val database = (project in file("database-code"))
     ),
   )
 
+lazy val tastyFile = "\\.tasty$".r.unanchored
+
 lazy val root = (project in file("."))
   .dependsOn(common, database)
   .settings(
@@ -39,6 +41,7 @@ lazy val root = (project in file("."))
     ),
     assembly / assemblyMergeStrategy := {
       case "module-info.class" => MergeStrategy.discard
+      case tastyFile()         => MergeStrategy.discard
       case x =>
         val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
