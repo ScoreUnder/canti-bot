@@ -249,3 +249,9 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
   override def createTemplate(name: String, description: String): RestAction[Template] = ???
 
   override def retrieveTemplates(): RestAction[util.List[Template]] = ???
+
+  override def cancelRequestToSpeak(): Task[Void] = ???
+
+  override  def createStageChannel(name: String, category: Category): ChannelAction[StageChannel] = ???
+
+  override def requestToSpeak(): Task[Void] = ???
