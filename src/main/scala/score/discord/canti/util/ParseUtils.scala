@@ -55,7 +55,7 @@ object ParseUtils:
       case Seq(role) =>
         Right(role)
 
-      case matchingRoles @ Seq(*) =>
+      case Seq(matchingRoles*) =>
         val embed =
           BotMessages.error("Too many roles by that name.").addField("Search term", roleName, true)
 
@@ -99,7 +99,7 @@ object ParseUtils:
       case Seq(category) =>
         Right(category)
 
-      case matchingCategories @ Seq(*) =>
+      case Seq(matchingCategories*) =>
         val embed = BotMessages
           .error("Too many categories by that name.")
           .addField("Search term", categoryName, true)
