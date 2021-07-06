@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.{Guild, PrivateChannel, User}
 import net.dv8tion.jda.api.requests.RestAction
 
-class FakeUser(name: String, id: Long) extends User {
+class FakeUser(name: String, id: Long) extends User:
   override def getName: String = name
 
   override def getDiscriminator: String = "1234"
@@ -36,4 +36,3 @@ class FakeUser(name: String, id: Long) extends User {
   override def getFlagsRaw: Int = ???
 
   override def isSystem: Boolean = ???
-}

@@ -2,43 +2,43 @@ package score.discord.canti.functionality
 
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.events._
+import net.dv8tion.jda.api.events.*
 import net.dv8tion.jda.api.events.channel.text.{TextChannelCreateEvent, TextChannelDeleteEvent}
 import net.dv8tion.jda.api.events.channel.text.update.{GenericTextChannelUpdateEvent, TextChannelUpdateNameEvent, TextChannelUpdateSlowmodeEvent}
 import net.dv8tion.jda.api.events.channel.voice.{VoiceChannelCreateEvent, VoiceChannelDeleteEvent}
 import net.dv8tion.jda.api.events.channel.voice.update.{GenericVoiceChannelUpdateEvent, VoiceChannelUpdateNameEvent}
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent
 import net.dv8tion.jda.api.events.guild.member.{GuildMemberJoinEvent, GuildMemberRemoveEvent, GuildMemberRoleAddEvent, GuildMemberRoleRemoveEvent, GuildMemberUpdateEvent}
-import net.dv8tion.jda.api.events.guild.voice._
+import net.dv8tion.jda.api.events.guild.voice.*
 import net.dv8tion.jda.api.events.http.HttpRequestEvent
-import net.dv8tion.jda.api.events.message._
+import net.dv8tion.jda.api.events.message.*
 import net.dv8tion.jda.api.events.message.guild.GenericGuildMessageEvent
-import net.dv8tion.jda.api.events.message.react._
+import net.dv8tion.jda.api.events.message.react.*
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.events.user.GenericUserEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import org.slf4j.LoggerFactory
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.StringUtils.{formatMessageForLog => formatMessage}
-import score.discord.canti.wrappers.jda.Conversions._
+import score.discord.canti.wrappers.jda.Conversions.{richGuild, richMember, richMessageChannel, richUser, richVoiceChannel}
 import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 
 import java.util
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.reflectiveCalls
 
-class EventLogger(implicit messageOwnership: MessageOwnership) extends EventListener {
+class EventLogger(using messageOwnership: MessageOwnership) extends EventListener:
   private[this] val logger = LoggerFactory.getLogger(classOf[EventLogger])
 
-  private def logHigherIfMyMessage(ev: GenericMessageEvent, logLine: String): Unit = {
-    implicit val jda: JDA = ev.getJDA
-    messageOwnership(new ID[Message](ev.getMessageIdLong)).foreach {
+  private def logHigherIfMyMessage(ev: GenericMessageEvent, logLine: String): Unit =
+    given JDA = ev.getJDA
+    messageOwnership(ID[Message](ev.getMessageIdLong)).foreach {
       case None => logger.trace(logLine)
       case Some(_) => logger.debug(logLine)
     }
-  }
 
-  override def onEvent(event: GenericEvent): Unit = event match {
+  override def onEvent(event: GenericEvent): Unit = event match
     case _: ReadyEvent =>
       logger.info("Bot is ready.")
     case ev: StatusChangeEvent =>
@@ -108,9 +108,5 @@ class EventLogger(implicit messageOwnership: MessageOwnership) extends EventList
          | _: HttpRequestEvent =>
     // Ignored (they're pretty boring)
     case ev =>
-      if (!util.Arrays.stream(ev.getClass.getAnnotations).anyMatch(_.isInstanceOf[Deprecated])) {
+      if !util.Arrays.stream(ev.getClass.getAnnotations).anyMatch(_.isInstanceOf[Deprecated]) then
         logger.debug(ev.getClass.toGenericString)
-      }
-  }
-
-}

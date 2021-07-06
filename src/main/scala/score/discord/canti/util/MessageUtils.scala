@@ -1,6 +1,6 @@
 package score.discord.canti.util
 
-object MessageUtils {
+object MessageUtils:
   /** Sanitise a message such that all mentions become inactive, including
     * mass-mentions such as `@everyone`.
     *
@@ -38,4 +38,3 @@ object MessageUtils {
     */
   def sanitiseCode(message: String): String =
     message.replace("`", "`\u200C")
-}

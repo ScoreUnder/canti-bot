@@ -10,13 +10,14 @@ import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.StringUtils.formatMessageForLog
 import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.wrappers.Scheduler
-import score.discord.canti.wrappers.jda.Conversions._
+import score.discord.canti.wrappers.jda.Conversions.{richMessage, richMessageChannel, richSnowflake, richUser}
 import score.discord.canti.wrappers.jda.matching.Events.{NonBotMessage, NonBotMessageEdit}
 
 import scala.collection.mutable
-import scala.util.chaining._
+import scala.language.implicitConversions
+import scala.util.chaining.*
 
-class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache: ReplyCache, messageOwnership: MessageOwnership) extends EventListener {
+class Commands(using Scheduler, MessageCache, ReplyCache, MessageOwnership) extends EventListener:
   private val logger = LoggerFactory.getLogger(classOf[Commands])
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
@@ -40,13 +41,11 @@ class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache:
     *
     * @param command command to register
     */
-  def register(command: Command): Unit = {
+  def register(command: Command): Unit =
     commands(normaliseCommandName(command.name)) = command
-    for (alias <- command.aliases) {
+    for alias <- command.aliases do
       commands(normaliseCommandName(alias)) = command
-    }
     commandList += command
-  }
 
   /** Retrieve a command by name from this command registry.
     *
@@ -80,11 +79,11 @@ class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache:
     * @param requirePrefix whether command prefix is necessary
     * @return optionally (name, args) of command
     */
-  def splitCommand(messageRaw: String, requirePrefix: Boolean = true): Option[(String, String)] = {
+  def splitCommand(messageRaw: String, requirePrefix: Boolean = true): Option[(String, String)] =
     val hasPrefix = messageRaw.startsWith(prefix)
-    if (requirePrefix && !hasPrefix)
-      None
-    else {
+    if requirePrefix && !hasPrefix
+    then None
+    else
       val unprefixed = if (hasPrefix) messageRaw.drop(prefix.length) else messageRaw
       val split = unprefixed.split("[\\s　]", 2)
 
@@ -92,18 +91,16 @@ class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache:
       val cmdExtra = if (split.length < 2) "" else split(1)
 
       Some((cmdName, cmdExtra))
-    }
-  }
 
   /** Parses a command string into the command object and argument string.
     *
     * @param input command string
     * @return optionally (command, args)
     */
-  def parseCommand(input: String): Option[(Command, String)] = for {
+  def parseCommand(input: String): Option[(Command, String)] = for
     (cmdName, cmdExtra) <- splitCommand(input)
     cmd <- get(cmdName)
-  } yield (cmd, cmdExtra)
+  yield (cmd, cmdExtra)
 
   def runIfAllowed(message: Message, cmd: Command, cmdExtra: String): Either[String, Command] =
     canRunCommand(cmd, message).tap {
@@ -111,52 +108,40 @@ class Commands(implicit exec: Scheduler, messageCache: MessageCache, replyCache:
       case Left(err) => message ! BotMessages.error(err)
     }
 
-  private def logIfMaybeCommand(logPrefix: String, message: Message): Unit = {
-    if (message.getContentRaw.startsWith(prefix)) {
+  private def logIfMaybeCommand(logPrefix: String, message: Message): Unit =
+    if message.getContentRaw.startsWith(prefix) then
       logger.debug(s"$logPrefix: ${message.rawId} ${message.getAuthor.unambiguousString} ${message.getChannel.unambiguousString}\n${formatMessageForLog(message)}")
-    }
-  }
 
-  private def logCommandInvocation(message: Message, cmd: Command): Unit = {
+  private def logCommandInvocation(message: Message, cmd: Command): Unit =
     logger.debug(s"Running command '${cmd.name}' on behalf of ${message.getAuthor.unambiguousString} in ${message.getChannel.unambiguousString}")
-  }
 
-  override def onEvent(event: GenericEvent): Unit = {
-    event match {
-      case NonBotMessage(message) =>
-        logIfMaybeCommand("COMMAND?", message)
-        for ((cmd, cmdExtra) <- parseCommand(message.getContentRaw)) {
-          logCommandInvocation(message, cmd)
-          runIfAllowed(message, cmd, cmdExtra)
-        }
-      case NonBotMessageEdit(oldMsg, newMsg) =>
-        logIfMaybeCommand("COMMAND EDIT?", newMsg)
-        for ((cmd, cmdExtra) <- parseCommand(newMsg.getContentRaw)) {
-          parseCommand(oldMsg.text) match {
-            case None =>
-              logger.debug(s"Editing non-command to command")
-              logCommandInvocation(newMsg, cmd)
-              runIfAllowed(newMsg, cmd, cmdExtra)
-            case Some((`cmd`, _)) =>
-              logger.debug(s"Editing old command in $oldMsg (same command)")
-              logCommandInvocation(newMsg, cmd)
-              canRunCommand(cmd, newMsg) match {
-                case Right(_) => cmd.executeForEdit(newMsg, replyCache.get(oldMsg.messageId), cmdExtra)
-                case Left(_) => // Do not print error for edits to command with no perms
+  override def onEvent(event: GenericEvent): Unit = event match
+    case NonBotMessage(message) =>
+      logIfMaybeCommand("COMMAND?", message)
+      for (cmd, cmdExtra) <- parseCommand(message.getContentRaw) do
+        logCommandInvocation(message, cmd)
+        runIfAllowed(message, cmd, cmdExtra)
+    case NonBotMessageEdit(oldMsg, newMsg) =>
+      logIfMaybeCommand("COMMAND EDIT?", newMsg)
+      for (cmd, cmdExtra) <- parseCommand(newMsg.getContentRaw) do
+        parseCommand(oldMsg.text) match
+          case None =>
+            logger.debug(s"Editing non-command to command")
+            logCommandInvocation(newMsg, cmd)
+            runIfAllowed(newMsg, cmd, cmdExtra)
+          case Some((`cmd`, _)) =>
+            logger.debug(s"Editing old command in $oldMsg (same command)")
+            logCommandInvocation(newMsg, cmd)
+            canRunCommand(cmd, newMsg) match
+              case Right(_) => cmd.executeForEdit(newMsg, summon[ReplyCache].get(oldMsg.messageId), cmdExtra)
+              case Left(_) => // Do not print error for edits to command with no perms
+          case Some((_, _)) =>
+            logger.debug(s"Editing old command in $oldMsg (different command)")
+            logCommandInvocation(newMsg, cmd)
+            runIfAllowed(newMsg, cmd, cmdExtra) match
+              case Right(_) => summon[ReplyCache].get(oldMsg.messageId).foreach { replyId =>
+                APIHelper.tryRequest(newMsg.getChannel.deleteMessageById(replyId.value),
+                  onFail = APIHelper.failure("deleting old command reply"))
               }
-            case Some((_, _)) =>
-              logger.debug(s"Editing old command in $oldMsg (different command)")
-              logCommandInvocation(newMsg, cmd)
-              runIfAllowed(newMsg, cmd, cmdExtra) match {
-                case Right(_) => replyCache.get(oldMsg.messageId).foreach { replyId =>
-                  APIHelper.tryRequest(newMsg.getChannel.deleteMessageById(replyId.value),
-                    onFail = APIHelper.failure("deleting old command reply"))
-                }
-                case _ =>
-              }
-          }
-        }
-      case _ =>
-    }
-  }
-}
+              case _ =>
+    case _ =>

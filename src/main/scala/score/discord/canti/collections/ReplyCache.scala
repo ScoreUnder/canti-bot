@@ -5,11 +5,10 @@ import java.util
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.wrappers.jda.ID
 
-class ReplyCache(capacity: Int = 100) {
-  private[this] val replies = new util.LinkedHashMap[ID[Message], ID[Message]] {
+class ReplyCache(capacity: Int = 100):
+  private[this] val replies = new util.LinkedHashMap[ID[Message], ID[Message]]:
     override def removeEldestEntry(eldest: util.Map.Entry[ID[Message], ID[Message]]): Boolean =
       size > ReplyCache.this.capacity
-  }
 
   def +=(reply: (ID[Message], ID[Message])): Unit = replies.synchronized {
     // Needs to be cast to Unit here, or `synchronized' will return an
@@ -21,4 +20,3 @@ class ReplyCache(capacity: Int = 100) {
   def get(origId: ID[Message]): Option[ID[Message]] = replies.synchronized {
     Option(replies.get(origId))
   }
-}

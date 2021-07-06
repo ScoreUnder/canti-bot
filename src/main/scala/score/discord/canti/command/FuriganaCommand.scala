@@ -1,6 +1,6 @@
 package score.discord.canti.command
 
-import cps._
+import cps.*
 import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.Furigana
@@ -8,14 +8,18 @@ import score.discord.canti.collections.ReplyCache
 import score.discord.canti.command.FuriganaCommand.{FURI_PATTERN, sendFuriMessage}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, CommandHelper}
-import score.discord.canti.wrappers.jda.Conversions._
+import score.discord.canti.wrappers.jda.MessageConversions.given
+import score.discord.canti.wrappers.jda.RichMessage.!
+import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
+import score.discord.canti.wrappers.jda.RichSnowflake.id
 
 import java.util.Collections
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.chaining._
+import scala.language.implicitConversions
+import scala.util.chaining.*
 
-class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone {
+class FuriganaCommand(using MessageOwnership, ReplyCache) extends Command.Anyone:
   override def name = "furigana"
 
   override def aliases = List("furi", "fg", "f")
@@ -31,19 +35,17 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
   def parseInput(args: String): Seq[(String, String)] =
     FURI_PATTERN.findAllMatchIn(args)
       .flatMap { m =>
-        m.group("other") match {
+        m.group("other") match
           case null => Seq((m.group("left"), m.group("right")))
           case other => other.split("\n", -1).flatMap(line => Seq(("\n", ""), (line, ""))).tail
-        }
       }
       .filter(t => !t._1.isEmpty || !t._2.isEmpty)
       .toSeq
 
-  override def execute(message: Message, args: String): Unit = {
-    if (args.isEmpty) {
-      message.!(BotMessages error "Please provide the text to render as part of the command.")
+  override def execute(message: Message, args: String): Unit =
+    if args.isEmpty then
+      message ! BotMessages.error("Please provide the text to render as part of the command.")
       return
-    }
 
     async {
       message.getChannel.sendTyping().queue()
@@ -59,14 +61,12 @@ class FuriganaCommand(implicit messageOwnership: MessageOwnership, replyCache: R
 
       await(sendFuriMessage(replyingTo = message, furigana = furiText, plain = origWithoutFuri))
     }.failed foreach APIHelper.loudFailure("rendering furigana", message)
-  }
-}
 
-object FuriganaCommand {
+object FuriganaCommand:
   private val FURI_PATTERN = raw"[｛{](?<left>[^：:]*)[：:](?<right>[^｝}]*)[｝}]|(?<other>[^{｛]+)".r
 
   def sendFuriMessage(replyingTo: Message, furigana: Iterable[(String, String)], plain: String)
-                     (implicit messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] = {
+                     (using messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] =
     replyingTo.reply(Furigana.renderPNG(furigana), "furigana.png")
       .mentionRepliedUser(false)
       .append(plain.take(2000))
@@ -76,5 +76,3 @@ object FuriganaCommand {
         messageOwnership(newMsg) = replyingTo.getAuthor
         replyCache += replyingTo.id -> newMsg.id
       })
-  }
-}

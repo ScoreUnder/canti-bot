@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.MessageAction
 import net.dv8tion.jda.api.utils.AttachmentOption
 
-class FakeMessageAction(message: Message) extends MessageAction {
+class FakeMessageAction(message: Message) extends MessageAction:
   override def queue(success: Consumer[_ >: Message], failure: Consumer[_ >: Throwable]): Unit = success.accept(message)
 
   override def complete(shouldQueue: Boolean): Message = message
@@ -40,9 +40,9 @@ class FakeMessageAction(message: Message) extends MessageAction {
 
   override def append(c: Char): MessageAction = ???
 
-  override def addFile(data: InputStream, name: String, options: AttachmentOption*): MessageAction = ???
+  override def addFile(data: InputStream, name: String, options: Array[_ <: AttachmentOption]): MessageAction = ???
 
-  override def addFile(file: File, name: String, options: AttachmentOption*): MessageAction = ???
+  override def addFile(file: File, name: String, options: Array[_ <: AttachmentOption]): MessageAction = ???
 
   override def clearFiles(): MessageAction = ???
 
@@ -62,11 +62,11 @@ class FakeMessageAction(message: Message) extends MessageAction {
 
   override def allowedMentions(allowedMentions: util.Collection[Message.MentionType]): MessageAction = ???
 
-  override def mention(mentions: IMentionable*): MessageAction = ???
+  override def mention(mentions: Array[_ <: IMentionable]): MessageAction = ???
 
-  override def mentionUsers(userIds: String*): MessageAction = ???
+  override def mentionUsers(userIds: Array[_ <: String]): MessageAction = ???
 
-  override def mentionRoles(roleIds: String*): MessageAction = ???
+  override def mentionRoles(roleIds: Array[_ <: String]): MessageAction = ???
 
   override def referenceById(messageId: Long): MessageAction = this
 
@@ -76,7 +76,6 @@ class FakeMessageAction(message: Message) extends MessageAction {
 
   override def retainFilesById(ids: util.Collection[String]): MessageAction = ???
 
-  override def setActionRows(rows: ActionRow*): MessageAction = this
+  override def setActionRows(rows: Array[_ <: ActionRow]): MessageAction = this
 
   override def setEmbeds(embeds: util.Collection[_ <: MessageEmbed]): MessageAction = ???
-}

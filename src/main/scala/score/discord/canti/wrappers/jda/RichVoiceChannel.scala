@@ -1,15 +1,15 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.VoiceChannel
-import score.discord.canti.wrappers.jda.Conversions._
+import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 
-class RichVoiceChannel(val channel: VoiceChannel) extends AnyVal {
-  /** The name of this voice channel */
-  def name = channel.getName
+object RichVoiceChannel:
+  extension (channel: VoiceChannel)
+    /** The name of this voice channel */
+    def name = channel.getName
 
-  /** A debug-friendly plaintext representation of this voice channel object */
-  def unambiguousString = s"Channel(${channel.rawId} /* $name */)"
+    /** A debug-friendly plaintext representation of this voice channel object */
+    def unambiguousString = s"Channel(${channel.rawId} /* ${channel.name} */)"
 
-  /** The mention string for this voice channel */
-  def mention = s"<#${channel.rawId}>"
-}
+    /** The mention string for this voice channel */
+    def mention = s"<#${channel.rawId}>"

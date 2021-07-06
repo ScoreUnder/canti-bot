@@ -1,7 +1,6 @@
 package score.discord.canti.command
 
-trait BaseCommand {
+trait BaseCommand:
   def name: String
 
   def description: String
-}

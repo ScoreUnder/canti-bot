@@ -4,11 +4,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import score.discord.canti.TestFixtures
 
-class FuriganaCommandTest extends AnyFlatSpec with should.Matchers {
+class FuriganaCommandTest extends AnyFlatSpec with should.Matchers:
   val fixture = TestFixtures.default
-  import fixture.implicits._
+  import fixture.given
 
-  val furiganaCommand = new FuriganaCommand
+  val furiganaCommand = FuriganaCommand()
 
   "parseInput" should "accept plain text" in {
     furiganaCommand.parseInput("asdf asdfasdf") should contain(("asdf asdfasdf", ""))
@@ -49,4 +49,3 @@ class FuriganaCommandTest extends AnyFlatSpec with should.Matchers {
     furiganaCommand.parseInput("{郵便局：ゆうびんきょく｝に{行：い}きました") should equal(
       Seq(("郵便局", "ゆうびんきょく"), ("に", ""), ("行", "い"), ("きました", "")))
   }
-}
