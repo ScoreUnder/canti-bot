@@ -10,7 +10,7 @@ import score.discord.canti.wrappers.jda.RichSnowflake.id
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class MessageOwnership(backend: AsyncMap[_ >: ID[Message], ID[User]]):
+class MessageOwnership(backend: AsyncMap[? >: ID[Message], ID[User]]):
   def apply(message: Message): Future[Option[User]] = this(message.id)(using message.getJDA)
 
   def apply(messageId: ID[Message])(using JDA): Future[Option[User]] =

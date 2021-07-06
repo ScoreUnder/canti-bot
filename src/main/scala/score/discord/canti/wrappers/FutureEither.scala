@@ -8,13 +8,12 @@ class FutureEither[L, R](val value: Future[Either[L, R]]) extends AnyVal:
 
   def flatMap[R2](f: R => Future[Either[L, R2]]): Future[Either[L, R2]] =
     value flatMap {
-      case Left(_) => value.asInstanceOf[Future[Either[L, R2]]]
+      case Left(_)  => value.asInstanceOf[Future[Either[L, R2]]]
       case Right(x) => f(x)
     }
 
 object FutureEither:
-  extension [L, R](value: Future[Either[L, R]])
-    def flatView = FutureEither[L, R](value)
+  extension [L, R](value: Future[Either[L, R]]) def flatView = FutureEither[L, R](value)
 
   extension [L, R](value: Either[L, Future[Either[L, R]]])
     def toFuture: Future[Either[L, R]] = value.fold(x => Future.successful(Left(x)), identity)

@@ -12,12 +12,19 @@ import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCache) extends Command.Anyone:
+class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
+    extends Command.Anyone:
   override def name: String = "ping"
 
   override def description: String = "Check the lag from the bot to the server"
 
-  def getPingMessage(timeSent: Instant, timeReallySent: Option[Instant], timeOnServer: Instant, timeReceived: Instant, gatewayPing: Long): String =
+  def getPingMessage(
+    timeSent: Instant,
+    timeReallySent: Option[Instant],
+    timeOnServer: Instant,
+    timeReceived: Instant,
+    gatewayPing: Long
+  ): String =
     var times = mutable.Buffer.empty[String]
 
     def diff(x: Instant, y: Instant) = formatTimeDiff(Duration.between(x, y))
@@ -40,13 +47,27 @@ class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
     val timeSent = Instant.now()
     var timeReallySent: Option[Instant] = None
     (for
-      pingMessage <- message.reply(s"⏲ Checking ping...").mentionRepliedUser(false).setCheck({ () =>
-        timeReallySent = Some(Instant.now())
-        true
-      }).queueFuture()
+      pingMessage <- message
+        .reply(s"⏲ Checking ping...")
+        .mentionRepliedUser(false)
+        .setCheck({ () =>
+          timeReallySent = Some(Instant.now())
+          true
+        })
+        .queueFuture()
       timeOnServer = pingMessage.getTimeCreated.toInstant
       timeReceived = Instant.now()
       _ = messageOwnership(pingMessage) = message.getAuthor
-      _ <- pingMessage.editMessage(getPingMessage(timeSent, timeReallySent, timeOnServer, timeReceived, message.getJDA.getGatewayPing)).queueFuture()
-    yield ())
-      .failed.foreach(APIHelper.loudFailure("checking ping", message))
+      _ <- pingMessage
+        .editMessage(
+          getPingMessage(
+            timeSent,
+            timeReallySent,
+            timeOnServer,
+            timeReceived,
+            message.getJDA.getGatewayPing
+          )
+        )
+        .queueFuture()
+    yield ()).failed.foreach(APIHelper.loudFailure("checking ping", message))
+end PingCommand

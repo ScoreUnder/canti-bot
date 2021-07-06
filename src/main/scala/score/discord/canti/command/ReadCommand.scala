@@ -19,12 +19,15 @@ import scala.concurrent.{Await, Future, TimeoutException, blocking}
 import scala.io.Codec
 import scala.language.implicitConversions
 
-class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache) extends Command.Anyone:
+class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache)
+    extends Command.Anyone:
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
   private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".split(" ")
   private val DICT_FILE = File("extra_words")
 
-  private given Codec = Codec("EUC-JP").onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE)
+  private given Codec = Codec("EUC-JP")
+    .onMalformedInput(CodingErrorAction.REPLACE)
+    .onUnmappableCharacter(CodingErrorAction.REPLACE)
 
   private val WHITESPACE = "\\s".r
   private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
@@ -53,8 +56,7 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
         case text => text
 
       val input = CommandHelper(message).mentionsToPlaintext(rawInput)
-      if input.isEmpty then
-        await(message ! BotMessages.error("You need to enter some text first"))
+      if input.isEmpty then await(message ! BotMessages.error("You need to enter some text first"))
       else
         val furiganaFuture = queryKakasi(KAKASI_FURIGANA, input)
         val romajiFuture = queryKakasi(KAKASI_ROMAJI, input)
@@ -72,14 +74,14 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
     yield
       val elem = raw.slice(start, end)
       val splitAt =
-        if (elem.endsWith("]")) elem.lastIndexOf("[")
+        if elem.endsWith("]") then elem.lastIndexOf("[")
         else -1
       val furigana =
-        if (splitAt == -1) (elem, "")
+        if splitAt == -1 then (elem, "")
         else (elem take splitAt, elem.substring(splitAt + 1, elem.length - 1))
       val space = raw.slice(end, end + 1)
-        List(furigana, (space, ""))
-      ).flatten
+      List(furigana, (space, ""))
+    ).flatten
 
   private def queryKakasi(cmd: Array[String], text: String): Future[String] =
     async {
@@ -109,8 +111,7 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
 
       val exitCode = blocking(kakasi.waitFor())
 
-      if exitCode != 0 then
-        throw Exception(s"Kakasi failed. stderr: ${await(stderr)}")
+      if exitCode != 0 then throw Exception(s"Kakasi failed. stderr: ${await(stderr)}")
 
       await(stdout)
     }
@@ -118,8 +119,7 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
   def available: Boolean =
     try
       val result = queryKakasi(KAKASI_ROMAJI, "今テストなう")
-      try
-        Await.result(result, Duration(30, TimeUnit.SECONDS))
-          .trim == "ima tesuto nau"
+      try Await.result(result, Duration(30, TimeUnit.SECONDS)).trim == "ima tesuto nau"
       catch case _: TimeoutException => false
     catch case _: IOException => false
+end ReadCommand

@@ -27,7 +27,13 @@ trait ReplyingCommand extends Command:
   override def execute(message: Message, args: String): Unit =
     executeFuture(message, args).failed.foreach(APIHelper.failure(s"executing the $name command"))
 
-  override def executeForEdit(message: Message, myMessageOption: Option[ID[Message]], args: String): Unit =
+  override def executeForEdit(
+    message: Message,
+    myMessageOption: Option[ID[Message]],
+    args: String
+  ): Unit =
     for oldMessage <- myMessageOption; myReply <- executeAndGetMessage(message, args) do
-      APIHelper.tryRequest(message.getChannel.editMessageById(oldMessage.value, myReply),
-        onFail = APIHelper.failure("executing a command for edited message"))
+      APIHelper.tryRequest(
+        message.getChannel.editMessageById(oldMessage.value, myReply),
+        onFail = APIHelper.failure("executing a command for edited message")
+      )

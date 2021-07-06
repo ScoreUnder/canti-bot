@@ -2,7 +2,9 @@ package score.discord.canti.wrappers.jda
 
 import scala.annotation.targetName
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{Guild, Member, MessageChannel, Role, TextChannel, User, VoiceChannel}
+import net.dv8tion.jda.api.entities.{
+  Guild, Member, MessageChannel, Role, TextChannel, User, VoiceChannel
+}
 
 object IdConversions:
   extension (me: ID[MessageChannel])

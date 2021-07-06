@@ -14,7 +14,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
-class HelpCommand(commands: Commands)(using val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with ReplyingCommand :
+class HelpCommand(commands: Commands)(using
+  val messageOwnership: MessageOwnership,
+  val replyCache: ReplyCache
+) extends Command.Anyone
+    with ReplyingCommand:
   val pageSize = 10
 
   override def name = "help"
@@ -26,27 +30,28 @@ class HelpCommand(commands: Commands)(using val messageOwnership: MessageOwnersh
   override def executeAndGetMessage(message: Message, args: String): Future[Message] =
     Future {
       (args.trim match
-        case "" => showHelpPage(message, 1)
+        case ""           => showHelpPage(message, 1)
         case IntStr(page) => showHelpPage(message, page)
-        case cmdName => showCommandHelp(cmdName)
-        ).fold(BotMessages.error, identity).toMessage
+        case cmdName      => showCommandHelp(cmdName)
+      ).fold(BotMessages.error, identity).toMessage
     }
 
   private def inviteLink(using jda: JDA) =
-    jda.getInviteUrl(
-      MANAGE_ROLES, MANAGE_CHANNEL, MESSAGE_MANAGE, VOICE_MOVE_OTHERS
-    )
+    jda.getInviteUrl(MANAGE_ROLES, MANAGE_CHANNEL, MESSAGE_MANAGE, VOICE_MOVE_OTHERS)
 
   private def showCommandHelp(command: String) =
     val unprefixed = command.stripPrefix(commands.prefix)
-    commands.get(unprefixed)
+    commands
+      .get(unprefixed)
       .toRight("Expected a page number or command name, but got something else.")
-      .map(command => BotMessages plain
-        s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
-           |**Restrictions:** ${command.permissionMessage}
-           |${command.description}
-           |
-           |${command.longDescription(commands.prefix + unprefixed)}""".stripMargin.trim)
+      .map(command =>
+        BotMessages plain
+          s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
+             |**Restrictions:** ${command.permissionMessage}
+             |${command.description}
+             |
+             |${command.longDescription(commands.prefix + unprefixed)}""".stripMargin.trim
+      )
 
   private def showHelpPage(message: Message, page: Int) =
     given JDA = message.getJDA
@@ -55,15 +60,18 @@ class HelpCommand(commands: Commands)(using val messageOwnership: MessageOwnersh
     val pageOffset = pageSize * (page - 1)
     val numPages = (myCommands.length + pageSize - 1) / pageSize
 
-    if page < 1 then
-      Left("ಠ_ಠ")
+    if page < 1 then Left("ಠ_ಠ")
     else if page > numPages then
-      Left(s"There are only $numPages pages, but you asked for page $page. That page does not exist.")
+      Left(
+        s"There are only $numPages pages, but you asked for page $page. That page does not exist."
+      )
     else
       val helpList = myCommands.slice(pageOffset, pageOffset + pageSize)
       val embed = EmbedBuilder()
-      embed.appendDescription("You can erase most replies this bot sends to you by reacting with ❌ or 🚮.\n" +
-        s"**Commands (page $page of $numPages):**\n")
+      embed.appendDescription(
+        "You can erase most replies this bot sends to you by reacting with ❌ or 🚮.\n" +
+          s"**Commands (page $page of $numPages):**\n"
+      )
 
       for command <- helpList do
         embed appendDescription s"`${commands.prefix}${command.name}`: ${command.description}\n"
@@ -75,3 +83,4 @@ class HelpCommand(commands: Commands)(using val messageOwnership: MessageOwnersh
       )
 
       Right(embed)
+end HelpCommand

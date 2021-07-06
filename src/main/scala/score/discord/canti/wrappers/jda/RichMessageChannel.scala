@@ -24,19 +24,28 @@ object RichMessageChannel:
 
     /** Send a message to this channel.
       *
-      * @param message message to send
-      * @return the resulting Message, wrapped in Future
+      * @param message
+      *   message to send
+      * @return
+      *   the resulting Message, wrapped in Future
       */
-    def !(message: MessageFromX): Future[Message] = channel.sendMessage(message.toMessage).queueFuture()
+    def !(message: MessageFromX): Future[Message] =
+      channel.sendMessage(message.toMessage).queueFuture()
 
     /** Send a message to this channel, tracking it as owned by a specific user.
       *
-      * @param message message to send
-      * @param owner user who owns the message
-      * @param messageOwnership message ownership cache
-      * @return the resulting Message, wrapped in Future
+      * @param message
+      *   message to send
+      * @param owner
+      *   user who owns the message
+      * @param messageOwnership
+      *   message ownership cache
+      * @return
+      *   the resulting Message, wrapped in Future
       */
-    def sendOwned(message: MessageFromX, owner: User)(using messageOwnership: MessageOwnership): Future[Message] =
+    def sendOwned(message: MessageFromX, owner: User)(using
+      messageOwnership: MessageOwnership
+    ): Future[Message] =
       val future = channel ! message
       future.foreach(messageOwnership(_) = owner)
       future

@@ -10,5 +10,5 @@ class Scheduler(me: ScheduledExecutorService):
   def schedule[T](delay: Duration)(f: => T): ScheduledFuture[T] =
     me.schedule((() => f): Callable[T], delay.length, delay.unit)
 
-  def schedule[T](initialDelay: Duration, delay: Duration)(f: => Unit): ScheduledFuture[_] =
+  def schedule[T](initialDelay: Duration, delay: Duration)(f: => Unit): ScheduledFuture[?] =
     me.scheduleWithFixedDelay(() => f, initialDelay.toNanos, delay.toNanos, TimeUnit.NANOSECONDS)

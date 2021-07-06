@@ -30,19 +30,23 @@ class MessageCache(capacity: Int = 2000) extends EventListener:
       _.messageId == id
     } match
       case Some(msg) => Future.successful(Some(msg))
-      case None => APIHelper.tryRequest(channel.retrieveMessageById(id.value)).map { msg => Some(toBareMessage(msg)) }.recover {
-        case Error(UNKNOWN_CHANNEL | UNKNOWN_MESSAGE) => None
-      }
+      case None =>
+        APIHelper
+          .tryRequest(channel.retrieveMessageById(id.value))
+          .map { msg => Some(toBareMessage(msg)) }
+          .recover { case Error(UNKNOWN_CHANNEL | UNKNOWN_MESSAGE) =>
+            None
+          }
 
   override def onEvent(event: GenericEvent): Unit = event match
-      case ev: MessageReceivedEvent =>
-        val bareMessage = toBareMessage(ev.getMessage)
-        messages.synchronized {
-          messages ::= bareMessage
-        }
-      case ev: MessageUpdateEvent =>
-        val msgId = ev.getMessage.id
-        messages.synchronized {
-          messages.findAndUpdate(_.messageId == msgId)(_.copy(text = ev.getMessage.getContentRaw))
-        }
-      case _ =>
+    case ev: MessageReceivedEvent =>
+      val bareMessage = toBareMessage(ev.getMessage)
+      messages.synchronized {
+        messages ::= bareMessage
+      }
+    case ev: MessageUpdateEvent =>
+      val msgId = ev.getMessage.id
+      messages.synchronized {
+        messages.findAndUpdate(_.messageId == msgId)(_.copy(text = ev.getMessage.getContentRaw))
+      }
+    case _ =>

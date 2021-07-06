@@ -17,7 +17,11 @@ trait Command extends BaseCommand:
 
   def execute(message: Message, args: String): Unit
 
-  def executeForEdit(message: Message, myMessageOption: Option[ID[Message]], args: String): Unit = {}
+  def executeForEdit(
+    message: Message,
+    myMessageOption: Option[ID[Message]],
+    args: String
+  ): Unit = {}
 
 object Command:
   trait ServerAdminOnly extends Command:

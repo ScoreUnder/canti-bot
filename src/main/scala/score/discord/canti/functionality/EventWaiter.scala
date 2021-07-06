@@ -13,7 +13,11 @@ class EventWaiter extends EventListener:
   type Instant = Long // nanoTime
   type EventHandler = PartialFunction[GenericEvent, Unit]
 
-  case class ExpiringEvent(expiry: Instant = System.nanoTime() + 10.minutes.toNanos, identifier: AnyRef, handler: EventHandler):
+  case class ExpiringEvent(
+    expiry: Instant = System.nanoTime() + 10.minutes.toNanos,
+    identifier: AnyRef,
+    handler: EventHandler
+  ):
     def expired: Boolean = expiry <= System.nanoTime()
 
   private[this] val queuedEvents = mutable.ArrayBuffer.empty[ExpiringEvent]
@@ -26,8 +30,7 @@ class EventWaiter extends EventListener:
 
   def cleanupOneEvent(): Unit =
     queuedEvents.synchronized {
-      if queuedEvents.nonEmpty && queuedEvents(0).expired then
-        queuedEvents.remove(index = 0)
+      if queuedEvents.nonEmpty && queuedEvents(0).expired then queuedEvents.remove(index = 0)
     }
 
   override def onEvent(event: GenericEvent): Unit =
@@ -39,7 +42,7 @@ class EventWaiter extends EventListener:
         activeHandlers
       }
 
-      for ev@ExpiringEvent(_, _, handler) <- activeHandlers if !ev.expired do
+      for ev @ ExpiringEvent(_, _, handler) <- activeHandlers if !ev.expired do
         Future {
           handler(event)
         }.failed.foreach(APIHelper.failure("processing delayed event"))

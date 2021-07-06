@@ -21,7 +21,7 @@ class SlashCommands(commands: SlashCommand*) extends EventListener:
   private def normaliseCommandName(name: String): String = name.toLowerCase
 
   def registerCommands(what: CommandListUpdateAction): CommandListUpdateAction =
-    what.addCommands(commands.map(_.data): _*)
+    what.addCommands(commands.map(_.data)*)
 
   override def onEvent(event: GenericEvent): Unit = event match
     case ev: ReadyEvent =>
@@ -32,7 +32,9 @@ class SlashCommands(commands: SlashCommand*) extends EventListener:
         case None => logger.warn(s"Got unknown slash command from API: $name")
         case Some(cmd) =>
           val guildStr = Option(ev.getGuild).fold("no guild")(_.unambiguousString)
-          logger.debug(s"Running slash command ${cmd.name} on behalf of user ${ev.getUser.unambiguousString} in ${ev.getChannel.unambiguousString} ($guildStr)")
+          logger.debug(
+            s"Running slash command ${cmd.name} on behalf of user ${ev.getUser.unambiguousString} in ${ev.getChannel.unambiguousString} ($guildStr)"
+          )
           Future {
             cmd.execute(ev)
           }

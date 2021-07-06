@@ -23,7 +23,8 @@ trait DataReplyingCommand[T] extends ReplyingCommand:
     for
       (replyUnsent, data) <- executeAndGetMessageWithData(message, args)
       reply <-
-        message.reply(replyUnsent)
+        message
+          .reply(replyUnsent)
           .mentionRepliedUser(false)
           .pipe(tweakMessageAction(_, data))
           .queueFuture()
@@ -32,7 +33,17 @@ trait DataReplyingCommand[T] extends ReplyingCommand:
 
   def tweakMessageAction(action: MessageAction, data: T): MessageAction
 
-  override def executeForEdit(message: Message, myMessageOption: Option[ID[Message]], args: String): Unit =
-    for oldMessage <- myMessageOption; (myReply, data) <- executeAndGetMessageWithData(message, args) do
-      APIHelper.tryRequest(message.getChannel.editMessageById(oldMessage.value, myReply).pipe(tweakMessageAction(_, data)),
-        onFail = APIHelper.failure("executing a command for edited message"))
+  override def executeForEdit(
+    message: Message,
+    myMessageOption: Option[ID[Message]],
+    args: String
+  ): Unit =
+    for
+      oldMessage <- myMessageOption; (myReply, data) <- executeAndGetMessageWithData(message, args)
+    do
+      APIHelper.tryRequest(
+        message.getChannel
+          .editMessageById(oldMessage.value, myReply)
+          .pipe(tweakMessageAction(_, data)),
+        onFail = APIHelper.failure("executing a command for edited message")
+      )

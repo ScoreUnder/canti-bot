@@ -18,7 +18,7 @@ import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichGuild.voiceStates
 import score.discord.canti.wrappers.jda.RichJDA.guilds
-import score.discord.canti.wrappers.jda.RichMember.{roles, has}
+import score.discord.canti.wrappers.jda.RichMember.{has, roles}
 import score.discord.canti.wrappers.jda.RichRole.mention
 import score.discord.canti.wrappers.jda.RichSnowflake.id
 
@@ -29,7 +29,11 @@ import scala.concurrent.duration.*
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.chaining.scalaUtilChainingOps
 
-class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)(using scheduler: Scheduler, messageOwnership: MessageOwnership, replyCache: ReplyCache) extends EventListener:
+class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)(using
+  scheduler: Scheduler,
+  messageOwnership: MessageOwnership,
+  replyCache: ReplyCache
+) extends EventListener:
   commands register new ReplyingCommand with Command.ServerAdminOnly:
     override def name = "voicerole"
 
@@ -42,20 +46,19 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
          |You can also remove the role with `$invocation none`""".stripMargin
 
     override def executeAndGetMessage(message: Message, args: String): Future[Message] = async {
-      await(args.trim match {
-        case "" => showVoiceRole(message.getGuild)
+      await(args.trim match
+        case ""     => showVoiceRole(message.getGuild)
         case "none" => delVoiceRole(message.getGuild)
-        case _ => setVoiceRole(args.trim, message.getGuild)
-      }).toMessage
+        case _      => setVoiceRole(args.trim, message.getGuild)
+      ).toMessage
     }.tap(_.failed.foreach(APIHelper.loudFailure("setting voice role", message)))
 
     private def setVoiceRole(roleName: String, guild: Guild) = async {
-      findRole(guild, roleName) match {
+      findRole(guild, roleName) match
         case Left(err) => err
         case Right(role) =>
           await(roleByGuild(guild.id) = role.id)
           BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
-      }
     }
 
     private def delVoiceRole(guild: Guild) = async {
@@ -67,9 +70,9 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
       given JDA = guild.getJDA
       await(roleByGuild.get(guild.id))
         .flatMap(_.find)
-        .fold(
-          BotMessages.plain("There is currently no voice chat role set."))(
-          role => BotMessages.okay(s"The voice chat role is currently set to ${role.mention}."))
+        .fold(BotMessages.plain("There is currently no voice chat role set."))(role =>
+          BotMessages.okay(s"The voice chat role is currently set to ${role.mention}.")
+        )
     }
 
     override given messageOwnership: MessageOwnership = VoiceRoles.this.messageOwnership
@@ -78,18 +81,18 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit =
     if shouldHaveRole != (member has role) then
-      if shouldHaveRole then
-        member.roles += role -> "voice state change"
-      else
-        member.roles -= role -> "voice state change"
+      if shouldHaveRole then member.roles += role -> "voice state change"
+      else member.roles -= role -> "voice state change"
 
   private def shouldHaveRole(state: GuildVoiceState) =
-    !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(_ != state.getGuild.getAfkChannel)
+    !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(
+      _ != state.getGuild.getAfkChannel
+    )
 
   private val pendingRoleUpdates = ConcurrentHashMap[GuildUserId, ScheduledFuture[Unit]]()
   private[this] val rng = ThreadLocalRandom.current()
 
-  private def queueRoleUpdate(member: Member): Unit = {
+  private def queueRoleUpdate(member: Member): Unit =
     /*
       Why queue role updates?
       Because the "join"/"deafen" events come one after the other,
@@ -120,7 +123,6 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
       given JDA = member.getJDA
       await(roleByGuild.get(member.getGuild.id)).flatMap(_.find).foreach(queueUpdate)
     }
-  }
 
   override def onEvent(event: GenericEvent): Unit =
     event match
@@ -130,11 +132,11 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
           for
             guild <- jda.guilds
             voiceState <- guild.voiceStates
-          do
-            queueRoleUpdate(voiceState.getMember)
+          do queueRoleUpdate(voiceState.getMember)
         }
 
       case ev: GenericGuildVoiceEvent =>
         queueRoleUpdate(ev.getMember)
 
       case _ =>
+end VoiceRoles

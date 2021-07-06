@@ -1,6 +1,6 @@
 package score.discord.canti.command
 
-import com.google.re2j.{PatternSyntaxException, Pattern => RE2JPattern}
+import com.google.re2j.{PatternSyntaxException, Pattern as RE2JPattern}
 import net.dv8tion.jda.api.entities.{Message, MessageChannel}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
@@ -27,7 +27,9 @@ import scala.language.implicitConversions
 import scala.util.Try
 import scala.util.chaining.scalaUtilChainingOps
 
-class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with DataReplyingCommand[Seq[String]]:
+class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: ReplyCache)
+    extends Command.Anyone
+    with DataReplyingCommand[Seq[String]]:
   override def name: String = "find"
 
   override val aliases: Seq[String] = List("id")
@@ -46,11 +48,15 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
        |So far, this searches roles, emotes, users, and games.
     """.stripMargin
 
-  override def executeAndGetMessageWithData(message: Message, args: String): Future[(Message, Seq[String])] =
+  override def executeAndGetMessageWithData(
+    message: Message,
+    args: String
+  ): Future[(Message, Seq[String])] =
     Future {
       args.trim match
         case "" => (BotMessages.error("Please enter a term to search for.").toMessage, Nil)
-        case searchTerm => makeSearchReply(message, searchTerm).pipe { case (x, y) => (x.toMessage, y) }
+        case searchTerm =>
+          makeSearchReply(message, searchTerm).pipe { case (x, y) => (x.toMessage, y) }
     }
 
   private def makeSearchReply(message: Message, searchTerm: String): (EmbedBuilder, Seq[String]) =
@@ -70,38 +76,41 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
           val header =
             if results.size > maxResults then
               s"__First $maxResults results for ``$searchTermSanitised``__"
-            else if results.size == 1 then
-              s"__Got one result for ``$searchTermSanitised``__"
-            else
-              s"__Got ${results.size} results for ``$searchTermSanitised``__"
+            else if results.size == 1 then s"__Got one result for ``$searchTermSanitised``__"
+            else s"__Got ${results.size} results for ``$searchTermSanitised``__"
 
           val footer =
-            (if results.size > maxResults then
-              "\n**...and more**\n"
-            else
-              "\n") + ReactListener.SEARCHABLE_MESSAGE_TAG
+            (if results.size > maxResults then "\n**...and more**\n"
+             else "\n") + ReactListener.SEARCHABLE_MESSAGE_TAG
 
-          (BotMessages.okay(s"$header\n${results take maxResults map (_._1) mkString "\n"}$footer"),
-            results.take(maxResults).map(_._2))
+          (
+            BotMessages.okay(
+              s"$header\n${results take maxResults map (_._1) mkString "\n"}$footer"
+            ),
+            results.take(maxResults).map(_._2)
+          )
       }
-      .recover {
-        case e: PatternSyntaxException =>
-          (BotMessages.error(s"Could not parse regex for $name command: ${e.getDescription}"), Nil)
+      .recover { case e: PatternSyntaxException =>
+        (BotMessages.error(s"Could not parse regex for $name command: ${e.getDescription}"), Nil)
       }
       .get
 
   override def tweakMessageAction(action: MessageAction, data: Seq[String]): MessageAction =
     action.setActionRows(
-      data
-        .zipWithIndex
-        .map { case (id, index) => Button.secondary(ReactListener.ACTION_PREFIX + id, index.toString) }
+      data.zipWithIndex
+        .map { case (id, index) =>
+          Button.secondary(ReactListener.ACTION_PREFIX + id, index.toString)
+        }
         .grouped(5)
         .map(buttons => ActionRow.of(buttons.asJava))
         .toSeq
         .asJava
     )
 
-  private def getSearchResults(message: Message, searchPattern: RE2JPattern): Seq[(String, String)] =
+  private def getSearchResults(
+    message: Message,
+    searchPattern: RE2JPattern
+  ): Seq[(String, String)] =
     @inline def containsSearchTerm(haystack: String) =
       searchPattern.matcher(haystack).find()
 
@@ -115,38 +124,53 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
       case Some(guild) =>
         results ++= guild.getRoles.asScala.view
           .filter(r => containsSearchTerm(s"@${r.getName}"))
-          .map(r => (s"**Role** ${r.getAsMention} (${MessageUtils.sanitise(s"@${r.getName}")}): `${r.getId}`", r.getId))
+          .map(r =>
+            (
+              s"**Role** ${r.getAsMention} (${MessageUtils.sanitise(s"@${r.getName}")}): `${r.getId}`",
+              r.getId
+            )
+          )
         results ++= guild.getEmotes.asScala.view
           .filter(e => containsSearchTerm(s":${e.getName}:"))
           .map(e => (s"**Emote** ${e.getAsMention} (:${e.getName}:): `${e.getId}`", e.getId))
         results ++= guild.getMembers.asScala.view
           .filter(m =>
             containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
-              Option(m.getNickname).exists(n => containsSearchTerm(s"@$n")))
-          .map(m => {
+              Option(m.getNickname).exists(n => containsSearchTerm(s"@$n"))
+          )
+          .map(
+          m =>
             val u = m.getUser
             val nick = Option(m.getNickname)
               .map(MessageUtils.sanitise)
               .fold("")(name => s" (aka $name)")
             (s"**User** ${u.mentionWithName}$nick: `${u.getId}`", u.getId)
-          })
+          )
     results
 
   object ReactListener extends EventListener:
-    val ICONS = Vector("0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "\uD83D\uDD1F")
+    val ICONS =
+      Vector("0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "\uD83D\uDD1F")
     val ACTION_PREFIX = "show_result:"
-    val SEARCHABLE_MESSAGE_TAG = "React with one of the icons above to make it easier to copy the ID on mobile"
+    val SEARCHABLE_MESSAGE_TAG =
+      "React with one of the icons above to make it easier to copy the ID on mobile"
     private val LINE_REGEX = (ICONS.mkString("(", "|", ")") + ":.*`(\\d+)`").r.unanchored
 
-    def getIdFromMessage(channel: MessageChannel, myMsgId: ID[Message], idLabel: String): Future[Option[(Message, String)]] =
+    def getIdFromMessage(
+      channel: MessageChannel,
+      myMsgId: ID[Message],
+      idLabel: String
+    ): Future[Option[(Message, String)]] =
       for
-        msg <- APIHelper.tryRequest(channel.retrieveMessageById(myMsgId.value), onFail = APIHelper.failure("retrieving reacted message"))
-      yield
-        (for
-          embed <- msg.getEmbeds.asScala
-          if embed.getDescription.contains(SEARCHABLE_MESSAGE_TAG)
-          LINE_REGEX(`idLabel`, selected) <- embed.getDescription.split("\n")
-         yield (msg, selected)).headOption
+        msg <- APIHelper.tryRequest(
+          channel.retrieveMessageById(myMsgId.value),
+          onFail = APIHelper.failure("retrieving reacted message")
+        )
+      yield (for
+        embed <- msg.getEmbeds.asScala
+        if embed.getDescription.contains(SEARCHABLE_MESSAGE_TAG)
+        LINE_REGEX(`idLabel`, selected) <- embed.getDescription.split("\n")
+      yield (msg, selected)).headOption
 
     override def onEvent(event: GenericEvent): Unit = event match
       case NonBotReact(React.Text(react), msgId, channel, user) =>
@@ -158,7 +182,10 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
             msgId <- maybeMsgId
             (msg, selected) = msgId
           do
-            APIHelper.tryRequest(msg.editMessage(selected), onFail = APIHelper.failure("editing message for reaction"))
+            APIHelper.tryRequest(
+              msg.editMessage(selected),
+              onFail = APIHelper.failure("editing message for reaction")
+            )
       case ev: ButtonClickEvent =>
         given JDA = event.getJDA
         val rawId = ev.getComponentId
@@ -166,10 +193,14 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
           val id = rawId.substring(ACTION_PREFIX.length)
           for
             owner <- messageOwnership(ID[Message](ev.getMessageIdLong))
-            if id.forall(c => c.isDigit || c == '-') // Sanity check for potential exploits that probably don't exist
+            if id.forall(c =>
+              c.isDigit || c == '-'
+            ) // Sanity check for potential exploits that probably don't exist
           do
             val user = ev.getUser
             owner match
               case Some(`user`) => ev.editMessage(id).queueFuture()
-              case _ => ev.reply(id).setEphemeral(true).queueFuture()
+              case _            => ev.reply(id).setEphemeral(true).queueFuture()
       case _ =>
+  end ReactListener
+end FindCommand

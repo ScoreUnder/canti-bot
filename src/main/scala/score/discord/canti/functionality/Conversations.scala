@@ -11,13 +11,16 @@ import scala.collection.concurrent.TrieMap
 
 class Conversations extends EventListener:
 
-  case class Conversation(message: Message,
-                          private val userId: ID[User],
-                          private val chanId: ID[MessageChannel]):
+  case class Conversation(
+    message: Message,
+    private val userId: ID[User],
+    private val chanId: ID[MessageChannel]
+  ):
     def next(action: Conversation => Unit): Unit =
       start(userId, chanId)(action)
 
-  private[this] val ongoingConversation = TrieMap[(ID[User], ID[MessageChannel]), Conversation => Unit]()
+  private[this] val ongoingConversation =
+    TrieMap[(ID[User], ID[MessageChannel]), Conversation => Unit]()
 
   def start(user: User, channel: MessageChannel)(action: Conversation => Unit): Unit =
     start(user.id, channel.id)(action)
@@ -31,5 +34,5 @@ class Conversations extends EventListener:
       val chanId = msg.getChannel.id
       ongoingConversation
         .remove((userId, chanId))
-        .foreach(_ (Conversation(msg, userId, chanId)))
+        .foreach(_(Conversation(msg, userId, chanId)))
     case _ =>

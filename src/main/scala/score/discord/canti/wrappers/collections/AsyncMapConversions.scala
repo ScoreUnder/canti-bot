@@ -21,4 +21,5 @@ object AsyncMapConversions:
 
     def remove(channel: VoiceChannel): Future[Int] = me.remove(key(channel))
 
-  private def key(channel: VoiceChannel): (ID[Guild], ID[VoiceChannel]) = (channel.getGuild.id, channel.id)
+  private def key(channel: VoiceChannel): (ID[Guild], ID[VoiceChannel]) =
+    (channel.getGuild.id, channel.id)

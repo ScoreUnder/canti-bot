@@ -33,10 +33,11 @@ class FuriganaCommand(using MessageOwnership, ReplyCache) extends Command.Anyone
     """.stripMargin
 
   def parseInput(args: String): Seq[(String, String)] =
-    FURI_PATTERN.findAllMatchIn(args)
+    FURI_PATTERN
+      .findAllMatchIn(args)
       .flatMap { m =>
         m.group("other") match
-          case null => Seq((m.group("left"), m.group("right")))
+          case null  => Seq((m.group("left"), m.group("right")))
           case other => other.split("\n", -1).flatMap(line => Seq(("\n", ""), (line, ""))).tail
       }
       .filter(t => !t._1.isEmpty || !t._2.isEmpty)
@@ -52,12 +53,14 @@ class FuriganaCommand(using MessageOwnership, ReplyCache) extends Command.Anyone
 
       val commandHelper = CommandHelper(message)
 
-      val (origWithoutFuri, furiText) = {
+      val (origWithoutFuri, furiText) =
         val orig = parseInput(args)
-        (orig.map(_._1).mkString, orig.map(t => (
-          commandHelper.mentionsToPlaintext(t._1),
-          commandHelper.mentionsToPlaintext(t._2))))
-      }
+        (
+          orig.map(_._1).mkString,
+          orig.map(t =>
+            (commandHelper.mentionsToPlaintext(t._1), commandHelper.mentionsToPlaintext(t._2))
+          )
+        )
 
       await(sendFuriMessage(replyingTo = message, furigana = furiText, plain = origWithoutFuri))
     }.failed foreach APIHelper.loudFailure("rendering furigana", message)
@@ -65,9 +68,13 @@ class FuriganaCommand(using MessageOwnership, ReplyCache) extends Command.Anyone
 object FuriganaCommand:
   private val FURI_PATTERN = raw"[｛{](?<left>[^：:]*)[：:](?<right>[^｝}]*)[｝}]|(?<other>[^{｛]+)".r
 
-  def sendFuriMessage(replyingTo: Message, furigana: Iterable[(String, String)], plain: String)
-                     (using messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] =
-    replyingTo.reply(Furigana.renderPNG(furigana), "furigana.png")
+  def sendFuriMessage(
+    replyingTo: Message,
+    furigana: Iterable[(String, String)],
+    plain: String
+  )(using messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] =
+    replyingTo
+      .reply(Furigana.renderPNG(furigana), "furigana.png")
       .mentionRepliedUser(false)
       .append(plain.take(2000))
       .allowedMentions(Collections.emptySet)

@@ -15,7 +15,8 @@ import score.discord.canti.wrappers.jda.RichUser.{discriminator, name}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.implicitConversions
 
-class BotInfoCommand(override val userId: ID[User])(using MessageOwnership, ReplyCache) extends Command.OneUserOnly:
+class BotInfoCommand(override val userId: ID[User])(using MessageOwnership, ReplyCache)
+    extends Command.OneUserOnly:
   override def name = "botinfo"
 
   override def description = "Show miscellaneous info about the bot"
@@ -30,9 +31,12 @@ class BotInfoCommand(override val userId: ID[User])(using MessageOwnership, Repl
         s"${guild.getName} ($memberCount users; owner: ${owner.name}#${owner.discriminator})"
       }
       val me = await(jda.retrieveApplicationInfo.queueFuture())
-      await(message ! BotMessages.plain("Some basic bot info")
-        .addField("Owner", s"<@$userId>", true)
-        .addField("Servers", s"${allGuilds.size}", true)
-        .addField("Top servers", topGuilds.mkString("\n"), false)
-        .setThumbnail(me.getIconUrl))
+      await(
+        message ! BotMessages
+          .plain("Some basic bot info")
+          .addField("Owner", s"<@$userId>", true)
+          .addField("Servers", s"${allGuilds.size}", true)
+          .addField("Top servers", topGuilds.mkString("\n"), false)
+          .setThumbnail(me.getIconUrl)
+      )
     }.failed.foreach(APIHelper.loudFailure("getting bot info", message))

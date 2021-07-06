@@ -16,9 +16,8 @@ object RichUser:
     /** The mention string for this user */
     def mention = me.getAsMention
 
-    /** Gets the user's name and discriminator.
-      * Looks like what you would type in Discord if you wanted to mention the user.
-      * Not sanitised.
+    /** Gets the user's name and discriminator. Looks like what you would type in Discord if you
+      * wanted to mention the user. Not sanitised.
       */
     def mentionAsText = s"@${me.getName}#${me.getDiscriminator}"
 
@@ -32,8 +31,10 @@ object RichUser:
 
     /** Checks whether the user has read access to the channel.
       *
-      * @param channel channel to check
-      * @return `true` if the user can see this channel
+      * @param channel
+      *   channel to check
+      * @return
+      *   `true` if the user can see this channel
       */
     def canSee(channel: GuildChannel): Boolean =
       Option(channel.getGuild.getMember(me))

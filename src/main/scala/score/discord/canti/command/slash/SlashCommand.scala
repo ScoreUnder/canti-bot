@@ -7,6 +7,6 @@ import score.discord.canti.command.BaseCommand
 trait SlashCommand extends BaseCommand:
   def options: Seq[OptionData]
 
-  def data = CommandData(name, description).addOptions(options: _*)
+  def data = CommandData(name, description).addOptions(options*)
 
   def execute(origin: CommandInteraction): Unit

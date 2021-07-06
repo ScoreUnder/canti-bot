@@ -10,9 +10,10 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T]:
 
   override def length: Int =
     if isEmpty_ then 0
-    else readPos - writePos match
-      case x if x > 0 => x
-      case x => x + buffer.length
+    else
+      readPos - writePos match
+        case x if x > 0 => x
+        case x          => x + buffer.length
 
   override def isEmpty: Boolean = isEmpty_
 
@@ -21,8 +22,7 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T]:
       case 0 => buffer.length - 1
       case x => x - 1
     buffer(nextWrite) = elem
-    if readPos == writePos && !isEmpty then
-      readPos = nextWrite
+    if readPos == writePos && !isEmpty then readPos = nextWrite
     writePos = nextWrite
     isEmpty_ = false
 
@@ -39,24 +39,22 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T]:
 
   def findAndUpdate(condition: T => Boolean)(replace: T => T): this.type =
     val index = this.indexWhere(condition)
-    if index != -1 then
-      this(index) = replace(this(index))
+    if index != -1 then this(index) = replace(this(index))
     this
 
-  override def iterator: Iterator[T] = new Iterator[T] {
+  override def iterator: Iterator[T] = new Iterator[T]:
     private[this] var myPos = writePos
     private[this] var iterated = LogBuffer.this.isEmpty
 
     override def hasNext: Boolean = myPos != readPos || !iterated
 
     override def next(): T =
-      if !hasNext then
-        throw NoSuchElementException()
+      if !hasNext then throw NoSuchElementException()
       val pos = myPos
       val result = buffer(pos).asInstanceOf[T]
       myPos = pos + 1 match
         case x if x == buffer.length => 0
-        case x => x
+        case x                       => x
       iterated = true
       result
-  }
+end LogBuffer

@@ -15,12 +15,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
-class RegisterGuildSlashCommandsCommand(val userId: ID[User], slashCommands: SlashCommands)(using val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.OneUserOnly with ReplyingCommand:
+class RegisterGuildSlashCommandsCommand(val userId: ID[User], slashCommands: SlashCommands)(using
+  val messageOwnership: MessageOwnership,
+  val replyCache: ReplyCache
+) extends Command.OneUserOnly
+    with ReplyingCommand:
   override def name: String = "regslash"
 
   override def description: String = "Register slash commands in guild (debug purposes)"
 
-  override def longDescription(invocation: String): String = s"`${invocation} off` = remove them again"
+  override def longDescription(invocation: String): String =
+    s"`${invocation} off` = remove them again"
 
   override def executeAndGetMessage(message: Message, args: String): Future[Message] =
     val action = message.getGuild.updateCommands()

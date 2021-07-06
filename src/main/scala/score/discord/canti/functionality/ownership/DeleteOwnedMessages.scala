@@ -14,8 +14,7 @@ import scala.concurrent.Future
 
 class DeleteOwnedMessages(using messageOwnership: MessageOwnership) extends EventListener:
   private def getOwnership(user: User, channel: MessageChannel, messageId: ID[Message]) =
-    if channel.getType == ChannelType.PRIVATE then
-      Future.successful(Some(user))
+    if channel.getType == ChannelType.PRIVATE then Future.successful(Some(user))
     else
       given JDA = user.getJDA
       messageOwnership(messageId)
@@ -27,7 +26,8 @@ class DeleteOwnedMessages(using messageOwnership: MessageOwnership) extends Even
           case Some(`user`) =>
             APIHelper.tryRequest(
               channel.deleteMessageById(messageId.value),
-              onFail = APIHelper.failure("deleting an owned message"))
+              onFail = APIHelper.failure("deleting an owned message")
+            )
           case Some(_) =>
             react.removeReaction(user).queue()
           case None =>

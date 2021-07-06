@@ -24,7 +24,12 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.jdk.CollectionConverters.*
 
-class QuoteCommand(using messageCache: MessageCache, val messageOwnership: MessageOwnership, val replyCache: ReplyCache) extends Command.Anyone with DataReplyingCommand[Option[String]]:
+class QuoteCommand(using
+  messageCache: MessageCache,
+  val messageOwnership: MessageOwnership,
+  val replyCache: ReplyCache
+) extends Command.Anyone
+    with DataReplyingCommand[Option[String]]:
   override def name: String = "quote"
 
   override val aliases: Seq[String] = List("q")
@@ -42,26 +47,35 @@ class QuoteCommand(using messageCache: MessageCache, val messageOwnership: Messa
        |`>>12341234`
     """.stripMargin
 
-  override def executeAndGetMessageWithData(cmdMessage: Message, args: String): Future[(Message, Option[String])] =
+  override def executeAndGetMessageWithData(
+    cmdMessage: Message,
+    args: String
+  ): Future[(Message, Option[String])] =
     async {
       val quotedMsg = await(retrieveQuoteMessageByArg(cmdMessage, args))
       val replyMsg = quotedMsg
         .map(message => getMessageAsQuote(cmdMessage, message.getChannel, message))
-        .fold(BotMessages.error, identity).toMessage
+        .fold(BotMessages.error, identity)
+        .toMessage
       (replyMsg, quotedMsg.toOption.map(_.getJumpUrl))
     }
 
-  private def retrieveQuoteMessageByArg(cmdMessage: Message, args: String): Future[Either[String, Message]] =
+  private def retrieveQuoteMessageByArg(
+    cmdMessage: Message,
+    args: String
+  ): Future[Either[String, Message]] =
     async {
       parseQuoteIDs(args) match
         case Some((quoteId, specifiedChannel)) =>
           val channel = channelOrBestGuess(cmdMessage, quoteId, specifiedChannel)
           checkChannelVisibility(channel, cmdMessage.getAuthor) match
             case Right(ch) =>
-              await(APIHelper
-                .tryRequest(ch retrieveMessageById quoteId.value)
-                .map(Right(_))
-                .recover(stringifyMessageRetrievalError(specifiedChannel)))
+              await(
+                APIHelper
+                  .tryRequest(ch retrieveMessageById quoteId.value)
+                  .map(Right(_))
+                  .recover(stringifyMessageRetrievalError(specifiedChannel))
+              )
             case Left(e) => Left(e)
         case None =>
           Left("You need to give a message ID to quote")
@@ -69,10 +83,14 @@ class QuoteCommand(using messageCache: MessageCache, val messageOwnership: Messa
 
   override def tweakMessageAction(action: MessageAction, data: Option[String]): MessageAction =
     data match
-      case None => action
+      case None       => action
       case Some(link) => action.setActionRow(Button.link(link, "Go to message"))
 
-  private def channelOrBestGuess(context: Message, quoteId: ID[Message], specifiedChannel: Option[ID[MessageChannel]]): Option[MessageChannel] =
+  private def channelOrBestGuess(
+    context: Message,
+    quoteId: ID[Message],
+    specifiedChannel: Option[ID[MessageChannel]]
+  ): Option[MessageChannel] =
     given JDA = context.getJDA
     specifiedChannel match
       case Some(chanID) => chanID.find
@@ -83,7 +101,9 @@ class QuoteCommand(using messageCache: MessageCache, val messageOwnership: Messa
           .flatMap(_.find)
           .orElse(Some(context.getChannel))
 
-  private def stringifyMessageRetrievalError(specifiedChannel: Option[ID[MessageChannel]]): PartialFunction[Throwable, Either[String, Nothing]] =
+  private def stringifyMessageRetrievalError(
+    specifiedChannel: Option[ID[MessageChannel]]
+  ): PartialFunction[Throwable, Either[String, Nothing]] =
     import APIHelper.Error
     import ErrorResponse.*
     {
@@ -96,15 +116,17 @@ class QuoteCommand(using messageCache: MessageCache, val messageOwnership: Messa
       case Error(MISSING_PERMISSIONS) | Error(MISSING_ACCESS) =>
         Left("I don't have permission to read messages in that channel.")
       case e: PermissionException =>
-        Left(s"I don't have permission to read messages in that channel. Missing `${e.getPermission.getName}`.")
+        Left(
+          s"I don't have permission to read messages in that channel. Missing `${e.getPermission.getName}`."
+        )
     }
 
   private def checkChannelVisibility(channel: Option[MessageChannel], sender: User) =
     channel match
-      case Some(ch: GuildChannel) if sender canSee ch => Right(ch)
+      case Some(ch: GuildChannel) if sender canSee ch       => Right(ch)
       case Some(ch: PrivateChannel) if ch.getUser == sender => Right(ch)
       case Some(_) => Left("You do not have access to the specified channel.")
-      case None => Left("I do not have access to the specified channel.")
+      case None    => Left("I do not have access to the specified channel.")
 
   private def getMessageAsQuote(cmdMessage: Message, ch: MessageChannel, msg: Message) =
     val chanName = Option(ch.getName).fold("Untitled channel")("#" + _)
@@ -125,8 +147,7 @@ class QuoteCommand(using messageCache: MessageCache, val messageOwnership: Messa
           quote.setImage(image.getUrl)
 
     for embed <- embeds do
-      for desc <- Option(embed.getDescription) do
-        quote.addField("[Embed description]", desc, false)
+      for desc <- Option(embed.getDescription) do quote.addField("[Embed description]", desc, false)
 
       embed.getFields.asScala.foreach(quote.addField)
 
@@ -159,9 +180,11 @@ class QuoteCommand(using messageCache: MessageCache, val messageOwnership: Messa
           .findPrefixMatchOf(message.getContentRaw)
           .foreach(m => QuoteCommand.this.execute(message, m.after.toString))
       case _ =>
+end QuoteCommand
 
 object QuoteCommand:
-  private val LINK_REGEX_STR = """https://(?:[^.]+\.)?discord(?:app)?\.com/channels/\d+/(\d+)/(\d+)"""
+  private val LINK_REGEX_STR =
+    """https://(?:[^.]+\.)?discord(?:app)?\.com/channels/\d+/(\d+)/(\d+)"""
   private val LINK_REGEX = s"^$LINK_REGEX_STR".r.unanchored
   private val CHANNEL_REGEX = "\\s*<#(\\d+)>".r
   // To avoid false positives, trigger on message URL or 9+ digits
