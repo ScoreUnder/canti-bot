@@ -13,6 +13,7 @@ import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, MessageUtils}
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.MessageConversions.given
+import score.discord.canti.wrappers.jda.RichGenericComponentInteractionCreateEvent.messageId
 import score.discord.canti.wrappers.jda.RichMessage.{!, guild}
 import score.discord.canti.wrappers.jda.RichMessageChannel.participants
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
@@ -191,7 +192,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
         if rawId.startsWith(ACTION_PREFIX) then
           val id = rawId.substring(ACTION_PREFIX.length)
           for
-            owner <- messageOwnership(ID[Message](ev.getMessageIdLong))
+            owner <- messageOwnership(ev.messageId)
             if id.forall(c =>
               c.isDigit || c == '-'
             ) // Sanity check for potential exploits that probably don't exist

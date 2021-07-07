@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.events.message.{
 import score.discord.canti.collections.MessageCache
 import score.discord.canti.discord.BareMessage
 import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.RichGenericMessageEvent.messageId
 
 object Events:
   object NonBotMessage:
@@ -34,11 +35,11 @@ object Events:
       ev: MessageReactionAddEvent
     ): Option[(MessageReaction, ID[Message], MessageChannel, User)] =
       if ev.getUser.isBot then None
-      else Some((ev.getReaction, ID[Message](ev.getMessageIdLong), ev.getChannel, ev.getUser))
+      else Some((ev.getReaction, ev.messageId, ev.getChannel, ev.getUser))
 
   object MessageDelete:
     def unapply(ev: MessageDeleteEvent): Option[ID[Message]] =
-      Some(ID[Message](ev.getMessageIdLong))
+      Some(ev.messageId)
 
   object GuildVoiceUpdate:
     def unapply(

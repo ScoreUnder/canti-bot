@@ -31,6 +31,7 @@ import score.discord.canti.wrappers.jda.Conversions.{
   richGuild, richMember, richMessageChannel, richUser, richVoiceChannel
 }
 import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.RichGenericMessageEvent.messageId
 import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 
 import java.util
@@ -42,7 +43,7 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
 
   private def logHigherIfMyMessage(ev: GenericMessageEvent, logLine: String): Unit =
     given JDA = ev.getJDA
-    messageOwnership(ID[Message](ev.getMessageIdLong)).foreach {
+    messageOwnership(ev.messageId).foreach {
       case None    => logger.trace(logLine)
       case Some(_) => logger.debug(logLine)
     }

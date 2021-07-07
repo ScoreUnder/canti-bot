@@ -24,6 +24,7 @@ import score.discord.canti.wrappers.jda.Conversions.{
 }
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.IdConversions.*
+import score.discord.canti.wrappers.jda.RichGenericComponentInteractionCreateEvent.messageId
 import score.discord.canti.wrappers.jda.RichGuild.{findMember, findVoiceChannel}
 import score.discord.canti.wrappers.jda.RichGuildChannel.{applyPerms, getPermissionAttachment}
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
@@ -521,7 +522,7 @@ class VoiceKick(
         vote <- getButtonMeaning(ev.getComponentId)
         member <- Option(ev.getMember)
         channel = ev.getTextChannel
-        msgId = ID[Message](ev.getMessageIdLong)
+        msgId = ev.messageId
       do
         val edit = ev.deferEdit().queueFuture()
         updateKickVote(channel, msgId, vote, member, Some(edit))

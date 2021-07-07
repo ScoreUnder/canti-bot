@@ -3,6 +3,11 @@ package score.discord.canti.wrappers.jda
 object Conversions:
   given richChannelAction: RichChannelAction.type = RichChannelAction
 
+  given richGenericComponentInteractionCreateEvent
+    : RichGenericComponentInteractionCreateEvent.type = RichGenericComponentInteractionCreateEvent
+
+  given richGenericMessageEvent: RichGenericMessageEvent.type = RichGenericMessageEvent
+
   given richGuild: RichGuild.type = RichGuild
 
   given richGuildChannel: RichGuildChannel.type = RichGuildChannel
