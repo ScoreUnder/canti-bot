@@ -1,7 +1,6 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.requests.RestAction
-import score.discord.canti.wrappers.Scheduler
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
@@ -18,6 +17,3 @@ object RichRestAction:
       val promise = Promise[T]()
       orig.queue(promise.success(_), promise.failure(_))
       promise.future
-
-    def delay(duration: Duration)(using scheduler: Scheduler): RestAction[T] =
-      orig.delay(duration.length, duration.unit, scheduler.asJava)

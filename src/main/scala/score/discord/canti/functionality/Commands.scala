@@ -9,7 +9,6 @@ import score.discord.canti.command.Command
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.StringUtils.formatMessageForLog
 import score.discord.canti.util.{APIHelper, BotMessages}
-import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.jda.Conversions.{
   richMessage, richMessageChannel, richSnowflake, richUser
 }
@@ -19,7 +18,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.chaining.*
 
-class Commands(using Scheduler, MessageCache, ReplyCache, MessageOwnership) extends EventListener:
+class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventListener:
   private val logger = LoggerFactory.getLogger(classOf[Commands])
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
