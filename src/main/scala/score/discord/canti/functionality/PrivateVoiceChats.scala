@@ -88,7 +88,7 @@ class PrivateVoiceChats(
       executeAndGetMessage(origin, deferred)
         .map(replyTo(deferred))
         .failed
-        .foreach(APIHelper.failure("calling /accept"))
+        .foreach(APIHelper.failure(s"calling /${origin.getName}"))
 
   object AcceptCommand extends Command.Anyone with MyReplyingCommand with MySlashCommand:
     override def name = "accept"
