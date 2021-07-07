@@ -130,6 +130,6 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
         _: MessageEmbedEvent | _: HttpRequestEvent =>
     // Ignored (they're pretty boring)
     case ev =>
-      if !util.Arrays.stream(ev.getClass.getAnnotations).anyMatch(_.isInstanceOf[Deprecated]) then
+      if !ev.getClass.getAnnotations.exists(_.isInstanceOf[Deprecated]) then
         logger.debug(ev.getClass.toGenericString)
 end EventLogger
