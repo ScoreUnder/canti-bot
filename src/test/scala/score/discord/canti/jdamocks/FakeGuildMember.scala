@@ -54,11 +54,11 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getPermissions: util.EnumSet[Permission] = util.EnumSet.copyOf(myPerms.asJava).nn
 
-  override def hasPermission(permissions: Array[_ <: Permission]): Boolean = getPermissions.containsAll(util.Arrays.asList(permissions: _*))
+  override def hasPermission(permissions: Array[_ <: Permission]): Boolean = getPermissions.containsAll(util.Arrays.asList(permissions*))
 
   override def hasPermission(permissions: util.Collection[Permission]): Boolean = getPermissions.containsAll(permissions)
 
-  override def hasPermission(channel: GuildChannel, permissions: Array[_ <: Permission]): Boolean = getPermissions(channel).containsAll(util.Arrays.asList(permissions: _*))
+  override def hasPermission(channel: GuildChannel, permissions: Array[_ <: Permission]): Boolean = getPermissions(channel).containsAll(util.Arrays.asList(permissions*))
 
   override def hasPermission(channel: GuildChannel, permissions: util.Collection[Permission]): Boolean = getPermissions(channel).containsAll(permissions)
 
