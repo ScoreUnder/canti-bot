@@ -8,7 +8,7 @@ class Scheduler(me: ScheduledExecutorService):
   def asJava: ScheduledExecutorService = me
 
   def schedule[T](delay: Duration)(f: => T): ScheduledFuture[T] =
-    me.schedule((() => f): Callable[T], delay.length, delay.unit)
+    me.schedule((() => f): Callable[T], delay.length, delay.unit).nn
 
   def schedule[T](initialDelay: Duration, delay: Duration)(f: => Unit): ScheduledFuture[?] =
-    me.scheduleWithFixedDelay(() => f, initialDelay.toNanos, delay.toNanos, TimeUnit.NANOSECONDS)
+    me.scheduleWithFixedDelay(() => f, initialDelay.toNanos, delay.toNanos, TimeUnit.NANOSECONDS).nn

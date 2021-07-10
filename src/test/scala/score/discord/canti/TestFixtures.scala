@@ -35,7 +35,7 @@ object TestFixtures:
     given messageOwnership: MessageOwnership = MessageOwnership(NullCacheBackend())
     given messageCache: MessageCache = MessageCache()
     given replyCache: ReplyCache = ReplyCache()
-    given scheduler: Scheduler = Scheduler(Executors.newSingleThreadScheduledExecutor())
+    given scheduler: Scheduler = Scheduler(Executors.newSingleThreadScheduledExecutor().nn)
 
     val commands = Commands()
 

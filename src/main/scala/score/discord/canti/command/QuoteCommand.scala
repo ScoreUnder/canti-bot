@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.requests.restaction.MessageAction
 import score.discord.canti.collections.{MessageCache, ReplyCache}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
@@ -117,7 +118,7 @@ class QuoteCommand(using
         Left("I don't have permission to read messages in that channel.")
       case e: PermissionException =>
         Left(
-          s"I don't have permission to read messages in that channel. Missing `${e.getPermission.getName}`."
+          s"I don't have permission to read messages in that channel. Missing `${e.getPermission.nn.getName}`."  // TODO: PR @Nonnull for getPermission
         )
     }
 
@@ -143,8 +144,7 @@ class QuoteCommand(using
     msg.getAttachments.asScala.find(_.isImage) match
       case Some(image) => quote.setImage(image.getUrl)
       case None =>
-        for image <- embeds.flatMap(emb => Option(emb.getImage)).headOption do
-          quote.setImage(image.getUrl)
+        for image <- embeds.flatMap(_.getImage.?).headOption do quote.setImage(image.getUrl)
 
     for embed <- embeds do
       for desc <- Option(embed.getDescription) do quote.addField("[Embed description]", desc, false)
@@ -154,7 +154,7 @@ class QuoteCommand(using
     quote
 
   private def parseQuoteIDs(args: String) =
-    val (firstIdStr, remains) = args.trim.span(Character.isDigit)
+    val (firstIdStr, remains) = args.trimnn.span(Character.isDigit)
     val secondIdStr = remains.drop(1).takeWhile(Character.isDigit)
 
     // If shift+click was used to copy a long ID

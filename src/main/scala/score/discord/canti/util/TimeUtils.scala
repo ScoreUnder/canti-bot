@@ -15,7 +15,7 @@ object TimeUtils:
     "h" -> 3600000000000L
   )
 
-  private val decimalFormat = NumberFormat.getNumberInstance.tap(_ setMinimumFractionDigits 0)
+  private val decimalFormat = NumberFormat.getNumberInstance.nn.tap(_ setMinimumFractionDigits 0)
 
   /** Formats a duration in a human-readable way. Takes the highest time unit possible and displays
     * as a fraction of that.

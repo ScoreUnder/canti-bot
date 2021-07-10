@@ -17,20 +17,20 @@ class ScalaCacheView[T](cache: Iterable[T], getName: T => String) extends CacheV
 
   override def size(): Long = cache.size
 
-  override def isEmpty: Boolean = cache.isEmpty
+  export cache.isEmpty
 
   override def getElementsByName(name: String, ignoreCase: Boolean): util.List[T] =
     val eq = if ignoreCase then name.equals else name.equalsIgnoreCase
     util.ArrayList[T](cache.filter(el => eq(getName(el))).asJavaCollection)
 
-  override def stream(): util.stream.Stream[T] = cache.asJavaCollection.stream()
+  override def stream(): util.stream.Stream[T] = cache.asJavaCollection.stream().nn
 
-  override def parallelStream(): util.stream.Stream[T] = cache.asJavaCollection.parallelStream()
+  override def parallelStream(): util.stream.Stream[T] = cache.asJavaCollection.parallelStream().nn
 
-  override def iterator(): util.Iterator[T] = cache.asJava.iterator()
+  override def iterator(): util.Iterator[T] = cache.iterator.asJava
 
   override def lockedIterator(): ClosableIterator[T] =
-    val readLock = lock.readLock
+    val readLock = lock.readLock.nn
     readLock.lock()
     try LockIterator[T](cache.iterator.asJava, readLock) catch
       case t: Throwable =>

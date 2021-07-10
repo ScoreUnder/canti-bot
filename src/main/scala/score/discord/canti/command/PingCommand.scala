@@ -27,7 +27,7 @@ class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
   ): String =
     var times = mutable.Buffer.empty[String]
 
-    def diff(x: Instant, y: Instant) = formatTimeDiff(Duration.between(x, y))
+    def diff(x: Instant, y: Instant) = formatTimeDiff(Duration.between(x, y).nn)
 
     timeReallySent match
       case Some(time) =>
@@ -40,23 +40,24 @@ class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
     for time <- timeReallySent do
       times += s"Total time (excl. rate limiting): ${diff(time, timeReceived)}"
     times += s"Total time: ${diff(timeSent, timeReceived)}"
-    times += s"(Reported gateway ping: ${formatTimeDiff(Duration.ofMillis(gatewayPing))})"
+    times += s"(Reported gateway ping: ${formatTimeDiff(Duration.ofMillis(gatewayPing).nn)})"
     times.mkString("\n")
 
   override def execute(message: Message, args: String): Unit =
-    val timeSent = Instant.now()
+    def now() = Instant.now().nn
+    val timeSent = now()
     var timeReallySent: Option[Instant] = None
     (for
       pingMessage <- message
         .reply(s"⏲ Checking ping...")
         .mentionRepliedUser(false)
         .setCheck({ () =>
-          timeReallySent = Some(Instant.now())
+          timeReallySent = Some(now())
           true
         })
         .queueFuture()
-      timeOnServer = pingMessage.getTimeCreated.toInstant
-      timeReceived = Instant.now()
+      timeOnServer = pingMessage.getTimeCreated.toInstant.nn
+      timeReceived = now()
       _ = messageOwnership(pingMessage) = message.getAuthor
       _ <- pingMessage
         .editMessage(

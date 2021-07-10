@@ -9,6 +9,7 @@ import score.discord.canti.command.Command
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.StringUtils.formatMessageForLog
 import score.discord.canti.util.{APIHelper, BotMessages}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{
   richMessage, richMessageChannel, richSnowflake, richUser
 }
@@ -19,7 +20,7 @@ import scala.language.implicitConversions
 import scala.util.chaining.*
 
 class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventListener:
-  private val logger = LoggerFactory.getLogger(classOf[Commands])
+  private val logger = LoggerFactory.getLogger(classOf[Commands]).nn
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
   // Commands list excluding aliases
@@ -35,7 +36,7 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
     * @return
     *   name in normalised form
     */
-  private def normaliseCommandName(name: String): String = name.toLowerCase
+  private def normaliseCommandName(name: String): String = name.lowernn
 
   /** Register a command with this command registry. The command may then be retrieved via its main
     * name or any of its aliases, and will be available to the command-dispatching event listener.
@@ -93,7 +94,7 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
     if requirePrefix && !hasPrefix then None
     else
       val unprefixed = if hasPrefix then messageRaw.drop(prefix.length) else messageRaw
-      val split = unprefixed.split("[\\s　]", 2)
+      val split = unprefixed.splitnn("[\\s　]", 2)
 
       val cmdName = split(0)
       val cmdExtra = if split.length < 2 then "" else split(1)

@@ -11,7 +11,7 @@ import scala.jdk.CollectionConverters.*
 
 object Furigana:
   private val dummyImage = BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB)
-  private val dummyGraphics = dummyImage.createGraphics()
+  private val dummyGraphics = dummyImage.createGraphics().nn
   private val mainFont = Font("M+ 2c regular", Font.PLAIN, 60)
   private val furiFont = Font("M+ 2c regular", Font.PLAIN, 30)
   private val backgroundColor = Color(0x36, 0x39, 0x3e)
@@ -36,8 +36,8 @@ object Furigana:
     val furiYAdjust = 0
     val lineGap = 10
 
-    val mainMetrics = dummyGraphics.getFontMetrics(mainFont)
-    val furiMetrics = dummyGraphics.getFontMetrics(furiFont)
+    val mainMetrics = dummyGraphics.getFontMetrics(mainFont).nn
+    val furiMetrics = dummyGraphics.getFontMetrics(furiFont).nn
     val furiHeight = furiMetrics.getHeight
     val lineHeight = mainMetrics.getHeight + furiHeight + lineGap
     val furiAscent = furiMetrics.getAscent + furiYAdjust
@@ -50,7 +50,7 @@ object Furigana:
       positionedFuri.head.y + lineHeight,
       BufferedImage.TYPE_INT_RGB
     )
-    val graphics = image.createGraphics()
+    val graphics = image.createGraphics().nn
 
     graphics.setBackground(backgroundColor)
     graphics.clearRect(0, 0, image.getWidth, image.getHeight)
@@ -73,7 +73,7 @@ object Furigana:
     ImageIO.write(image, "PNG", outputStream)
     graphics.dispose()
 
-    outputStream.toByteArray
+    outputStream.toByteArray.nn
 
   private def positionText(
     furiText: Iterable[(String, String)],
@@ -87,7 +87,9 @@ object Furigana:
     def splitText(text: String, toWidth: Int) =
       val numCodePoints = text
         .codePoints()
+        .nn
         .iterator()
+        .nn
         .asScala
         .to(LazyList)
         .scanLeft(0) { (width, chr) => width + mainMetrics.charWidth(chr) }

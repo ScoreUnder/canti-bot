@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.{EmbedBuilder, JDA}
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, MessageUtils}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichGenericComponentInteractionCreateEvent.messageId
@@ -54,7 +55,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
     args: String
   ): Future[(Message, Seq[String])] =
     Future {
-      args.trim match
+      args.trimnn match
         case "" => (BotMessages.error("Please enter a term to search for.").toMessage, Nil)
         case searchTerm =>
           makeSearchReply(message, searchTerm).pipe { case (x, y) => (x.toMessage, y) }
@@ -63,7 +64,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
   private def makeSearchReply(message: Message, searchTerm: String): (EmbedBuilder, Seq[String]) =
     val maxResults = 10
     val searchTermSanitised = MessageUtils.sanitiseCode(searchTerm)
-    Try(RE2JPattern.compile(searchTerm, RE2JPattern.CASE_INSENSITIVE))
+    Try(RE2JPattern.compile(searchTerm, RE2JPattern.CASE_INSENSITIVE).nn)
       .map { searchPattern =>
         val results = getSearchResults(message, searchPattern)
           .take(maxResults + 1)
@@ -113,7 +114,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
     searchPattern: RE2JPattern
   ): Seq[(String, String)] =
     inline def containsSearchTerm(haystack: String) =
-      searchPattern.matcher(haystack).find()
+      searchPattern.matcher(haystack).nn.find()
 
     var results: Seq[(String, String)] = Vector.empty
     message.guild match
@@ -137,12 +138,11 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
         results ++= guild.getMembers.asScala.view
           .filter(m =>
             containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
-              Option(m.getNickname).exists(n => containsSearchTerm(s"@$n"))
+              m.getNickname.?.exists(n => containsSearchTerm(s"@$n"))
           )
           .map(m =>
             val u = m.getUser
-            val nick = Option(m.getNickname)
-              .map(MessageUtils.sanitise)
+            val nick = m.getNickname.?.map(MessageUtils.sanitise)
               .fold("")(name => s" (aka $name)")
             (s"**User** ${u.mentionWithName}$nick: `${u.getId}`", u.getId)
           )
@@ -168,8 +168,9 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
         )
       yield (for
         embed <- msg.getEmbeds.asScala
-        if embed.getDescription.contains(SEARCHABLE_MESSAGE_TAG)
-        LINE_REGEX(`idLabel`, selected) <- embed.getDescription.split("\n")
+        description = embed.getDescription ?? ""
+        if description.contains(SEARCHABLE_MESSAGE_TAG)
+        LINE_REGEX(`idLabel`, selected) <- description.splitnn("\n")
       yield (msg, selected)).headOption
 
     override def onEvent(event: GenericEvent): Unit = event match
@@ -190,7 +191,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
         given JDA = event.getJDA
         val rawId = ev.getComponentId
         if rawId.startsWith(ACTION_PREFIX) then
-          val id = rawId.substring(ACTION_PREFIX.length)
+          val id = rawId.drop(ACTION_PREFIX.length)
           for
             owner <- messageOwnership(ev.messageId)
             if id.forall(c =>

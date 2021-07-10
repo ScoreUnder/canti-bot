@@ -22,6 +22,7 @@ import score.discord.canti.util.APIHelper.Error
 import score.discord.canti.util.*
 import score.discord.canti.wrappers.FutureEither.*
 import score.discord.canti.wrappers.collections.AsyncMapConversions.*
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{
   richChannelAction, richGuildChannel, richMember, richUser, richVoiceChannel
 }
@@ -51,7 +52,7 @@ class PrivateVoiceChats(
   eventWaiter: EventWaiter,
 )(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
     extends EventListener:
-  private[this] val logger = LoggerFactory.getLogger(classOf[PrivateVoiceChats])
+  private[this] val logger = LoggerFactory.getLogger(classOf[PrivateVoiceChats]).nn
 
   private val invites = ConcurrentHashMap[GuildUserId, Invite]()
 
@@ -80,7 +81,7 @@ class PrivateVoiceChats(
         .foreach(APIHelper.failure("replying to slash command"))
 
     def memberFromInteraction(origin: CommandInteraction): Either[String, Member] =
-      Option(origin.getMember).toRight("This command must be run from within a server")
+      origin.getMember ?<> "This command must be run from within a server"
 
     override def execute(origin: CommandInteraction): Unit =
       val deferred = origin.deferReply().queueFuture()
@@ -130,8 +131,9 @@ class PrivateVoiceChats(
       val result = for
         member <- member
         guild = member.getGuild
-        inv <- Option(invites get GuildUserId(member))
-          .toRight("You don't have any pending voice chat invitations.")
+        inv <- invites.get(
+          GuildUserId(member)
+        ) ?<> "You don't have any pending voice chat invitations."
         _ <- ensureInviteValid(inv)
         voiceChannel <- guild
           .findVoiceChannel(inv.channel)
@@ -165,7 +167,7 @@ class PrivateVoiceChats(
       s"""Usage:
          |`$invocation @person1 @person2`
          |Invites the mentioned parties, in this case person1 and person2, to your current voice channel.
-       """.stripMargin.trim
+       """.stripMargin.trimnn
 
     lazy val inviteMessage: String = s"Please join a voice channel and " +
       s"type `${commands.prefix}${AcceptCommand.name}` to accept this invitation."
@@ -180,7 +182,10 @@ class PrivateVoiceChats(
       origin: CommandInteraction,
       deferred: Future[InteractionHook]
     ): Future[Message] =
-      executeGeneric(memberFromInteraction(origin), Seq(origin.getOption("user").getAsUser))
+      executeGeneric(
+        memberFromInteraction(origin),
+        origin.getOption("user").?.map(_.getAsUser).toSeq
+      )
 
     override def executeAndGetMessage(message: Message, args: String): Future[Message] =
       val member = CommandHelper(message).member
@@ -191,8 +196,8 @@ class PrivateVoiceChats(
       val response = for
         member <- member
         guild = member.getGuild
-        chan <- Option(member.getVoiceState.getChannel)
-          .toRight("You must be in voice chat to use this command.")
+        voiceState <- member.getVoiceState ?<> "Internal error: no voice state cached for you"
+        chan <- voiceState.getChannel ?<> "You must be in voice chat to use this command."
         success <- invitees match
           case Seq() => Left("You must mention the users you want to join you in voice chat.")
           case Seq(mentions*) =>
@@ -291,10 +296,10 @@ class PrivateVoiceChats(
     ): Future[Message] =
       createUserOwnedChannel(
         public = false,
-        limit = Option(origin.getOption("limit")).fold(0)(_.getAsLong.toInt),
+        limit = origin.getOption("limit").?.fold(0)(_.getAsLong.toInt),
         member = memberFromInteraction(origin),
         reply = replyTo(deferred),
-        chosenName = Option(origin.getOption("name")).fold("")(_.getAsString),
+        chosenName = origin.getOption("name").?.fold("")(_.getAsString),
         commandName = "",
         args = ""
       )
@@ -328,7 +333,7 @@ class PrivateVoiceChats(
         limit = 0,
         member = memberFromInteraction(origin),
         reply = replyTo(deferred),
-        chosenName = Option(origin.getOption("name")).fold("")(_.getAsString),
+        chosenName = origin.getOption("name").?.fold("")(_.getAsString),
         commandName = "",
         args = ""
       )
@@ -350,7 +355,7 @@ class PrivateVoiceChats(
     override def executeAndGetMessage(message: Message, args: String): Future[Message] =
       CommandHelper(message).guild
         .map { guild =>
-          args.trim match
+          args.trimnn match
             case ""     => showCurrentCategory(guild)
             case "none" => removeDefaultCategory(guild)
             case arg    => setDefaultCategory(guild, arg)
@@ -411,7 +416,7 @@ class PrivateVoiceChats(
     case _: IllegalStateException =>
       "You need to join voice chat before I can move you into a channel."
     case e: PermissionException =>
-      s"I don't have permission to move you to another voice channel. A server administrator will need to fix this. Missing `${e.getPermission.getName}`."
+      s"I don't have permission to move you to another voice channel. A server administrator will need to fix this. Missing `${e.getPermission.nn.getName}`."
 
   private def eitherToFutureMessage[T](
     either: Either[String, Future[T]]
@@ -437,7 +442,7 @@ class PrivateVoiceChats(
   private def sendErrorOrRetry(member: Member, reply: Message => Unit)(handler: => Future[Message])(
     ex: Throwable
   ): Future[Message] =
-    val channel = Option(member.getVoiceState.getChannel)
+    val channel = member.getVoiceState.?.flatMap(_.getChannel.?)
     ex match
       case _: IllegalStateException if channel.isEmpty =>
         waitForVoiceJoin(member, reply, VoiceMove(member.id, member.getGuild.id), handler)
@@ -533,11 +538,11 @@ class PrivateVoiceChats(
     def retryingParseAndCreateChannel(member: Member): Future[Message] =
       getGuildDefaultCategory(member.getGuild).flatMap { defaultCategory =>
         def aux(): Future[Message] =
-          Option(member.getVoiceState.getChannel) match
+          member.getVoiceState.?.flatMap(_.getChannel.?) match
             case Some(voiceChannel) =>
               val name =
                 if chosenName.nonEmpty then chosenName else genericChannelName(voiceChannel, public)
-              val category = defaultCategory.orElse(Option(voiceChannel.getParent))
+              val category = defaultCategory.orElse(voiceChannel.getParent.?)
               (for channelReq <- createChannel(name, member.getGuild, category)
               yield asyncCreateChannel(member, limit, name, category, channelReq))
                 .pipe(x => eitherToFutureMessage(x))
@@ -571,7 +576,7 @@ class PrivateVoiceChats(
       .setTitle("Success", null)
 
     if limit == 0 && !public then
-      args.trim match
+      args.trimnn match
         case mistakeRegex(mistake) =>
           val cutName = name.dropRight(mistake.length).trim
           val invocation = s"${commands.prefix}$commandName $mistake $cutName"
@@ -618,13 +623,13 @@ class PrivateVoiceChats(
   private val maxNameLen = 100
 
   private def parseChannelDetails(args: String, public: Boolean) =
-    val trimmedArgs = args.trim
+    val trimmedArgs = args.trimnn
     val (limit, name) =
       if public then ("", trimmedArgs)
       else
-        trimmedArgs.split(" ", 2) match
-          case Array(limitStr, name_) => (limitStr, name_.trim)
-          case Array(maybeLimit)      => (maybeLimit, "")
+        trimmedArgs.splitAt(trimmedArgs.indexOf(' ')) match
+          case ("", maybeLimit)  => (maybeLimit, "")
+          case (limitStr, name_) => (limitStr, name_.trimnn)
 
     limit.toIntOption
       .filter(x => x >= 0 && x <= 99)
@@ -642,7 +647,7 @@ class PrivateVoiceChats(
     Try(category.fold(guild.createVoiceChannel(name))(_.createVoiceChannel(name))).toEither.left
       .map({
         case e: PermissionException =>
-          s"I don't have permission to create a voice channel. A server administrator will need to fix this. Missing `${e.getPermission.getName}`."
+          s"I don't have permission to create a voice channel. A server administrator will need to fix this. Missing `${e.getPermission.nn.getName}`."
         case x =>
           logger.error("Failed to create channel", x)
           "Unknown error occurred when trying to create your channel."
@@ -652,7 +657,7 @@ class PrivateVoiceChats(
     defaultCategoryByGuild
       .get(guild.id)
       .map(_.flatMap { id =>
-        Option(guild.getCategoryById(id.value))
+        guild.getCategoryById(id.value).?
       })
 
   private def deleteUserOwnedChannel(channel: VoiceChannel) =

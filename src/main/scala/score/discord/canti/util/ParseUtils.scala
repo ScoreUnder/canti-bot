@@ -2,6 +2,7 @@ package score.discord.canti.util
 
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.{Category, Guild, Role}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichRole.mention
 import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 
@@ -10,15 +11,17 @@ import scala.jdk.CollectionConverters.*
 object ParseUtils:
   private def searchGeneric[T](
     term: String,
-    findOne: Long => T,
+    findOne: Long => T | Null,
     findMany: String => java.util.List[T]
   ): Seq[T] =
     if term.isEmpty then Nil
     else
-      term.toLongOption
-        .map(id => List(findOne(id)))
-        .getOrElse(findMany(term).asScala)
-        .toSeq
+      val fromId =
+        for
+          id <- term.toLongOption
+          result <- findOne(id).?
+        yield List(result)
+      fromId.getOrElse(findMany(term).asScala.toSeq)
 
   /** Searches the given guild for a role by the given name/ID. If the provided string is a valid
     * Long, it will match by ID, otherwise it will match by name. Not case sensitive.

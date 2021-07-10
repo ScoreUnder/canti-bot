@@ -14,6 +14,7 @@ import score.discord.canti.command.slash.RegisterGuildSlashCommandsCommand
 import score.discord.canti.functionality.*
 import score.discord.canti.functionality.ownership.{DeleteOwnedMessages, MessageOwnership}
 import score.discord.canti.functionality.voicekick.VoiceKick
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -35,7 +36,8 @@ class CantiBot:
   def start(): Unit =
     discord match
       case None =>
-        val rawConfig = ConfigFactory.load(URLClassLoader.newInstance(Array(File(".").toURI.toURL)))
+        val rawConfig =
+          ConfigFactory.load(URLClassLoader.newInstance(Array(File(".").toURI.nn.toURL))).nn
         val config = Config.load(rawConfig)
         val bot = JDABuilder
           .create(
@@ -57,7 +59,7 @@ class CantiBot:
             util.Arrays.asList(ACTIVITY, CLIENT_STATUS, ONLINE_STATUS, ROLE_TAGS)
           })
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
-        executor = Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors)
+        executor = Executors.newScheduledThreadPool(Runtime.getRuntime.nn.availableProcessors).nn
         given Scheduler = Scheduler(executor)
         given MessageOwnership = MessageOwnership(
           UserByMessage(dbConfig, "message_ownership") withCache LruCache.empty(20000)
@@ -148,9 +150,10 @@ class CantiBot:
         discord = None
         try executor.awaitTermination(timeout.length, timeout.unit)
         catch case _: InterruptedException => ()
-        bot.getHttpClient.dispatcher().executorService().shutdown()
-        bot.getHttpClient.connectionPool().evictAll()
-        try Option(bot.getHttpClient.cache()).foreach(_.close())
+        val httpClient = bot.getHttpClient.nn
+        httpClient.dispatcher().nn.executorService().nn.shutdown()
+        httpClient.connectionPool().nn.evictAll()
+        try httpClient.cache().?.foreach(_.close())
         catch case _: IOException => ()
 
       case None =>

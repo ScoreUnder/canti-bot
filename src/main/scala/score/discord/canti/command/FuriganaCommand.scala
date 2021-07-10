@@ -8,6 +8,7 @@ import score.discord.canti.collections.ReplyCache
 import score.discord.canti.command.FuriganaCommand.{FURI_PATTERN, sendFuriMessage}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, CommandHelper}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
@@ -36,9 +37,9 @@ class FuriganaCommand(using MessageOwnership, ReplyCache) extends Command.Anyone
     FURI_PATTERN
       .findAllMatchIn(args)
       .flatMap { m =>
-        m.group("other") match
-          case null  => Seq((m.group("left"), m.group("right")))
-          case other => other.split("\n", -1).flatMap(line => Seq(("\n", ""), (line, ""))).tail
+        val other: String | Null = m.group("other")
+        if other == null then Seq((m.group("left"), m.group("right")))
+        else other.splitnn("\n", -1).flatMap(line => Seq(("\n", ""), (line, ""))).tail
       }
       .filter(t => !t._1.isEmpty || !t._2.isEmpty)
       .toSeq

@@ -65,7 +65,7 @@ class CacheCoordinator[K, V](cache: CacheLayer[K, Option[V]], backend: AsyncMap[
 end CacheCoordinator
 
 object CacheCoordinator:
-  private[CacheCoordinator] val logger = LoggerFactory.getLogger(getClass)
+  private[CacheCoordinator] val logger = LoggerFactory.getLogger(getClass).nn
 
   extension [K, V](me: AsyncMap[K, V])
     def withCache(cache: CacheLayer[K, Option[V]]): CacheCoordinator[K, V] =

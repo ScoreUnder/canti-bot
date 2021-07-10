@@ -1,5 +1,7 @@
 package score.discord.canti.util
 
+import score.discord.canti.wrappers.NullWrappers.*
+
 object MessageUtils:
   /** Sanitise a message such that all mentions become inactive, including mass-mentions such as
     * `@everyone`.
@@ -10,7 +12,7 @@ object MessageUtils:
     *   sanitised text
     */
   def blockMentionsNaive(message: String): String =
-    message.replace("@", "@\u200C")
+    message.replacenn("@", "@\u200C")
 
   private val FORMAT_MATCHER = s"(?<!\\\\)([*_~`])".r
 
@@ -45,4 +47,4 @@ object MessageUtils:
     *   sanitised text
     */
   def sanitiseCode(message: String): String =
-    message.replace("`", "`\u200C")
+    message.replacenn("`", "`\u200C")

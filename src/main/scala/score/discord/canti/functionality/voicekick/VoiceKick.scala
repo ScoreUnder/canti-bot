@@ -17,6 +17,7 @@ import score.discord.canti.discord.permissions.{PermissionAttachment, Permission
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper.Error
 import score.discord.canti.util.{APIHelper, BotMessages}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.collections.AsyncMapConversions.*
 import score.discord.canti.wrappers.jda.Conversions.{
@@ -113,13 +114,9 @@ class VoiceKick(
     override def execute(message: Message, args: String): Unit = Future {
       val textChannel = message.getChannel
       val result = for
-        member <- Option(message.getMember).toRight("You must run this command in a public server")
-        voiceState <- Option(member.getVoiceState).toRight(
-          "Internal error: no voice state cached for you"
-        )
-        voiceChan <- Option(voiceState.getChannel).toRight(
-          "You must be in a voice channel to run this command"
-        )
+        member <- message.getMember ?<> "You must run this command in a public server"
+        voiceState <- member.getVoiceState ?<> "Internal error: no voice state cached for you"
+        voiceChan <- voiceState.getChannel ?<> "You must be in a voice channel to run this command"
 
         _ <- Either.cond(
           voiceChan != member.getGuild.getAfkChannel,
@@ -130,12 +127,10 @@ class VoiceKick(
         guildTextChannel <- ensureIsGuildTextChannel(textChannel)
 
         mentioned <- singleMentionedMember(message)
-        mentionedVoiceState <- Option(mentioned.getVoiceState)
-          .toRight(
-            s"Internal error: no voice state cached for ${mentioned.getUser.mentionWithName}"
-          )
-        mentionedVoiceChan <- Option(mentionedVoiceState.getChannel)
-          .toRight(s"The user ${mentioned.getUser.mentionWithName} is not in voice chat")
+        mentionedVoiceState <- mentioned.getVoiceState ?<>
+          s"Internal error: no voice state cached for ${mentioned.getUser.mentionWithName}"
+        mentionedVoiceChan <- mentionedVoiceState.getChannel ?<>
+          s"The user ${mentioned.getUser.mentionWithName} is not in voice chat"
 
         _ <- Either.cond(
           voiceChan == mentionedVoiceChan,
@@ -150,7 +145,7 @@ class VoiceKick(
         )
 
         voteEligibleUsers = voiceChan.getMembers.asScala.toSeq
-          .filter(m => m != mentioned && Option(m.getVoiceState).exists(!_.isDeafened))
+          .filter(m => m != mentioned && m.getVoiceState.?.exists(!_.isDeafened))
         usersMissing = voteEligibleUsers.filter(!_.getUser.canSee(guildTextChannel))
         _ <- Either.cond(
           usersMissing.isEmpty,
@@ -226,7 +221,7 @@ class VoiceKick(
       val mentioned = message.getMentionedMembers
       Either.cond(
         mentioned.size == 1,
-        mentioned.get(0),
+        mentioned.get(0).nn,
         if mentioned.isEmpty then "You need to mention a user"
         else "You should mention only one user"
       )
@@ -287,7 +282,7 @@ class VoiceKick(
     logChannel: Option[MessageChannel],
     explicitGrant: Boolean
   ): Unit =
-    for permissionOverride <- Option(voiceChannel.getPermissionOverride(member)) do
+    for permissionOverride <- voiceChannel.getPermissionOverride(member).? do
       val originalPerms = PermissionAttachment(permissionOverride)
       val permsWithoutVoiceBan = originalPerms.clear(Permission.VOICE_CONNECT)
 
@@ -361,7 +356,7 @@ class VoiceKick(
     logChannel: MessageChannel
   ): Unit =
     for
-      voiceState <- Option(member.getVoiceState)
+      voiceState <- member.getVoiceState.?
       if voiceState.getChannel == voiceChannel
     do
       APIHelper.tryRequest(
@@ -515,12 +510,12 @@ class VoiceKick(
     case NonBotReact(React.Text(emoji), msgId, channel: TextChannel, user) =>
       for
         vote <- getEmojiMeaning(emoji)
-        member <- Option(channel.getGuild.getMember(user))
+        member <- channel.getGuild.getMember(user).?
       do updateKickVote(channel, msgId, vote, member, None)
     case ev: ButtonClickEvent =>
       for
         vote <- getButtonMeaning(ev.getComponentId)
-        member <- Option(ev.getMember)
+        member <- ev.getMember.?
         channel = ev.getTextChannel
         msgId = ev.messageId
       do

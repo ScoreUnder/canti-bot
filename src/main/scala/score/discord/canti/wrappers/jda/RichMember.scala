@@ -15,7 +15,7 @@ object RichMember:
       *   true iff they have the role
       */
     def has(role: Role): Boolean = (member match
-      case x: MemberImpl => x.getRoleSet
+      case x: MemberImpl => x.getRoleSet.nn
       case x             => x.getRoles
     ) contains role
 

@@ -2,6 +2,7 @@ package score.discord.canti.util
 
 import net.dv8tion.jda.api.entities.{Guild, Member}
 import net.dv8tion.jda.api.{MessageBuilder, entities}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichMessage.guild
 
 object CommandHelper:
@@ -15,10 +16,8 @@ object CommandHelper:
     /** Either this message's member, or a human-readable error */
     def member: Either[String, Member] =
       guild flatMap { guild =>
-        Option(guild.getMember(_me.getAuthor))
-          .toRight(
-            "Internal error: Can't find your server membership. This might be a temporary problem."
-          )
+        guild.getMember(_me.getAuthor) ?<>
+          "Internal error: Can't find your server membership. This might be a temporary problem."
       }
 
     /** Sanitise all mentions in the provided text for use with Discord. This does not actually use

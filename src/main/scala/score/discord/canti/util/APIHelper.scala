@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.requests.{ErrorResponse, RestAction}
 import org.slf4j.LoggerFactory
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{richMessage, richMessageChannel}
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
@@ -18,7 +19,7 @@ import scala.util.chaining.*
 
 /** Miscellaneous functions useful when dealing with JDA's API calls */
 object APIHelper:
-  private[this] val logger = LoggerFactory.getLogger(getClass)
+  private[this] val logger = LoggerFactory.getLogger(getClass).nn
 
   /** Curried function to report an exception to the console.
     *
@@ -33,7 +34,7 @@ object APIHelper:
   private def describeFailure(whatFailed: String, exception: Throwable): String =
     exception match
       case e: PermissionException =>
-        s"Error when $whatFailed: I don't have permission for that. Missing `${e.getPermission.getName}`."
+        s"Error when $whatFailed: I don't have permission for that. Missing `${e.getPermission.nn.getName}`."
       case Error(x) => s"Error when $whatFailed: ${x.getMeaning}"
       case _        => s"Unknown error occurred when $whatFailed"
 
@@ -120,5 +121,5 @@ object APIHelper:
     Try(apiCall).fold(Future.failed, _.queueFuture())
 
   object Error:
-    def unapply(arg: ErrorResponseException): Option[ErrorResponse] = Option(arg.getErrorResponse)
+    def unapply(arg: ErrorResponseException): Option[ErrorResponse] = arg.getErrorResponse.?
 end APIHelper

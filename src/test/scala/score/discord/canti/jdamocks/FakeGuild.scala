@@ -54,7 +54,7 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def getSelfMember: Member = ???
 
-  override def getMember(user: User): Member = members.get(user.getIdLong).orNull
+  override def getMember(user: User): Member | Null = members.get(user.getIdLong).orNull
 
   override def getMemberCache: MemberCacheView = ???
 

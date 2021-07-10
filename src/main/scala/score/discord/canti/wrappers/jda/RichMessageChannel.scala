@@ -53,6 +53,6 @@ object RichMessageChannel:
     /** A list of all users in this channel */
     def participants: Seq[User] = channel match
       case guildChannel: GuildChannel =>
-        guildChannel.getMembers.iterator().asScala.map(_.getUser).toSeq
+        guildChannel.getMembers.iterator().nn.asScala.map(_.getUser).toSeq
       case privateChannel: PrivateChannel =>
         List(channel.getJDA.getSelfUser, privateChannel.getUser)

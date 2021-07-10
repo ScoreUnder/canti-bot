@@ -27,6 +27,7 @@ import net.dv8tion.jda.api.hooks.EventListener
 import org.slf4j.LoggerFactory
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.StringUtils.{formatMessageForLog as formatMessage}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{
   richGuild, richMember, richMessageChannel, richUser, richVoiceChannel
 }
@@ -34,12 +35,13 @@ import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.RichGenericMessageEvent.messageId
 import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 
+import java.lang.annotation.Annotation
 import java.util
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.reflectiveCalls
 
 class EventLogger(using messageOwnership: MessageOwnership) extends EventListener:
-  private[this] val logger = LoggerFactory.getLogger(classOf[EventLogger])
+  private[this] val logger = LoggerFactory.getLogger(classOf[EventLogger]).nn
 
   private def logHigherIfMyMessage(ev: GenericMessageEvent, logLine: String): Unit =
     given JDA = ev.getJDA
@@ -54,8 +56,7 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
     case ev: StatusChangeEvent =>
       logger.info(s"Bot status changed to ${ev.getNewStatus}")
     case ev: DisconnectEvent =>
-      val reason = Option(ev.getCloseCode)
-        .map(code => s"code=${code.getCode} meaning=${code.getMeaning}")
+      val reason = ev.getCloseCode.?.map(code => s"code=${code.getCode} meaning=${code.getMeaning}")
         .getOrElse("no reason provided")
       logger.warn(s"Disconnected, $reason")
     case ev: MessageReceivedEvent =>
@@ -91,12 +92,12 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
     case ev: MessageReactionAddEvent =>
       logHigherIfMyMessage(
         ev,
-        s"REACT: ${Option(ev.getUser).fold(s"User?(${ev.getUserId})")(_.unambiguousString)} ${ev.getReaction}"
+        s"REACT: ${ev.getUser.?.fold(s"User?(${ev.getUserId})")(_.unambiguousString)} ${ev.getReaction}"
       )
     case ev: MessageReactionRemoveEvent =>
       logHigherIfMyMessage(
         ev,
-        s"UNREACT: ${Option(ev.getUser).fold(s"User?(${ev.getUserId})")(_.unambiguousString)} ${ev.getReaction}"
+        s"UNREACT: ${ev.getUser.?.fold(s"User?(${ev.getUserId})")(_.unambiguousString)} ${ev.getReaction}"
       )
     case ev: MessageReactionRemoveAllEvent =>
       logHigherIfMyMessage(ev, s"CLEAR REACT: ${ev.getMessageId}")
@@ -130,6 +131,6 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
         _: MessageEmbedEvent | _: HttpRequestEvent =>
     // Ignored (they're pretty boring)
     case ev =>
-      if !ev.getClass.getAnnotations.exists(_.isInstanceOf[Deprecated]) then
+      if !ev.getClass.getAnnotations.nn.exists(_.isInstanceOf[Deprecated]) then
         logger.debug(ev.getClass.toGenericString)
 end EventLogger

@@ -3,6 +3,7 @@ package score.discord.canti.collections
 import java.util
 
 import net.dv8tion.jda.api.entities.Message
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 
 class ReplyCache(capacity: Int = 100):
@@ -18,5 +19,5 @@ class ReplyCache(capacity: Int = 100):
   }
 
   def get(origId: ID[Message]): Option[ID[Message]] = replies.synchronized {
-    Option(replies.get(origId))
+    replies.get(origId).?
   }

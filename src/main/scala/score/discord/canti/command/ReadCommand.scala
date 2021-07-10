@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.collections.{MessageCache, ReplyCache}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, CommandHelper}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichSnowflake.id
 
@@ -21,13 +22,13 @@ import scala.language.implicitConversions
 
 class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache)
     extends Command.Anyone:
-  private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".split(" ")
-  private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".split(" ")
+  private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".splitnn(" ")
+  private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".splitnn(" ")
   private val DICT_FILE = File("extra_words")
 
   private given Codec = Codec("EUC-JP")
-    .onMalformedInput(CodingErrorAction.REPLACE)
-    .onUnmappableCharacter(CodingErrorAction.REPLACE)
+    .onMalformedInput(CodingErrorAction.REPLACE.nn)
+    .onUnmappableCharacter(CodingErrorAction.REPLACE.nn)
 
   private val WHITESPACE = "\\s".r
   private val JAPANESE = "[\\p{InHiragana}\\p{InKatakana}\\p{InCJK_Unified_Ideographs}]".r
@@ -46,7 +47,7 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
 
   override def execute(message: Message, args: String): Unit =
     async {
-      val rawInput = args.trim match
+      val rawInput = args.trimnn match
         case "" =>
           val chanId = message.getChannel.id
           messageCache
@@ -83,17 +84,17 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
       if elem.endsWith("]") then elem.lastIndexOf("[")
       else -1
     if splitAt == -1 then (elem, "")
-    else (elem take splitAt, elem.substring(splitAt + 1, elem.length - 1))
+    else (elem take splitAt, elem.slice(splitAt + 1, elem.length - 1))
 
   private def queryKakasi(cmd: Array[String], text: String): Future[String] =
     async {
-      val withDict =
+      val withDict: Array[String | Null] =
         if DICT_FILE.exists() then cmd :+ DICT_FILE.getPath
-        else cmd
-      val kakasi = Runtime.getRuntime.exec(withDict)
-      val os = kakasi.getOutputStream
+        else cmd.unsafeNullableArray
+      val kakasi = Runtime.getRuntime.nn.exec(withDict).nn
+      val os = kakasi.getOutputStream.nn
       Future {
-        val encoded = summon[Codec].encoder.encode(CharBuffer.wrap(text))
+        val encoded = summon[Codec].encoder.encode(CharBuffer.wrap(text)).nn
         val encodedArr = new Array[Byte](encoded.remaining())
         encoded.get(encodedArr)
         blocking {
@@ -104,11 +105,11 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
       }
 
       val stdout = Future(blocking {
-        io.Source.fromInputStream(kakasi.getInputStream).mkString
+        io.Source.fromInputStream(kakasi.getInputStream.nn).mkString
       })
 
       val stderr = Future(blocking {
-        io.Source.fromInputStream(kakasi.getErrorStream).mkString
+        io.Source.fromInputStream(kakasi.getErrorStream.nn).mkString
       })
 
       val exitCode = blocking(kakasi.waitFor())

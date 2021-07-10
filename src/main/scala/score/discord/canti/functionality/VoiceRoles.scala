@@ -12,6 +12,7 @@ import score.discord.canti.command.{Command, ReplyingCommand}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.ParseUtils.*
 import score.discord.canti.util.{APIHelper, BotMessages, GuildUserId}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.IdConversions.*
@@ -46,10 +47,10 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
          |You can also remove the role with `$invocation none`""".stripMargin
 
     override def executeAndGetMessage(message: Message, args: String): Future[Message] = async {
-      await(args.trim match
-        case ""     => showVoiceRole(message.getGuild)
-        case "none" => delVoiceRole(message.getGuild)
-        case _      => setVoiceRole(args.trim, message.getGuild)
+      await(args.trimnn match
+        case ""      => showVoiceRole(message.getGuild)
+        case "none"  => delVoiceRole(message.getGuild)
+        case trimmed => setVoiceRole(trimmed, message.getGuild)
       ).toMessage
     }.tap(_.failed.foreach(APIHelper.loudFailure("setting voice role", message)))
 
@@ -90,7 +91,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     )
 
   private val pendingRoleUpdates = ConcurrentHashMap[GuildUserId, ScheduledFuture[Unit]]()
-  private[this] val rng = ThreadLocalRandom.current()
+  private[this] val rng = ThreadLocalRandom.current().nn
 
   private def queueRoleUpdate(member: Member): Unit =
     /*
@@ -109,7 +110,8 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
       def updateRole(role: Role): Unit =
         pendingRoleUpdates remove memberId
         // TODO: No thread-safe way to do this
-        setRole(member, role, shouldHaveRole(member.getVoiceState))
+        for voiceState <- member.getVoiceState.? do
+          setRole(member, role, shouldHaveRole(voiceState))
 
       def queueUpdate(role: Role): Unit =
         // Delay to ensure that rapid switching of deafen doesn't run our
@@ -117,7 +119,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
         val newFuture = scheduler.schedule((200 + rng.nextInt(300)) milliseconds) {
           updateRole(role)
         }
-        val previousFuture = Option(pendingRoleUpdates.put(memberId, newFuture))
+        val previousFuture = pendingRoleUpdates.put(memberId, newFuture).?
         previousFuture.foreach(_.cancel(false))
 
       given JDA = member.getJDA

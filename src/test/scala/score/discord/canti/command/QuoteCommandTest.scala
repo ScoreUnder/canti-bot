@@ -16,7 +16,7 @@ class QuoteCommandTest extends AnyFlatSpec with should.Matchers:
   commands.register(QuoteCommand())
 
   def quoteCommandTest(invocation: String, expected: String): Unit =
-    testCommand(invocation).getEmbeds.get(0).getDescription should include(expected)
+    testCommand(invocation).getEmbeds.get(0).nn.getDescription.nn should include(expected)
 
   "The &quote command" should "understand id + channel mention" in {
     quoteCommandTest(s"&quote ${quoteeMessage.getIdLong} ${quoteeChannel.getAsMention}", quoteeMessageData)

@@ -1,6 +1,7 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.*
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 
 import scala.collection.mutable
@@ -24,9 +25,8 @@ object RichGuild:
       * @return
       *   the channel, optionally (if found)
       */
-    def findVoiceChannel(channel: ID[VoiceChannel]): Option[VoiceChannel] = Option(
-      guild.getVoiceChannelById(channel.value)
-    )
+    def findVoiceChannel(channel: ID[VoiceChannel]): Option[VoiceChannel] =
+      guild.getVoiceChannelById(channel.value).?
 
     /** Find a role within this guild by ID.
       *
@@ -35,7 +35,7 @@ object RichGuild:
       * @return
       *   the role, optionally (if found)
       */
-    def findRole(role: ID[Role]): Option[Role] = Option(guild.getRoleById(role.value))
+    def findRole(role: ID[Role]): Option[Role] = guild.getRoleById(role.value).?
 
     /** Find a member within this guild, given its user counterpart.
       *
@@ -44,4 +44,4 @@ object RichGuild:
       * @return
       *   the member, optionally (if found)
       */
-    def findMember(user: User): Option[Member] = Option(guild.getMember(user))
+    def findMember(user: User): Option[Member] = guild.getMember(user).?

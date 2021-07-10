@@ -38,7 +38,7 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getColorRaw: Int = ???
 
-  override def getPermissions(channel: GuildChannel): util.EnumSet[Permission] = util.EnumSet.copyOf(myChanPerms.asJava)
+  override def getPermissions(channel: GuildChannel): util.EnumSet[Permission] = util.EnumSet.copyOf(myChanPerms.asJava).nn
 
   override def canInteract(member: Member): Boolean = ???
 
@@ -52,7 +52,7 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getAsMention: String = ???
 
-  override def getPermissions: util.EnumSet[Permission] = util.EnumSet.copyOf(myPerms.asJava)
+  override def getPermissions: util.EnumSet[Permission] = util.EnumSet.copyOf(myPerms.asJava).nn
 
   override def hasPermission(permissions: Array[_ <: Permission]): Boolean = getPermissions.containsAll(util.Arrays.asList(permissions: _*))
 

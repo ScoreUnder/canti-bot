@@ -3,6 +3,7 @@ package score.discord.canti.wrappers.jda
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.{GuildChannel, User}
 import score.discord.canti.util.MessageUtils
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 
 object RichUser:
@@ -37,5 +38,4 @@ object RichUser:
       *   `true` if the user can see this channel
       */
     def canSee(channel: GuildChannel): Boolean =
-      Option(channel.getGuild.getMember(me))
-        .exists(_.hasPermission(channel, Permission.MESSAGE_READ))
+      channel.getGuild.getMember(me).?.exists(_.hasPermission(channel, Permission.MESSAGE_READ))

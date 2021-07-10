@@ -8,6 +8,7 @@ import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.Commands
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{BotMessages, IntStr}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -29,7 +30,7 @@ class HelpCommand(commands: Commands)(using
 
   override def executeAndGetMessage(message: Message, args: String): Future[Message] =
     Future {
-      (args.trim match
+      (args.trimnn match
         case ""           => showHelpPage(message, 1)
         case IntStr(page) => showHelpPage(message, page)
         case cmdName      => showCommandHelp(cmdName)
@@ -50,7 +51,7 @@ class HelpCommand(commands: Commands)(using
              |**Restrictions:** ${command.permissionMessage}
              |${command.description}
              |
-             |${command.longDescription(commands.prefix + unprefixed)}""".stripMargin.trim
+             |${command.longDescription(commands.prefix + unprefixed)}""".stripMargin.trimnn
       )
 
   private def showHelpPage(message: Message, page: Int) =

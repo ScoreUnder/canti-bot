@@ -2,6 +2,7 @@ package score.discord.canti.command
 
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.{ISnowflake, Message, User}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.RichMessage.guild
 import score.discord.canti.wrappers.jda.RichSnowflake.id
@@ -26,7 +27,9 @@ trait Command extends BaseCommand:
 object Command:
   trait ServerAdminOnly extends Command:
     override def checkPermission(message: Message) =
-      message.guild.exists(_ getMember message.getAuthor hasPermission Permission.MANAGE_SERVER)
+      message.guild.exists(
+        _.getMember(message.getAuthor).?.exists(_.hasPermission(Permission.MANAGE_SERVER))
+      )
 
     override def permissionMessage = "Only server admins may use this command."
 

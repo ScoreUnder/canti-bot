@@ -10,13 +10,14 @@ import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.*
 import score.discord.canti.wrappers.jda.ID
 
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChannel:
   private var cachedMessages = Map.empty[Long, Message]
   private var lastMessage: Long = 0L
 
-  def addMessage(content: String, author: User, embeds: util.List[MessageEmbed] = Collections.emptyList[MessageEmbed]): FakeMessage =
+  def addMessage(content: String, author: User | Null, embeds: util.List[MessageEmbed] = Nil.asJava): FakeMessage =
     val message = FakeMessage(channel = this, id = guild.fakeJda.nextId, content = content, author = author, embeds = embeds)
     cachedMessages += message.getIdLong -> message
     lastMessage = message.getIdLong

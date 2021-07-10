@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.events.message.{
 }
 import score.discord.canti.collections.MessageCache
 import score.discord.canti.discord.BareMessage
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.RichGenericMessageEvent.messageId
 
@@ -34,8 +35,10 @@ object Events:
     def unapply(
       ev: MessageReactionAddEvent
     ): Option[(MessageReaction, ID[Message], MessageChannel, User)] =
-      if ev.getUser.isBot then None
-      else Some((ev.getReaction, ev.messageId, ev.getChannel, ev.getUser))
+      for
+        user <- ev.getUser.?
+        if !user.isBot
+      yield (ev.getReaction, ev.messageId, ev.getChannel, user)
 
   object MessageDelete:
     def unapply(ev: MessageDeleteEvent): Option[ID[Message]] =
@@ -45,7 +48,7 @@ object Events:
     def unapply(
       ev: GuildVoiceUpdateEvent
     ): Option[(Member, Option[VoiceChannel], Option[VoiceChannel])] =
-      Some((ev.getEntity, Option(ev.getChannelLeft), Option(ev.getChannelJoined)))
+      Some((ev.getEntity, ev.getChannelLeft.?, ev.getChannelJoined.?))
 
     // To hint to the IDE what the name of each unapplied parameter is (ctrl+P in intelliJ)
     private def apply(

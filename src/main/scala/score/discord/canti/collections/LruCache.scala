@@ -1,5 +1,7 @@
 package score.discord.canti.collections
 
+import score.discord.canti.wrappers.NullWrappers.*
+
 import java.util
 import java.util.Map.Entry
 
@@ -24,7 +26,7 @@ class LruCache[K, V](
       override def removeEldestEntry(entry: Entry[K, OV]) = size > maxCapacity
 
   override def get(key: K): Option[OV] =
-    Option.when(cache.containsKey(key))(cache.get(key))
+    cache.get(key).?
 
   override def update(key: K, value: OV): Unit =
     cache.put(key, value)

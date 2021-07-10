@@ -10,6 +10,7 @@ import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.Command
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichMessageChannel.{mention, sendOwned}
@@ -30,7 +31,7 @@ class Spoilers(
   conversations: Conversations
 )(using MessageOwnership, ReplyCache)
     extends EventListener:
-  private[this] val logger = LoggerFactory.getLogger(classOf[Spoilers])
+  private[this] val logger = LoggerFactory.getLogger(classOf[Spoilers]).nn
 
   val spoilerEmote = "🔍"
 
@@ -68,7 +69,7 @@ class Spoilers(
           onFail = APIHelper.loudFailure("deleting a message", message)
         )
 
-        args.trim match
+        args.trimnn match
           case "" =>
             await(createSpoilerConversation(message))
           case trimmed =>
@@ -101,10 +102,13 @@ class Spoilers(
     async {
       // Must be lowercase (to allow case insensitive string comparison)
       val hintPrefix = "hint:"
-      val Array(hintText, spoilerText) =
+      val (hintTextMaybe, spoilerText) =
         if args.take(hintPrefix.length) equalsIgnoreCase hintPrefix then
-          (args drop hintPrefix.length).split("\n", 2)
-        else Array("spoilers", args)
+          val unprefixed = args.drop(hintPrefix.length)
+          unprefixed.splitAt(unprefixed.indexOf('\n'))
+        else ("", args)
+
+      val hintText = if hintTextMaybe.isEmpty then "spoilers" else hintTextMaybe
 
       val spoilerMessage = await(
         spoilerChannel.sendOwned(
@@ -116,7 +120,7 @@ class Spoilers(
       )
 
       val spoilerDbUpdate =
-        spoilerTexts(spoilerMessage.id) = spoilerText.trim
+        spoilerTexts(spoilerMessage.id) = spoilerText.trimnn
       await(spoilerMessage.addReaction(spoilerEmote).queueFuture())
       await(spoilerDbUpdate)
       logger.info(s"Created spoiler ${spoilerMessage.id} on behalf of ${author.unambiguousString}")

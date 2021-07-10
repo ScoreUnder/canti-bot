@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.{Message, User}
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
+import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.RichJDA.guilds
 import score.discord.canti.wrappers.jda.RichMessage.!
@@ -27,8 +28,10 @@ class BotInfoCommand(override val userId: ID[User])(using MessageOwnership, Repl
       val allGuilds = jda.guilds
       val topGuilds = allGuilds.sortBy(-_.getMemberCache.size).take(10).map { guild =>
         val memberCount = guild.getMemberCache.size
-        val owner = guild.getOwner.getUser
-        s"${guild.getName} ($memberCount users; owner: ${owner.name}#${owner.discriminator})"
+        val owner = guild.getOwner.?.map(_.getUser).fold(s"unknown user ${guild.getOwnerIdLong}")(
+          user => s"${user.name}#${user.discriminator}"
+        )
+        s"${guild.getName} ($memberCount users; owner: $owner)"
       }
       val me = await(jda.retrieveApplicationInfo.queueFuture())
       await(
