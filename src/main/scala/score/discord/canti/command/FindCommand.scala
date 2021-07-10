@@ -170,7 +170,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
         embed <- msg.getEmbeds.asScala
         description = embed.getDescription ?? ""
         if description.contains(SEARCHABLE_MESSAGE_TAG)
-        LINE_REGEX(`idLabel`, selected) <- description.splitnn("\n")
+        case LINE_REGEX(`idLabel`, selected) <- description.splitnn("\n")
       yield (msg, selected)).headOption
 
     override def onEvent(event: GenericEvent): Unit = event match
@@ -178,7 +178,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
         given JDA = event.getJDA
         if ICONS contains react then
           for
-            Some(`user`) <- messageOwnership(msgId)
+            case Some(`user`) <- messageOwnership(msgId)
             maybeMsgId <- getIdFromMessage(channel, msgId, react)
             msgId <- maybeMsgId
             (msg, selected) = msgId

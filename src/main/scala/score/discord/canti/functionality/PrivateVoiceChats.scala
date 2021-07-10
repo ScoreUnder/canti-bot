@@ -52,7 +52,7 @@ class PrivateVoiceChats(
   eventWaiter: EventWaiter,
 )(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
     extends EventListener:
-  private[this] val logger = LoggerFactory.getLogger(classOf[PrivateVoiceChats]).nn
+  private val logger = LoggerFactory.getLogger(classOf[PrivateVoiceChats]).nn
 
   private val invites = ConcurrentHashMap[GuildUserId, Invite]()
 
@@ -515,7 +515,7 @@ class PrivateVoiceChats(
             .queueFuture()
             .failed
             .foreach(APIHelper.failure("deleting private channel after database error"))
-          ownerByChannel remove newVoiceChannel
+          ownerByChannel `remove` newVoiceChannel
         }
 
         logger.info(
@@ -678,7 +678,7 @@ class PrivateVoiceChats(
       )
       // Note: Sequenced rather than parallel because the channel
       // might not be deleted due to permissions or other reasons.
-      await(ownerByChannel remove channel)
+      await(ownerByChannel `remove` channel)
     }
 
   override def onEvent(event: GenericEvent): Unit = event match

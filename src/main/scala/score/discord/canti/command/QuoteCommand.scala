@@ -73,7 +73,7 @@ class QuoteCommand(using
             case Right(ch) =>
               await(
                 APIHelper
-                  .tryRequest(ch retrieveMessageById quoteId.value)
+                  .tryRequest(ch.retrieveMessageById(quoteId.value))
                   .map(Right(_))
                   .recover(stringifyMessageRetrievalError(specifiedChannel))
               )
@@ -124,7 +124,7 @@ class QuoteCommand(using
 
   private def checkChannelVisibility(channel: Option[MessageChannel], sender: User) =
     channel match
-      case Some(ch: GuildChannel) if sender canSee ch       => Right(ch)
+      case Some(ch: GuildChannel) if sender.canSee(ch)      => Right(ch)
       case Some(ch: PrivateChannel) if ch.getUser == sender => Right(ch)
       case Some(_) => Left("You do not have access to the specified channel.")
       case None    => Left("I do not have access to the specified channel.")

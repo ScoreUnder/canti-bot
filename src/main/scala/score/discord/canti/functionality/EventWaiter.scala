@@ -20,7 +20,7 @@ class EventWaiter extends EventListener:
   ):
     def expired: Boolean = expiry <= System.nanoTime()
 
-  private[this] val queuedEvents = mutable.ArrayBuffer.empty[ExpiringEvent]
+  private val queuedEvents = mutable.ArrayBuffer.empty[ExpiringEvent]
 
   def queue(identifier: AnyRef)(handler: EventHandler): Unit =
     queuedEvents.synchronized {

@@ -35,7 +35,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
   messageOwnership: MessageOwnership,
   replyCache: ReplyCache
 ) extends EventListener:
-  commands register new ReplyingCommand with Command.ServerAdminOnly:
+  commands `register` new ReplyingCommand with Command.ServerAdminOnly:
     override def name = "voicerole"
 
     override def aliases: List[String] = List("setvoicerole", "getvoicerole")
@@ -63,7 +63,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     }
 
     private def delVoiceRole(guild: Guild) = async {
-      await(roleByGuild remove guild.id)
+      await(roleByGuild.remove(guild.id))
       BotMessages.okay(s"Turned off voice chat roles for this server")
     }
 
@@ -81,7 +81,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     override given replyCache: ReplyCache = VoiceRoles.this.replyCache
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit =
-    if shouldHaveRole != (member has role) then
+    if shouldHaveRole != member.has(role) then
       if shouldHaveRole then member.roles += role -> "voice state change"
       else member.roles -= role -> "voice state change"
 
@@ -91,7 +91,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     )
 
   private val pendingRoleUpdates = ConcurrentHashMap[GuildUserId, ScheduledFuture[Unit]]()
-  private[this] val rng = ThreadLocalRandom.current().nn
+  private val rng = ThreadLocalRandom.current().nn
 
   private def queueRoleUpdate(member: Member): Unit =
     /*
@@ -108,7 +108,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
       val memberId = GuildUserId(member)
 
       def updateRole(role: Role): Unit =
-        pendingRoleUpdates remove memberId
+        pendingRoleUpdates.remove(memberId)
         // TODO: No thread-safe way to do this
         for voiceState <- member.getVoiceState.? do
           setRole(member, role, shouldHaveRole(voiceState))

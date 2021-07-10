@@ -23,6 +23,7 @@ import java.io.{File, IOException}
 import java.net.URLClassLoader
 import java.util
 import java.util.concurrent.{Executors, ScheduledExecutorService}
+import scala.compiletime.uninitialized
 import scala.concurrent.duration.*
 import scala.language.postfixOps
 
@@ -31,7 +32,7 @@ import scala.language.postfixOps
 
 class CantiBot:
   private var discord: Option[JDA] = None
-  private var executor: ScheduledExecutorService = _
+  private var executor: ScheduledExecutorService = uninitialized
 
   def start(): Unit =
     discord match
@@ -60,12 +61,12 @@ class CantiBot:
           })
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.nn.availableProcessors).nn
-        given Scheduler(executor)
-        given MessageOwnership(
+        given Scheduler = Scheduler(executor)
+        given MessageOwnership = MessageOwnership(
           UserByMessage(dbConfig, "message_ownership") withCache LruCache.empty(20000)
         )
-        given MessageCache()
-        given ReplyCache()
+        given MessageCache = MessageCache()
+        given ReplyCache = ReplyCache()
         val userCreatedChannels =
           UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
 
@@ -108,27 +109,28 @@ class CantiBot:
         val helpCommand = HelpCommand(commands)
         privateVoiceChats.allCommands.foreach(commands.register)
         voiceKick.allCommands.foreach(commands.register)
-        commands register helpCommand
-        commands register PlayCommand(userId = config.owner)
-        commands register StopCommand(this, userId = config.owner)
-        commands register FuriganaCommand()
-        commands register BlameCommand()
-        commands register BotInfoCommand(userId = config.owner)
-        commands register findCommand
-        commands register quoteCommand
-        commands register RegisterGuildSlashCommandsCommand(userId = config.owner, slashCommands)
+        commands.register(helpCommand)
+        commands.register(PlayCommand(userId = config.owner))
+        commands.register(StopCommand(this, userId = config.owner))
+        commands.register(FuriganaCommand())
+        commands.register(BlameCommand())
+        commands.register(BotInfoCommand(userId = config.owner))
+        commands.register(findCommand)
+        commands.register(quoteCommand)
+        commands.register(RegisterGuildSlashCommandsCommand(userId = config.owner, slashCommands))
         val readCommand = ReadCommand(summon[MessageCache])
-        if readCommand.available then commands register readCommand
-        commands register PingCommand()
+        if readCommand.available then commands.register(readCommand)
+        commands.register(PingCommand())
 
         bot.addEventListeners(
-          {
-            case ev: ReadyEvent =>
-              // TODO: Make configurable?
-              ev.getJDA.getPresence
-                .setActivity(Activity playing s"Usage: ${commands.prefix}${helpCommand.name}")
-              ev.getJDA.setRequiredScopes("bot", "applications.commands")
-            case _ =>
+          { e =>
+            e.nn match
+              case ev: ReadyEvent =>
+                // TODO: Make configurable?
+                ev.getJDA.getPresence
+                  .setActivity(Activity `playing` s"Usage: ${commands.prefix}${helpCommand.name}")
+                ev.getJDA.setRequiredScopes("bot", "applications.commands")
+              case _ =>
           }: EventListener,
           EventLogger()
         )

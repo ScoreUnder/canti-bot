@@ -11,7 +11,7 @@ class PlayCommand(val userId: ID[User]) extends Command.OneUserOnly:
   override def execute(message: Message, args: String) =
     message.getJDA.getPresence.setActivity(args match
       case ""   => null
-      case name => Activity playing name
+      case name => Activity.playing(name)
     )
     message.addReaction("👌").queue()
 

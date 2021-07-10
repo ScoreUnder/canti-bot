@@ -19,7 +19,7 @@ import scala.util.chaining.*
 
 /** Miscellaneous functions useful when dealing with JDA's API calls */
 object APIHelper:
-  private[this] val logger = LoggerFactory.getLogger(getClass).nn
+  private val logger = LoggerFactory.getLogger(getClass).nn
 
   /** Curried function to report an exception to the console.
     *

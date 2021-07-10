@@ -41,7 +41,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.reflectiveCalls
 
 class EventLogger(using messageOwnership: MessageOwnership) extends EventListener:
-  private[this] val logger = LoggerFactory.getLogger(classOf[EventLogger]).nn
+  private val logger = LoggerFactory.getLogger(classOf[EventLogger]).nn
 
   private def logHigherIfMyMessage(ev: GenericMessageEvent, logLine: String): Unit =
     given JDA = ev.getJDA

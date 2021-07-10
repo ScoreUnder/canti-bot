@@ -46,7 +46,7 @@ class HelpCommand(commands: Commands)(using
       .get(unprefixed)
       .toRight("Expected a page number or command name, but got something else.")
       .map(command =>
-        BotMessages plain
+        BotMessages `plain`
           s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
              |**Restrictions:** ${command.permissionMessage}
              |${command.description}
@@ -57,7 +57,7 @@ class HelpCommand(commands: Commands)(using
   private def showHelpPage(message: Message, page: Int) =
     given JDA = message.getJDA
 
-    val myCommands = commands.all.filter(_ checkPermission message)
+    val myCommands = commands.all.filter(_ `checkPermission` message)
     val pageOffset = pageSize * (page - 1)
     val numPages = (myCommands.length + pageSize - 1) / pageSize
 
@@ -75,7 +75,7 @@ class HelpCommand(commands: Commands)(using
       )
 
       for command <- helpList do
-        embed appendDescription s"`${commands.prefix}${command.name}`: ${command.description}\n"
+        embed `appendDescription` s"`${commands.prefix}${command.name}`: ${command.description}\n"
 
       embed.appendDescription(
         "[Source code 🗒️](https://github.com/ScoreUnder/canti-bot) \\| " +
