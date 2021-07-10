@@ -60,12 +60,12 @@ class CantiBot:
           })
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.nn.availableProcessors).nn
-        given Scheduler = Scheduler(executor)
-        given MessageOwnership = MessageOwnership(
+        given Scheduler(executor)
+        given MessageOwnership(
           UserByMessage(dbConfig, "message_ownership") withCache LruCache.empty(20000)
         )
-        given MessageCache = MessageCache()
-        given ReplyCache = ReplyCache()
+        given MessageCache()
+        given ReplyCache()
         val userCreatedChannels =
           UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
 
