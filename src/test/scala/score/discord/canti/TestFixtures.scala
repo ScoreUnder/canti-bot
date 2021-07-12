@@ -41,14 +41,15 @@ object TestFixtures:
 
     def testCommand(invocation: String): Message =
       val quotingMessage = botChannel.addMessage(invocation, commandUser)
-      val (cmdName, args) = commands.splitCommand(invocation)
+      val (cmdName, args) = commands
+        .splitCommand(invocation)
         .getOrElse(throw IllegalArgumentException("Command does not start with prefix"))
 
       val future = commands.get(cmdName) match
         case Some(cmd: ReplyingCommand) =>
           cmd.executeFuture(quotingMessage, args)
         case Some(_) => throw UnsupportedOperationException("Non-ReplyingCommand being tested")
-        case None => throw IllegalArgumentException("Bad command")
+        case None    => throw IllegalArgumentException("Bad command")
 
       Await.result(future, Duration.Inf)
 

@@ -28,7 +28,7 @@ class FuriganaCommandTest extends AnyFlatSpec with should.Matchers:
 
   it should "trim empty groups" in {
     val parsed = furiganaCommand.parseInput("{asdf:ghi}{:}{:}{:zxc}{vbn:}{qwe:rty}")
-    parsed should not contain(("", ""))
+    parsed should not contain (("", ""))
   }
 
   it should "split newlines properly" in {
@@ -38,14 +38,19 @@ class FuriganaCommandTest extends AnyFlatSpec with should.Matchers:
 
   it should "give exact correct results" in {
     furiganaCommand.parseInput("{郵便局:ゆうびんきょく}に{行:い}きました") should equal(
-      Seq(("郵便局", "ゆうびんきょく"), ("に", ""), ("行", "い"), ("きました", "")))
+      Seq(("郵便局", "ゆうびんきょく"), ("に", ""), ("行", "い"), ("きました", ""))
+    )
     furiganaCommand.parseInput("{asdf:ghi}{:}{:}{:zxc}{vbn:}{qwe:rty}") should equal(
-      Seq(("asdf", "ghi"), ("", "zxc"), ("vbn", ""), ("qwe", "rty")))
+      Seq(("asdf", "ghi"), ("", "zxc"), ("vbn", ""), ("qwe", "rty"))
+    )
   }
 
   it should "accept fullwidth separators" in {
     furiganaCommand.parseInput("｛郵便局：ゆうびんきょく｝に｛行:い｝きました") should equal(
-      Seq(("郵便局", "ゆうびんきょく"), ("に", ""), ("行", "い"), ("きました", "")))
+      Seq(("郵便局", "ゆうびんきょく"), ("に", ""), ("行", "い"), ("きました", ""))
+    )
     furiganaCommand.parseInput("{郵便局：ゆうびんきょく｝に{行：い}きました") should equal(
-      Seq(("郵便局", "ゆうびんきょく"), ("に", ""), ("行", "い"), ("きました", "")))
+      Seq(("郵便局", "ゆうびんきょく"), ("に", ""), ("行", "い"), ("きました", ""))
+    )
   }
+end FuriganaCommandTest

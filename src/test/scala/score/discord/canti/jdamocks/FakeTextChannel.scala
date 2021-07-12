@@ -17,8 +17,18 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   private var cachedMessages = Map.empty[Long, Message]
   private var lastMessage: Long = 0L
 
-  def addMessage(content: String, author: User | Null, embeds: util.List[MessageEmbed] = Nil.asJava): FakeMessage =
-    val message = FakeMessage(channel = this, id = guild.fakeJda.nextId, content = content, author = author, embeds = embeds)
+  def addMessage(
+    content: String,
+    author: User | Null,
+    embeds: util.List[MessageEmbed] = Nil.asJava
+  ): FakeMessage =
+    val message = FakeMessage(
+      channel = this,
+      id = guild.fakeJda.nextId,
+      content = content,
+      author = author,
+      embeds = embeds
+    )
     cachedMessages += message.getIdLong -> message
     lastMessage = message.getIdLong
     message
@@ -37,9 +47,15 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def clearReactionsById(messageId: String): RestAction[Void] = ???
 
-  override def removeReactionById(messageId: String, unicode: String, user: User): RestAction[Void] = ???
+  override def removeReactionById(
+    messageId: String,
+    unicode: String,
+    user: User
+  ): RestAction[Void] = ???
 
-  override def retrieveMessageById(messageId: String): RestAction[Message] = FakeMessageAction(cachedMessages(ID.fromString(messageId).value))
+  override def retrieveMessageById(messageId: String): RestAction[Message] = FakeMessageAction(
+    cachedMessages(ID.fromString(messageId).value)
+  )
 
   override def canTalk: Boolean = ???
 
@@ -61,7 +77,11 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def sendMessage(msg: Message): MessageAction =
     FakeMessageAction(
-      addMessage(content = msg.getContentRaw, author = Try(msg.getAuthor).toOption.orNull, embeds = msg.getEmbeds)
+      addMessage(
+        content = msg.getContentRaw,
+        author = Try(msg.getAuthor).toOption.orNull,
+        embeds = msg.getEmbeds
+      )
     )
 
   override def getRolePermissionOverrides: util.List[PermissionOverride] = ???
@@ -96,9 +116,13 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def getPermissionOverride(permissionHolder: IPermissionHolder): PermissionOverride = ???
 
-  override def createPermissionOverride(permissionHolder: IPermissionHolder): PermissionOverrideAction = ???
+  override def createPermissionOverride(
+    permissionHolder: IPermissionHolder
+  ): PermissionOverrideAction = ???
 
-  override def putPermissionOverride(permissionHolder: IPermissionHolder): PermissionOverrideAction = ???
+  override def putPermissionOverride(
+    permissionHolder: IPermissionHolder
+  ): PermissionOverrideAction = ???
 
   override def retrieveInvites(): RestAction[util.List[Invite]] = ???
 
@@ -113,3 +137,4 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
   override def isSynced: Boolean = ???
 
   override def follow(targetChannelId: String): RestAction[Webhook.WebhookReference] = ???
+end FakeTextChannel

@@ -13,7 +13,8 @@ class PrivateVoiceChatsTest extends AnyFlatSpec with should.Matchers with Privat
   val pvc = PrivateVoiceChats(NullCacheBackend(), NullCacheBackend(), commands, EventWaiter())
 
   val prefixOrUpdateNumberM = PrivateMethod[String](Symbol("prefixOrUpdateNumber"))
-  def prefixOrUpdateNumber(name: String, prefix: String): String = pvc.invokePrivate(prefixOrUpdateNumberM(name, prefix))
+  def prefixOrUpdateNumber(name: String, prefix: String): String =
+    pvc.invokePrivate(prefixOrUpdateNumberM(name, prefix))
 
   "prefixOrUpdateNumber" should "add a prefix correctly" in {
     prefixOrUpdateNumber("name", "prefix ") should equal("prefix name")

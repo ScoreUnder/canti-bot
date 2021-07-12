@@ -11,10 +11,17 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege
 import net.dv8tion.jda.api.managers.{AudioManager, GuildManager}
 import net.dv8tion.jda.api.requests.RestAction
-import net.dv8tion.jda.api.requests.restaction.{AuditableRestAction, ChannelAction, CommandCreateAction, CommandEditAction, CommandListUpdateAction, MemberAction, RoleAction}
-import net.dv8tion.jda.api.requests.restaction.order.{CategoryOrderAction, ChannelOrderAction, RoleOrderAction}
+import net.dv8tion.jda.api.requests.restaction.{
+  AuditableRestAction, ChannelAction, CommandCreateAction, CommandEditAction,
+  CommandListUpdateAction, MemberAction, RoleAction
+}
+import net.dv8tion.jda.api.requests.restaction.order.{
+  CategoryOrderAction, ChannelOrderAction, RoleOrderAction
+}
 import net.dv8tion.jda.api.requests.restaction.pagination.AuditLogPaginationAction
-import net.dv8tion.jda.api.utils.cache.{MemberCacheView, SnowflakeCacheView, SortedSnowflakeCacheView}
+import net.dv8tion.jda.api.utils.cache.{
+  MemberCacheView, SnowflakeCacheView, SortedSnowflakeCacheView
+}
 import net.dv8tion.jda.api.utils.concurrent.Task
 import net.dv8tion.jda.api.{JDA, Region}
 
@@ -60,9 +67,13 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def getCategoryCache: SortedSnowflakeCacheView[Category] = ???
 
-  override def getTextChannelCache: SortedSnowflakeCacheView[TextChannel] = ScalaSnowflakeCacheView[GuildChannel, TextChannel](channels.collect {
-    case (id, c: TextChannel) => id -> c
-  }, _.getName)
+  override def getTextChannelCache: SortedSnowflakeCacheView[TextChannel] =
+    ScalaSnowflakeCacheView[GuildChannel, TextChannel](
+      channels.collect { case (id, c: TextChannel) =>
+        id -> c
+      },
+      _.getName
+    )
 
   override def getVoiceChannelCache: SortedSnowflakeCacheView[VoiceChannel] = ???
 
@@ -166,9 +177,16 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def removeRoleFromMember(member: Member, role: Role): AuditableRestAction[Void] = ???
 
-  override def modifyMemberRoles(member: Member, rolesToAdd: util.Collection[Role], rolesToRemove: util.Collection[Role]): AuditableRestAction[Void] = ???
+  override def modifyMemberRoles(
+    member: Member,
+    rolesToAdd: util.Collection[Role],
+    rolesToRemove: util.Collection[Role]
+  ): AuditableRestAction[Void] = ???
 
-  override def modifyMemberRoles(member: Member, roles: util.Collection[Role]): AuditableRestAction[Void] = ???
+  override def modifyMemberRoles(
+    member: Member,
+    roles: util.Collection[Role]
+  ): AuditableRestAction[Void] = ???
 
   override def transferOwnership(newOwner: Member): AuditableRestAction[Void] = ???
 
@@ -206,7 +224,10 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def retrieveMemberById(id: Long, update: Boolean): RestAction[Member] = ???
 
-  override def retrieveMembersByIds(includePresence: Boolean, ids: Array[_ <: Long]): Task[util.List[Member]] = ???
+  override def retrieveMembersByIds(
+    includePresence: Boolean,
+    ids: Array[? <: Long]
+  ): Task[util.List[Member]] = ???
 
   override def retrieveMembersByPrefix(prefix: String, limit: Int): Task[util.List[Member]] = ???
 
@@ -214,7 +235,11 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def loadMembers(callback: Consumer[Member]): Task[Void] = ???
 
-  override def prune(days: Int, wait: Boolean, roles: Array[_ <: Role]): AuditableRestAction[Integer] = ???
+  override def prune(
+    days: Int,
+    wait: Boolean,
+    roles: Array[? <: Role]
+  ): AuditableRestAction[Integer] = ???
 
   override def createTextChannel(name: String, parent: Category): ChannelAction[TextChannel] = ???
 
@@ -238,13 +263,21 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def deleteCommandById(commandId: String): RestAction[Void] = ???
 
-  override def retrieveCommandPrivilegesById(commandId: String): RestAction[util.List[CommandPrivilege]] = ???
+  override def retrieveCommandPrivilegesById(
+    commandId: String
+  ): RestAction[util.List[CommandPrivilege]] = ???
 
-  override def retrieveCommandPrivileges(): RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
+  override def retrieveCommandPrivileges()
+    : RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
 
-  override def updateCommandPrivilegesById(id: String, privileges: util.Collection[_ <: CommandPrivilege]): RestAction[util.List[CommandPrivilege]] = ???
+  override def updateCommandPrivilegesById(
+    id: String,
+    privileges: util.Collection[? <: CommandPrivilege]
+  ): RestAction[util.List[CommandPrivilege]] = ???
 
-  override def updateCommandPrivileges(privileges: util.Map[String, util.Collection[_ <: CommandPrivilege]]): RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
+  override def updateCommandPrivileges(
+    privileges: util.Map[String, util.Collection[? <: CommandPrivilege]]
+  ): RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
 
   override def createTemplate(name: String, description: String): RestAction[Template] = ???
 
@@ -252,6 +285,8 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def cancelRequestToSpeak(): Task[Void] = ???
 
-  override  def createStageChannel(name: String, category: Category): ChannelAction[StageChannel] = ???
+  override def createStageChannel(name: String, category: Category): ChannelAction[StageChannel] =
+    ???
 
   override def requestToSpeak(): Task[Void] = ???
+end FakeGuild
