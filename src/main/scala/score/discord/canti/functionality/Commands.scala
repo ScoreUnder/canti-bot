@@ -32,7 +32,7 @@ object Commands:
 
   object CommandOrdering extends Ordering[Command]:
     def compare(c1: Command, c2: Command): Int =
-      c1.name compare c2.name
+      normaliseCommandName(c1.name) compare normaliseCommandName(c2.name)
 end Commands
 
 class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventListener:
