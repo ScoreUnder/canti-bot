@@ -132,9 +132,8 @@ class PrivateVoiceChats(
       val result = for
         member <- member
         guild = member.getGuild
-        inv <- invites.get(
-          GuildUserId(member)
-        ) ?<> "You don't have any pending voice chat invitations."
+        inv <- invites.get(GuildUserId(member)) ?<>
+          "You don't have any pending voice chat invitations."
         _ <- ensureInviteValid(inv)
         voiceChannel <- guild
           .findVoiceChannel(inv.channel)
