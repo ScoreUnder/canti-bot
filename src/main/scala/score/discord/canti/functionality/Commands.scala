@@ -19,15 +19,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.chaining.*
 
-class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventListener:
-  private val logger = LoggerFactory.getLogger(classOf[Commands]).nn
-  // All commands and aliases, indexed by name
-  private val commands = mutable.HashMap[String, Command]()
-  // Commands list excluding aliases
-  private val commandList = mutable.TreeSet[Command]()(_.name compare _.name)
-  // String prepended before a command
-  val prefix = "&"
-
+object Commands:
   /** Normalises a command name string into a form suitable to be looked up as a key in the command
     * map. Not guaranteed to behave similarly between versions.
     *
@@ -37,6 +29,22 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
     *   name in normalised form
     */
   private def normaliseCommandName(name: String): String = name.lowernn
+
+  object CommandOrdering extends Ordering[Command]:
+    def compare(c1: Command, c2: Command): Int =
+      c1.name compare c2.name
+end Commands
+
+class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventListener:
+  import Commands.*
+
+  private val logger = LoggerFactory.getLogger(classOf[Commands]).nn
+  // All commands and aliases, indexed by name
+  private val commands = mutable.HashMap[String, Command]()
+  // Commands list excluding aliases
+  private val commandList = mutable.TreeSet[Command]()(using CommandOrdering)
+  // String prepended before a command
+  val prefix = "&"
 
   /** Register a command with this command registry. The command may then be retrieved via its main
     * name or any of its aliases, and will be available to the command-dispatching event listener.

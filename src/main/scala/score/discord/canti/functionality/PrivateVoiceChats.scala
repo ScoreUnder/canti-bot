@@ -44,6 +44,7 @@ import scala.jdk.CollectionConverters.*
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.chaining.*
 import scala.util.{Failure, Success, Try}
+import scala.annotation.threadUnsafe
 
 class PrivateVoiceChats(
   ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]],
@@ -412,7 +413,7 @@ class PrivateVoiceChats(
 
   private val mistakeRegex = """ (\d+)$""".r.unanchored
 
-  private val translateChannelMoveError: PartialFunction[Throwable, String] =
+  @threadUnsafe private lazy val translateChannelMoveError: PartialFunction[Throwable, String] =
     case _: IllegalStateException =>
       "You need to join voice chat before I can move you into a channel."
     case e: PermissionException =>
