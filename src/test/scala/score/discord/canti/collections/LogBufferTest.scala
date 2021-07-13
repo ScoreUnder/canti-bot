@@ -11,16 +11,16 @@ class LogBufferTest extends AnyFlatSpec with should.Matchers:
 
   "size" should "be equal to the number of elements" in {
     val capacity = 10
-    for n <- 1 to capacity*4 do
+    for n <- 1 to capacity * 4 do
       val buf = LogBuffer[Int](capacity)
-      1 to n foreach(buf ::= _)
+      1 to n foreach (buf ::= _)
       buf.size should be(n min capacity)
   }
 
   "head" should "be equal to the most recently added element" in {
     val capacity = 10
     val buf = LogBuffer[Int](capacity)
-    for n <- 1 to capacity*4 do
+    for n <- 1 to capacity * 4 do
       buf ::= n
       buf.head should be(n)
   }
@@ -44,7 +44,7 @@ class LogBufferTest extends AnyFlatSpec with should.Matchers:
   it should "be equal to the element added $capacity-1 elements ago, when capacity is full" in {
     val capacity = 10
     val buf = bufWithContent(content = 0 until capacity, capacity = capacity)
-    for n <- capacity to capacity*4 do
+    for n <- capacity to capacity * 4 do
       buf ::= n
       buf.last should be(n - (capacity - 1))
   }
@@ -60,7 +60,7 @@ class LogBufferTest extends AnyFlatSpec with should.Matchers:
   "apply(0)" should "be the same as head" in {
     val capacity = 10
     val buf = LogBuffer[Int](capacity)
-    for n <- 1 to capacity*4 do
+    for n <- 1 to capacity * 4 do
       buf ::= n
       buf(0) should equal(buf.head)
   }
@@ -86,14 +86,14 @@ class LogBufferTest extends AnyFlatSpec with should.Matchers:
     val buf = LogBuffer[Int](capacity)
 
     def iteratorChecks(): Unit =
-      buf.iterator.zipWithIndex.map {
-        case (v, i) => v should be(buf(i))
+      buf.iterator.zipWithIndex.map { case (v, i) =>
+        v should be(buf(i))
       }
       buf.iterator.toVector should equal(buf.toVector)
       buf.iterator.size should equal(buf.size)
 
-    iteratorChecks()  // Test empty case
-    for n <- 1 to capacity*4 do
+    iteratorChecks() // Test empty case
+    for n <- 1 to capacity * 4 do
       buf ::= n
       iteratorChecks()
   }
@@ -129,7 +129,8 @@ class LogBufferTest extends AnyFlatSpec with should.Matchers:
   it should "return false when non-empty" in {
     val capacity = 10
     val buf = LogBuffer[Int](capacity)
-    for n <- 1 to capacity*4 do
+    for n <- 1 to capacity * 4 do
       buf ::= n
       buf.isEmpty should be(false)
   }
+end LogBufferTest

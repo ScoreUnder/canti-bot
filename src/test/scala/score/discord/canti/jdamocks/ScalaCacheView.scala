@@ -32,7 +32,8 @@ class ScalaCacheView[T](cache: Iterable[T], getName: T => String) extends CacheV
   override def lockedIterator(): ClosableIterator[T] =
     val readLock = lock.readLock.nn
     readLock.lock()
-    try LockIterator[T](cache.iterator.asJava, readLock) catch
+    try LockIterator[T](cache.iterator.asJava, readLock)
+    catch
       case t: Throwable =>
         readLock.unlock()
         throw t

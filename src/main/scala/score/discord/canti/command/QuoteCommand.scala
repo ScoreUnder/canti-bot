@@ -118,7 +118,7 @@ class QuoteCommand(using
         Left("I don't have permission to read messages in that channel.")
       case e: PermissionException =>
         Left(
-          s"I don't have permission to read messages in that channel. Missing `${e.getPermission.nn.getName}`."  // TODO: PR @Nonnull for getPermission
+          s"I don't have permission to read messages in that channel. Missing `${e.getPermission.nn.getName}`." // TODO: PR @Nonnull for getPermission
         )
     }
 

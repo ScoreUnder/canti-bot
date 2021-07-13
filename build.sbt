@@ -1,4 +1,4 @@
-import Dependencies._
+import Dependencies.*
 
 enablePlugins(GitVersioning, ReproducibleBuildsPlugin)
 
@@ -7,8 +7,8 @@ ThisBuild / scalaVersion := "3.0.1"
 ThisBuild / git.useGitDescribe := true
 ThisBuild / scalacOptions ++= List("-deprecation", "-unchecked", "-feature")
 ThisBuild / resolvers ++= Seq(
-    "jcenter-bintray" at "https://jcenter.bintray.com",
-    "m2-dv8tion" at "https://m2.dv8tion.net/releases",
+  "jcenter-bintray" at "https://jcenter.bintray.com",
+  "m2-dv8tion" at "https://m2.dv8tion.net/releases",
 )
 
 lazy val common = project in file("common-code")
@@ -18,10 +18,7 @@ lazy val database = (project in file("database-code"))
   .settings(
     scalaVersion := "2.13.6",
     scalacOptions += "-Ytasty-reader",
-    libraryDependencies ++= Seq(
-      jda,
-      "com.typesafe.slick" %% "slick" % "3.3.3",
-    ),
+    libraryDependencies ++= Seq(jda, "com.typesafe.slick" %% "slick" % "3.3.3"),
   )
 
 lazy val tastyFile = "\\.tasty$".r.unanchored

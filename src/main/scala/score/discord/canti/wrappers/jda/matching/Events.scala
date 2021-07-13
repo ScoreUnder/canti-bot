@@ -45,9 +45,7 @@ object Events:
       Tuple1(ev.messageId)
 
   object GuildVoiceUpdate:
-    def unapply(
-      ev: GuildVoiceUpdateEvent
-    ): (Member, Option[VoiceChannel], Option[VoiceChannel]) =
+    def unapply(ev: GuildVoiceUpdateEvent): (Member, Option[VoiceChannel], Option[VoiceChannel]) =
       (ev.getEntity, ev.getChannelLeft.?, ev.getChannelJoined.?)
 
     // To hint to the IDE what the name of each unapplied parameter is (ctrl+P in intelliJ)

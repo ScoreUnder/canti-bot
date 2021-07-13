@@ -6,4 +6,5 @@ final class ID[+T](val value: Long) extends AnyVal:
 object ID:
   def fromString[T](string: String) = ID[T](
     try java.lang.Long.parseUnsignedLong(string)
-    catch case _: NumberFormatException => string.toLong)
+    catch case _: NumberFormatException => string.toLong
+  )

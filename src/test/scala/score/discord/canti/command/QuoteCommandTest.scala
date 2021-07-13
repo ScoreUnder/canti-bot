@@ -19,15 +19,24 @@ class QuoteCommandTest extends AnyFlatSpec with should.Matchers:
     testCommand(invocation).getEmbeds.get(0).nn.getDescription.nn should include(expected)
 
   "The &quote command" should "understand id + channel mention" in {
-    quoteCommandTest(s"&quote ${quoteeMessage.getIdLong} ${quoteeChannel.getAsMention}", quoteeMessageData)
+    quoteCommandTest(
+      s"&quote ${quoteeMessage.getIdLong} ${quoteeChannel.getAsMention}",
+      quoteeMessageData
+    )
   }
 
   it should "understand long-style message quotes" in {
-    quoteCommandTest(s"&quote ${quoteeChannel.getIdLong}-${quoteeMessage.getIdLong}", quoteeMessageData)
+    quoteCommandTest(
+      s"&quote ${quoteeChannel.getIdLong}-${quoteeMessage.getIdLong}",
+      quoteeMessageData
+    )
   }
 
   it should "understand URL message quotes" in {
-    quoteCommandTest(s"&quote https://canary.discord.com/channels/${guild.getId}/${quoteeChannel.getIdLong}/${quoteeMessage.getIdLong}", quoteeMessageData)
+    quoteCommandTest(
+      s"&quote https://canary.discord.com/channels/${guild.getId}/${quoteeChannel.getIdLong}/${quoteeMessage.getIdLong}",
+      quoteeMessageData
+    )
   }
 
   it should "find cached messages" in {
