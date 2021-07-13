@@ -21,7 +21,7 @@ class LruCache[K, V](
   private type OV = Option[V]
   // Backing LinkedHashMap which discards at a certain capacity
   // "true" for accessOrder makes it reorder nodes on access to function as a LRU cache
-  private[this] val cache =
+  private val cache =
     new util.LinkedHashMap[K, OV](initialCapacity.getOrElse(64 min maxCapacity), loadFactor, true):
       override def removeEldestEntry(entry: Entry[K, OV]) = size > maxCapacity
 

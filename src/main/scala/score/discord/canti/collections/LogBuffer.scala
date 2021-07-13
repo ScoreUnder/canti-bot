@@ -4,9 +4,9 @@ import java.util.NoSuchElementException
 import scala.collection.mutable
 
 class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T]:
-  private[this] val buffer = new Array[Any](capacity)
+  private val buffer = new Array[Any](capacity)
   private var readPos, writePos = 0
-  private[this] var isEmpty_ = true
+  private var isEmpty_ = true
 
   override def length: Int =
     if isEmpty_ then 0
@@ -43,8 +43,8 @@ class LogBuffer[T](capacity: Int) extends mutable.IndexedSeq[T]:
     this
 
   override def iterator: Iterator[T] = new Iterator[T]:
-    private[this] var myPos = writePos
-    private[this] var iterated = LogBuffer.this.isEmpty
+    private var myPos = writePos
+    private var iterated = LogBuffer.this.isEmpty
 
     override def hasNext: Boolean = myPos != readPos || !iterated
 

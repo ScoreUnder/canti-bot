@@ -31,11 +31,11 @@ class Spoilers(
   conversations: Conversations
 )(using MessageOwnership, ReplyCache)
     extends EventListener:
-  private[this] val logger = LoggerFactory.getLogger(classOf[Spoilers]).nn
+  private val logger = LoggerFactory.getLogger(classOf[Spoilers]).nn
 
   val spoilerEmote = "🔍"
 
-  commands register new Command.Anyone:
+  commands `register` new Command.Anyone:
     override def name = "spoiler"
 
     override val aliases = List("sp", "spoil", "hide")
@@ -103,7 +103,7 @@ class Spoilers(
       // Must be lowercase (to allow case insensitive string comparison)
       val hintPrefix = "hint:"
       val (hintTextMaybe, spoilerText) =
-        if args.take(hintPrefix.length) equalsIgnoreCase hintPrefix then
+        if args.take(hintPrefix.length) `equalsIgnoreCase` hintPrefix then
           val unprefixed = args.drop(hintPrefix.length)
           unprefixed.splitAt(unprefixed.indexOf('\n'))
         else ("", args)

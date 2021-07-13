@@ -10,9 +10,14 @@ import score.discord.canti.SnowflakeOrdering
 
 import scala.jdk.CollectionConverters.*
 
-class FakeMessage(channel: MessageChannel, id: Long, content: String, author: User | Null, embeds: util.List[MessageEmbed])
-  extends AbstractMessage(content, "dummy nonce", false)
-  with SnowflakeOrdering:
+class FakeMessage(
+  channel: MessageChannel,
+  id: Long,
+  content: String,
+  author: User | Null,
+  embeds: util.List[MessageEmbed]
+) extends AbstractMessage(content, "dummy nonce", false)
+    with SnowflakeOrdering:
 
   override def getJumpUrl: String = s"https://dummy.jump.url/$id"
 
@@ -20,7 +25,8 @@ class FakeMessage(channel: MessageChannel, id: Long, content: String, author: Us
 
   override def getChannel: MessageChannel = channel
 
-  override def getAuthor: User = author.nn  // should not be called on a message that isn't "received"
+  override def getAuthor: User =
+    author.nn // should not be called on a message that isn't "received"
 
   override def getEmbeds: util.List[MessageEmbed] = embeds
 

@@ -19,7 +19,7 @@ class Conversations extends EventListener:
     def next(action: Conversation => Unit): Unit =
       start(userId, chanId)(action)
 
-  private[this] val ongoingConversation =
+  private val ongoingConversation =
     TrieMap[(ID[User], ID[MessageChannel]), Conversation => Unit]()
 
   def start(user: User, channel: MessageChannel)(action: Conversation => Unit): Unit =

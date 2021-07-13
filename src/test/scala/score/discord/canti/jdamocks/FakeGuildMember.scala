@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.entities.*
 
 import scala.jdk.CollectionConverters.*
 
-class FakeGuildMember(guild: Guild, user: User) extends Member {
+class FakeGuildMember(guild: Guild, user: User) extends Member:
   val myPerms = Vector.empty[Permission]
   val myChanPerms = Vector(MESSAGE_READ, MESSAGE_WRITE, VIEW_CHANNEL)
 
@@ -38,7 +38,8 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getColorRaw: Int = ???
 
-  override def getPermissions(channel: GuildChannel): util.EnumSet[Permission] = util.EnumSet.copyOf(myChanPerms.asJava).nn
+  override def getPermissions(channel: GuildChannel): util.EnumSet[Permission] =
+    util.EnumSet.copyOf(myChanPerms.asJava).nn
 
   override def canInteract(member: Member): Boolean = ???
 
@@ -54,13 +55,19 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
 
   override def getPermissions: util.EnumSet[Permission] = util.EnumSet.copyOf(myPerms.asJava).nn
 
-  override def hasPermission(permissions: Array[_ <: Permission]): Boolean = getPermissions.containsAll(util.Arrays.asList(permissions*))
+  override def hasPermission(permissions: Array[? <: Permission]): Boolean =
+    getPermissions.containsAll(util.Arrays.asList(permissions*))
 
-  override def hasPermission(permissions: util.Collection[Permission]): Boolean = getPermissions.containsAll(permissions)
+  override def hasPermission(permissions: util.Collection[Permission]): Boolean =
+    getPermissions.containsAll(permissions)
 
-  override def hasPermission(channel: GuildChannel, permissions: Array[_ <: Permission]): Boolean = getPermissions(channel).containsAll(util.Arrays.asList(permissions*))
+  override def hasPermission(channel: GuildChannel, permissions: Array[? <: Permission]): Boolean =
+    getPermissions(channel).containsAll(util.Arrays.asList(permissions*))
 
-  override def hasPermission(channel: GuildChannel, permissions: util.Collection[Permission]): Boolean = getPermissions(channel).containsAll(permissions)
+  override def hasPermission(
+    channel: GuildChannel,
+    permissions: util.Collection[Permission]
+  ): Boolean = getPermissions(channel).containsAll(permissions)
 
   override def getTimeBoosted: OffsetDateTime = ???
 
@@ -81,4 +88,4 @@ class FakeGuildMember(guild: Guild, user: User) extends Member {
   override def canSync(targetChannel: GuildChannel, syncSource: GuildChannel): Boolean = ???
 
   override def canSync(channel: GuildChannel): Boolean = ???
-}
+end FakeGuildMember

@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 class CacheCoordinator[K, V](cache: CacheLayer[K, Option[V]], backend: AsyncMap[K, V])
     extends AsyncMap[K, V]:
   // Cache requests which already exist (so that they are not repeatedly re-requested before the first completes)
-  private[this] val ongoingRequests = mutable.HashMap.empty[K, Future[Option[V]]]
+  private val ongoingRequests = mutable.HashMap.empty[K, Future[Option[V]]]
 
   def get(key: K): Future[Option[V]] = ongoingRequests.synchronized {
     cache.get(key) match
@@ -68,5 +68,5 @@ object CacheCoordinator:
   private[CacheCoordinator] val logger = LoggerFactory.getLogger(getClass).nn
 
   extension [K, V](me: AsyncMap[K, V])
-    def withCache(cache: CacheLayer[K, Option[V]]): CacheCoordinator[K, V] =
+    infix def withCache(cache: CacheLayer[K, Option[V]]): CacheCoordinator[K, V] =
       CacheCoordinator[K, V](cache, me)

@@ -17,7 +17,7 @@ object RichMember:
     def has(role: Role): Boolean = (member match
       case x: MemberImpl => x.getRoleSet.nn
       case x             => x.getRoles
-    ) contains role
+    ).contains(role)
 
     /** Used to add/remove roles from this member */
     def roles = MemberRolesShim(member)
