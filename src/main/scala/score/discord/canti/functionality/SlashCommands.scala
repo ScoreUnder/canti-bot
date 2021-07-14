@@ -4,7 +4,6 @@ import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction
-import org.slf4j.LoggerFactory
 import score.discord.canti.command.slash.SlashCommand
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{richGuild, richMessageChannel, richUser}
@@ -14,7 +13,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class SlashCommands(commands: SlashCommand*) extends EventListener:
-  private val logger = LoggerFactory.getLogger(classOf[SlashCommands]).nn
+  private val logger = loggerOf[SlashCommands]
 
   val commandsMap: Map[String, SlashCommand] =
     commands.map(c => normaliseCommandName(c.name) -> c).toMap

@@ -24,7 +24,6 @@ import net.dv8tion.jda.api.events.message.react.*
 import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.events.user.GenericUserEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import org.slf4j.LoggerFactory
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.StringUtils.{formatMessageForLog as formatMessage}
 import score.discord.canti.wrappers.NullWrappers.*
@@ -41,7 +40,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.reflectiveCalls
 
 class EventLogger(using messageOwnership: MessageOwnership) extends EventListener:
-  private val logger = LoggerFactory.getLogger(classOf[EventLogger]).nn
+  private val logger = loggerOf[EventLogger]
 
   private def logHigherIfMyMessage(ev: GenericMessageEvent, logLine: String): Unit =
     given JDA = ev.getJDA

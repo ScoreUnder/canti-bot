@@ -12,7 +12,6 @@ import net.dv8tion.jda.api.interactions.commands.{CommandInteraction, OptionType
 import net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
 import net.dv8tion.jda.api.{JDA, Permission}
-import org.slf4j.LoggerFactory
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.slash.SlashCommand
 import score.discord.canti.command.{Command, ReplyingCommand}
@@ -53,7 +52,7 @@ class PrivateVoiceChats(
   eventWaiter: EventWaiter,
 )(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
     extends EventListener:
-  private val logger = LoggerFactory.getLogger(classOf[PrivateVoiceChats]).nn
+  private val logger = loggerOf[PrivateVoiceChats]
 
   private val invites = ConcurrentHashMap[GuildUserId, Invite]()
 

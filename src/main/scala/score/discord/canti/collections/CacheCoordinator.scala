@@ -1,7 +1,7 @@
 package score.discord.canti.collections
 
-import org.slf4j.LoggerFactory
 import score.discord.canti.collections.CacheCoordinator.logger
+import score.discord.canti.wrappers.NullWrappers.loggerOf
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -65,7 +65,7 @@ class CacheCoordinator[K, V](cache: CacheLayer[K, Option[V]], backend: AsyncMap[
 end CacheCoordinator
 
 object CacheCoordinator:
-  private[CacheCoordinator] val logger = LoggerFactory.getLogger(getClass).nn
+  private[CacheCoordinator] val logger = loggerOf[this.type]
 
   extension [K, V](me: AsyncMap[K, V])
     infix def withCache(cache: CacheLayer[K, Option[V]]): CacheCoordinator[K, V] =

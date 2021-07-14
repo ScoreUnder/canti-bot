@@ -3,7 +3,6 @@ package score.discord.canti.functionality
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import org.slf4j.LoggerFactory
 import score.discord.canti.collections.{MessageCache, ReplyCache}
 import score.discord.canti.command.Command
 import score.discord.canti.functionality.ownership.MessageOwnership
@@ -38,7 +37,7 @@ end Commands
 class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventListener:
   import Commands.*
 
-  private val logger = LoggerFactory.getLogger(classOf[Commands]).nn
+  private val logger = loggerOf[Commands]
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, Command]()
   // Commands list excluding aliases

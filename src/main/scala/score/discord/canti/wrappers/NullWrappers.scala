@@ -1,6 +1,12 @@
 package score.discord.canti.wrappers
 
+import org.slf4j.LoggerFactory
+
+import scala.reflect.ClassTag
+
 object NullWrappers:
+  def loggerOf[T: ClassTag] = LoggerFactory.getLogger(summon[ClassTag[T]].runtimeClass).nn
+
   extension [T](me: T | Null)
     inline def ? : Option[T] =
       if me != null then Some(me) else None

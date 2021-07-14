@@ -3,7 +3,6 @@ package score.discord.canti.util
 import net.dv8tion.jda.api.entities.{Message, MessageChannel}
 import net.dv8tion.jda.api.exceptions.{ErrorResponseException, PermissionException}
 import net.dv8tion.jda.api.requests.{ErrorResponse, RestAction}
-import org.slf4j.LoggerFactory
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.wrappers.NullWrappers.*
@@ -19,7 +18,7 @@ import scala.util.chaining.*
 
 /** Miscellaneous functions useful when dealing with JDA's API calls */
 object APIHelper:
-  private val logger = LoggerFactory.getLogger(getClass).nn
+  private val logger = loggerOf[this.type]
 
   /** Curried function to report an exception to the console.
     *

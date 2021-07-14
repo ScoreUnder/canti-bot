@@ -5,7 +5,6 @@ import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import org.slf4j.LoggerFactory
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.Command
 import score.discord.canti.functionality.ownership.MessageOwnership
@@ -29,7 +28,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
   MessageOwnership,
   ReplyCache
 ) extends EventListener:
-  private val logger = LoggerFactory.getLogger(classOf[Spoilers]).nn
+  private val logger = loggerOf[Spoilers]
 
   val spoilerEmote = "🔍"
 
