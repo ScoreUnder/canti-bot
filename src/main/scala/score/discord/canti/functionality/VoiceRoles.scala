@@ -30,12 +30,12 @@ import scala.concurrent.duration.*
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.chaining.scalaUtilChainingOps
 
-class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)(using
+class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
   scheduler: Scheduler,
   messageOwnership: MessageOwnership,
   replyCache: ReplyCache
 ) extends EventListener:
-  commands `register` new ReplyingCommand with Command.ServerAdminOnly:
+  private val voiceRoleCommand = new ReplyingCommand with Command.ServerAdminOnly:
     override def name = "voicerole"
 
     override def aliases: List[String] = List("setvoicerole", "getvoicerole")
@@ -79,6 +79,9 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]], commands: Commands)
     override given messageOwnership: MessageOwnership = VoiceRoles.this.messageOwnership
 
     override given replyCache: ReplyCache = VoiceRoles.this.replyCache
+  end voiceRoleCommand
+
+  val allCommands: Seq[Command] = Seq(voiceRoleCommand)
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit =
     if shouldHaveRole != member.has(role) then

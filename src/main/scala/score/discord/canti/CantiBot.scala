@@ -83,22 +83,19 @@ class CantiBot:
           commands,
           eventWaiter
         )
+        val voiceRoles = VoiceRoles(RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000))
+        val spoilers = Spoilers(
+            StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100),
+            conversations)
         val slashCommands = SlashCommands(privateVoiceChats.allSlashCommands*)
         bot.addEventListeners(
           commands,
           slashCommands,
-          VoiceRoles(
-            RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000),
-            commands
-          ),
+          voiceRoles,
           privateVoiceChats,
           DeleteOwnedMessages(),
           conversations,
-          Spoilers(
-            StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100),
-            commands,
-            conversations
-          ),
+          spoilers,
           quoteCommand.GreentextListener(),
           findCommand.ReactListener,
           voiceKick,
@@ -109,6 +106,8 @@ class CantiBot:
         val helpCommand = HelpCommand(commands)
         privateVoiceChats.allCommands.foreach(commands.register)
         voiceKick.allCommands.foreach(commands.register)
+        voiceRoles.allCommands.foreach(commands.register)
+        spoilers.allCommands.foreach(commands.register)
         commands.register(helpCommand)
         commands.register(PlayCommand(userId = config.owner))
         commands.register(StopCommand(this, userId = config.owner))

@@ -27,7 +27,6 @@ import scala.util.chaining.*
 
 class Spoilers(
   spoilerTexts: AsyncMap[ID[Message], String],
-  commands: Commands,
   conversations: Conversations
 )(using MessageOwnership, ReplyCache)
     extends EventListener:
@@ -35,7 +34,7 @@ class Spoilers(
 
   val spoilerEmote = "🔍"
 
-  commands `register` new Command.Anyone:
+  private val spoilerCommand = new Command.Anyone:
     override def name = "spoiler"
 
     override val aliases = List("sp", "spoil", "hide")
@@ -93,6 +92,9 @@ class Spoilers(
             for _ <- createSpoiler(channel, conversation.message.getAuthor, spoiler) do
               conversation.message.!("Created your spoiler.")
       }
+  end spoilerCommand
+
+  val allCommands: Seq[Command] = Seq(spoilerCommand)
 
   private def createSpoiler(
     spoilerChannel: MessageChannel,
