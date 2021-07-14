@@ -83,10 +83,13 @@ class CantiBot:
           commands,
           eventWaiter
         )
-        val voiceRoles = VoiceRoles(RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000))
+        val voiceRoles = VoiceRoles(
+          RoleByGuild(dbConfig, "voice_active_role") withCache LruCache.empty(2000)
+        )
         val spoilers = Spoilers(
-            StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100),
-            conversations)
+          StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100),
+          conversations
+        )
         val slashCommands = SlashCommands(privateVoiceChats.allSlashCommands*)
         bot.addEventListeners(
           commands,

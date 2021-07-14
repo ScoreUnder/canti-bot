@@ -25,11 +25,10 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.util.chaining.*
 
-class Spoilers(
-  spoilerTexts: AsyncMap[ID[Message], String],
-  conversations: Conversations
-)(using MessageOwnership, ReplyCache)
-    extends EventListener:
+class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conversations)(using
+  MessageOwnership,
+  ReplyCache
+) extends EventListener:
   private val logger = LoggerFactory.getLogger(classOf[Spoilers]).nn
 
   val spoilerEmote = "🔍"
