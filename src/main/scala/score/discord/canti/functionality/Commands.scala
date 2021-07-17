@@ -161,14 +161,13 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
           case Some((_, _)) =>
             logger.debug(s"Editing old command in $oldMsg (different command)")
             logCommandInvocation(newMsg, cmd)
-            runIfAllowed(newMsg, cmd, cmdExtra) match
-              case Right(_) =>
-                summon[ReplyCache].get(oldMsg.messageId).foreach { replyId =>
-                  APIHelper.tryRequest(
-                    newMsg.getChannel.deleteMessageById(replyId.value),
-                    onFail = APIHelper.failure("deleting old command reply")
-                  )
-                }
-              case _ =>
+            for
+              _ <- runIfAllowed(newMsg, cmd, cmdExtra)
+              replyId <- summon[ReplyCache].get(oldMsg.messageId)
+            do
+              APIHelper.tryRequest(
+                newMsg.getChannel.deleteMessageById(replyId.value),
+                onFail = APIHelper.failure("deleting old command reply")
+              )
     case _ =>
 end Commands
