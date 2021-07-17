@@ -16,7 +16,7 @@ import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichGenericComponentInteractionCreateEvent.messageId
 import score.discord.canti.wrappers.jda.RichMessage.{!, guild}
-import score.discord.canti.wrappers.jda.RichMessageChannel.participants
+import score.discord.canti.wrappers.jda.RichMessageChannel.{findMessage, participants}
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 import score.discord.canti.wrappers.jda.RichUser.{discriminator, mentionWithName, name}
 import score.discord.canti.wrappers.jda.matching.Events.NonBotReact
@@ -162,10 +162,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
       idLabel: String
     ): Future[Option[(Message, String)]] =
       for
-        msg <- APIHelper.tryRequest(
-          channel.retrieveMessageById(myMsgId.value),
-          onFail = APIHelper.failure("retrieving reacted message")
-        )
+        msg <- channel.findMessage(myMsgId, logFail = true)
       yield (for
         embed <- msg.getEmbeds.asScala
         description = embed.getDescription ?? ""

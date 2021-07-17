@@ -26,7 +26,7 @@ object Events:
     )(using messageCache: MessageCache): Option[(BareMessage, Message)] =
       if ev.getAuthor.isBot || ev.getMessage.getType != MessageType.DEFAULT then None
       else
-        messageCache.find(_.messageId.value == ev.getMessageIdLong) match
+        messageCache.find(_.messageId == ev.messageId) match
           case None                                                 => None
           case Some(msg) if msg.text == ev.getMessage.getContentRaw => None // Not an edit
           case Some(msg)                                            => Some((msg, ev.getMessage))

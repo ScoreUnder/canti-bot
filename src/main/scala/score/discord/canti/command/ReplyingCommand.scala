@@ -6,6 +6,7 @@ import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.RichMessage.!
+import score.discord.canti.wrappers.jda.RichMessageChannel.editMessage
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -32,8 +33,8 @@ trait ReplyingCommand extends Command:
     myMessageOption: Option[ID[Message]],
     args: String
   ): Unit =
-    for oldMessage <- myMessageOption; myReply <- executeAndGetMessage(message, args) do
-      APIHelper.tryRequest(
-        message.getChannel.editMessageById(oldMessage.value, myReply),
-        onFail = APIHelper.failure("executing a command for edited message")
-      )
+    for
+      oldMessage <- myMessageOption
+      myReply <- executeAndGetMessage(message, args)
+    do
+      message.getChannel.editMessage(oldMessage, myReply)

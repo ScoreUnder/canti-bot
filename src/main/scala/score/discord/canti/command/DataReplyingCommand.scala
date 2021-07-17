@@ -7,6 +7,7 @@ import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.RichMessage.registerReply
+import score.discord.canti.wrappers.jda.RichMessageChannel.editMessage
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -41,9 +42,4 @@ trait DataReplyingCommand[T] extends ReplyingCommand:
     for
       oldMessage <- myMessageOption; (myReply, data) <- executeAndGetMessageWithData(message, args)
     do
-      APIHelper.tryRequest(
-        message.getChannel
-          .editMessageById(oldMessage.value, myReply)
-          .pipe(tweakMessageAction(_, data)),
-        onFail = APIHelper.failure("executing a command for edited message")
-      )
+      message.getChannel.editMessage(oldMessage, myReply, tweakMessageAction(_, data))

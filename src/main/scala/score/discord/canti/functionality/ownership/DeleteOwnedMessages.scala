@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.util.APIHelper
 import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.RichMessageChannel.deleteMessage
 import score.discord.canti.wrappers.jda.matching.Events.{MessageDelete, NonBotReact}
 import score.discord.canti.wrappers.jda.matching.React
 
@@ -24,10 +25,7 @@ class DeleteOwnedMessages(using messageOwnership: MessageOwnership) extends Even
       case NonBotReact(react @ React.Text("❌" | "🚮"), messageId, channel, user) =>
         getOwnership(user, channel, messageId).foreach {
           case Some(`user`) =>
-            APIHelper.tryRequest(
-              channel.deleteMessageById(messageId.value),
-              onFail = APIHelper.failure("deleting an owned message")
-            )
+            channel.deleteMessage(messageId)
           case Some(_) =>
             react.removeReaction(user).queue()
           case None =>

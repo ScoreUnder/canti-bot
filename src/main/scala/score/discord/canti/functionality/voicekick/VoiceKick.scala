@@ -408,10 +408,10 @@ class VoiceKick(
     deferredEdit match
       case Some(deferredEdit) =>
         deferredEdit.flatMap(deferredEdit =>
-          tryEdit[WebhookMessageUpdateAction[Message]](deferredEdit.editOriginal, _.setActionRows())
+          tryEdit(deferredEdit.editOriginal, _.setActionRows())
         )
       case None =>
-        tryEdit[MessageAction](channel.editMessageById(myMessage.value, _), _.setActionRows())
+        tryEdit(channel.editMessageById(myMessage.value, _), _.setActionRows())
 
     if kickState.ended then removePendingKick(channel, myMessage)
 

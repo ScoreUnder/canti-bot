@@ -165,9 +165,6 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
               _ <- runIfAllowed(newMsg, cmd, cmdExtra)
               replyId <- summon[ReplyCache].get(oldMsg.messageId)
             do
-              APIHelper.tryRequest(
-                newMsg.getChannel.deleteMessageById(replyId.value),
-                onFail = APIHelper.failure("deleting old command reply")
-              )
+              newMsg.getChannel.deleteMessage(replyId)
     case _ =>
 end Commands

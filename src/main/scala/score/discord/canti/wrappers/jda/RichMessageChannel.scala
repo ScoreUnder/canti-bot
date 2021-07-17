@@ -1,13 +1,15 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.requests.restaction.MessageAction
 import score.discord.canti.functionality.ownership.MessageOwnership
+import score.discord.canti.util.APIHelper
 import score.discord.canti.wrappers.jda.MessageConversions.MessageFromX
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 import score.discord.canti.wrappers.jda.RichSnowflake.*
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 import scala.language.postfixOps
 
@@ -56,3 +58,21 @@ object RichMessageChannel:
         guildChannel.getMembers.iterator().nn.asScala.map(_.getUser).toSeq
       case privateChannel: PrivateChannel =>
         List(channel.getJDA.getSelfUser, privateChannel.getUser)
+
+    def findMessage(messageId: ID[Message], logFail: Boolean = false): Future[Message] =
+      val req = APIHelper.tryRequest(channel.retrieveMessageById(messageId.value))
+      if logFail then
+        req.failed.foreach(APIHelper.failure("retrieving a message"))
+      req
+
+    def editMessage(messageId: ID[Message], newMessage: Message, transform: MessageAction => MessageAction = identity): Future[Message] =
+      APIHelper.tryRequest(
+        transform(channel.editMessageById(messageId.value, newMessage)),
+        onFail = APIHelper.failure("editing a message")
+      )
+
+    def deleteMessage(messageId: ID[Message]): Future[Unit] =
+      APIHelper.tryRequest(
+        channel.deleteMessageById(messageId.value),
+        onFail = APIHelper.failure("deleting a message")
+      ).map(_ => ())(using ExecutionContext.parasitic)

@@ -9,6 +9,7 @@ import score.discord.canti.discord.BareMessage
 import score.discord.canti.util.APIHelper
 import score.discord.canti.util.APIHelper.Error
 import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.RichMessageChannel.findMessage
 import score.discord.canti.wrappers.jda.RichSnowflake.id
 
 import scala.concurrent.ExecutionContext.Implicits.given
@@ -31,8 +32,7 @@ class MessageCache(capacity: Int = 2000) extends EventListener:
     } match
       case Some(msg) => Future.successful(Some(msg))
       case None =>
-        APIHelper
-          .tryRequest(channel.retrieveMessageById(id.value))
+        channel.findMessage(id)
           .map { msg => Some(toBareMessage(msg)) }
           .recover { case Error(UNKNOWN_CHANNEL | UNKNOWN_MESSAGE) =>
             None

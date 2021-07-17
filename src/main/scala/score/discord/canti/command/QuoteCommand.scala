@@ -17,6 +17,7 @@ import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
+import score.discord.canti.wrappers.jda.RichMessageChannel.findMessage
 import score.discord.canti.wrappers.jda.RichUser.{canSee, mentionAsText}
 import score.discord.canti.wrappers.jda.matching.Events.NonBotMessage
 
@@ -72,8 +73,7 @@ class QuoteCommand(using
           checkChannelVisibility(channel, cmdMessage.getAuthor) match
             case Right(ch) =>
               await(
-                APIHelper
-                  .tryRequest(ch.retrieveMessageById(quoteId.value))
+                ch.findMessage(quoteId)
                   .map(Right(_))
                   .recover(stringifyMessageRetrievalError(specifiedChannel))
               )
