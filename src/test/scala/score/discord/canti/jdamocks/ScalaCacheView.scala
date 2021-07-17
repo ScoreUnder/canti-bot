@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.utils.{ClosableIterator, LockIterator}
 
 import scala.jdk.CollectionConverters.*
 
-class ScalaCacheView[T](cache: Iterable[T], getName: T => String) extends CacheView[T]:
+open class ScalaCacheView[T](cache: Iterable[T], getName: T => String) extends CacheView[T]:
   val lock = ReentrantReadWriteLock()
 
   override def asList(): util.List[T] = util.ArrayList[T](cache.asJavaCollection)
