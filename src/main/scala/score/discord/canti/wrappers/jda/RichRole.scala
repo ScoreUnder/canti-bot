@@ -5,4 +5,4 @@ import net.dv8tion.jda.api.entities.Role
 object RichRole:
   extension (role: Role)
     /** The mention string for this role */
-    def mention = role.getAsMention
+    inline def mention = role.getAsMention

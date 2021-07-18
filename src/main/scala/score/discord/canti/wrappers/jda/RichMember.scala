@@ -20,7 +20,7 @@ object RichMember:
     ).contains(role)
 
     /** Used to add/remove roles from this member */
-    def roles = MemberRolesShim(member)
+    inline def roles = MemberRolesShim(member)
 
     def unambiguousString = s"${member.getUser.userUnambiguousString} @ ${member.getGuild}"
 

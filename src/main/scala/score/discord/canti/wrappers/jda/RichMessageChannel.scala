@@ -16,7 +16,7 @@ import scala.language.postfixOps
 object RichMessageChannel:
   extension (channel: MessageChannel)
     /** The name of this channel */
-    def name: String = channel.getName
+    inline def name: String = channel.getName
 
     /** A debug-friendly plaintext representation of this channel object */
     def unambiguousString = s"MessageChannel(${channel.rawId} /* ${channel.name} */)"

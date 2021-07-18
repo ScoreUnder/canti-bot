@@ -6,7 +6,7 @@ import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 object RichVoiceChannel:
   extension (channel: VoiceChannel)
     /** The name of this voice channel */
-    def name = channel.getName
+    inline def name = channel.getName
 
     /** A debug-friendly plaintext representation of this voice channel object */
     def unambiguousString = s"Channel(${channel.rawId} /* ${channel.name} */)"

@@ -10,7 +10,7 @@ import scala.jdk.CollectionConverters.*
 object RichGuild:
   extension (guild: Guild)
     /** The name of this guild */
-    def name = guild.getName
+    inline def name = guild.getName
 
     /** A debug-friendly plaintext representation of this guild object */
     def unambiguousString = s"Guild(${guild.rawId} /* ${guild.name} */)"
