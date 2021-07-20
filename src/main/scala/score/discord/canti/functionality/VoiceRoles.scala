@@ -87,15 +87,17 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit =
     if shouldHaveRole != member.has(role) then
-      if shouldHaveRole then
-        member.roles += role -> "voice state change"
-        logger.debug(s"Adding voice role to user ${member.unambiguousString}")
-      else
-        member.roles -= role -> "voice state change"
-        logger.debug(s"""Removing voice role from user ${member.unambiguousString},
-                        |who has roles ${member.getRoles.asScala.map(_.unambiguousString).mkString(" + ")}
-                        |to get rid of role ${role.unambiguousString}
-                        |""".stripMargin.trimnn)
+      {
+        if shouldHaveRole then
+          logger.debug(s"Adding voice role to user ${member.unambiguousString}")
+          member.roles += role -> "voice state change"
+        else
+          logger.debug(s"""Removing voice role from user ${member.unambiguousString},
+                          |who has roles ${member.getRoles.asScala.map(_.unambiguousString).mkString(" + ")}
+                          |to get rid of role ${role.unambiguousString}
+                          |""".stripMargin.trimnn)
+          member.roles -= role -> "voice state change"
+      }.failed.foreach(APIHelper.failure(s"giving 'in voice' role to ${member.unambiguousString}"))
 
   private def shouldHaveRole(state: GuildVoiceState) =
     !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(

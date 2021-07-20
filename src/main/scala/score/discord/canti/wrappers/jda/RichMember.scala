@@ -2,7 +2,10 @@ package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.{Member, Role}
 import net.dv8tion.jda.internal.entities.MemberImpl
+import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 import score.discord.canti.wrappers.jda.RichUser.{unambiguousString as userUnambiguousString}
+
+import scala.concurrent.Future
 
 object RichMember:
   extension (member: Member)
@@ -32,8 +35,8 @@ object RichMember:
       * @param roleReason
       *   role and reason for role change
       */
-    def +=(roleReason: (Role, String)): Unit =
-      member.getGuild.addRoleToMember(member, roleReason._1).reason(roleReason._2).queue()
+    def +=(roleReason: (Role, String)): Future[Void] =
+      member.getGuild.addRoleToMember(member, roleReason._1).reason(roleReason._2).queueFuture()
 
     /** Remove a role from this member.
       *
@@ -42,5 +45,5 @@ object RichMember:
       * @param roleReason
       *   role and reason for role change
       */
-    def -=(roleReason: (Role, String)): Unit =
-      member.getGuild.removeRoleFromMember(member, roleReason._1).reason(roleReason._2).queue()
+    def -=(roleReason: (Role, String)): Future[Void] =
+      member.getGuild.removeRoleFromMember(member, roleReason._1).reason(roleReason._2).queueFuture()
