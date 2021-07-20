@@ -61,11 +61,13 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
         case Left(err) => err
         case Right(role) =>
           await(roleByGuild(guild.id) = role.id)
+          refreshVoiceRoles(guild)
           BotMessages.okay(s"Set the new voice chat role to ${role.mention}")
     }
 
     private def delVoiceRole(guild: Guild) = async {
       await(roleByGuild.remove(guild.id))
+      refreshVoiceRoles(guild)
       BotMessages.okay(s"Turned off voice chat roles for this server")
     }
 
@@ -140,15 +142,19 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
       await(roleByGuild.get(member.getGuild.id)).flatMap(_.find).foreach(queueUpdate)
     }
 
+  private def refreshVoiceRoles(guild: Guild): Unit =
+    for
+      voiceState <- guild.voiceStates
+    do queueRoleUpdate(voiceState.getMember)
+
   override def onEvent(event: GenericEvent): Unit =
     event match
       case ev: ReadyEvent =>
         val jda = ev.getJDA
-        scheduler.schedule(initialDelay = 0 minutes, delay = 1 minute) {
+        async {
           for
             guild <- jda.guilds
-            voiceState <- guild.voiceStates
-          do queueRoleUpdate(voiceState.getMember)
+          do refreshVoiceRoles(guild)
         }
 
       case ev: GenericGuildVoiceEvent =>
