@@ -123,6 +123,7 @@ class CantiBot:
         val readCommand = ReadCommand(summon[MessageCache])
         if readCommand.available then commands.register(readCommand)
         commands.register(PingCommand())
+        commands.register(DebugCommand(userId = config.owner))
 
         bot.addEventListeners(
           { e =>

@@ -122,12 +122,14 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
       logger.debug(s"TEXT CHANNEL CREATE: ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
     case ev: TextChannelDeleteEvent =>
       logger.debug(s"TEXT CHANNEL DELETE: ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
+    case ev: HttpRequestEvent =>
+      logger.debug(s"HTTP REQUEST: ${ev.getRequest.getRoute}")
     case _: GenericUserEvent | _: GenericGuildMessageEvent | _: GuildMemberUpdateEvent |
         _: RoleUpdatePositionEvent | _: GatewayPingEvent | _: GuildVoiceSelfMuteEvent |
         _: GuildVoiceMuteEvent | _: GuildVoiceGuildMuteEvent | _: GuildVoiceSelfDeafenEvent |
         _: GuildVoiceGuildDeafenEvent | _: GuildMemberUpdateNicknameEvent |
         _: GuildMemberRemoveEvent | _: GuildMemberJoinEvent | _: GuildVoiceStreamEvent |
-        _: MessageEmbedEvent | _: HttpRequestEvent =>
+        _: MessageEmbedEvent =>
     // Ignored (they're pretty boring)
     case ev =>
       if !ev.getClass.getAnnotations.nn.exists(_.isInstanceOf[Deprecated]) then
