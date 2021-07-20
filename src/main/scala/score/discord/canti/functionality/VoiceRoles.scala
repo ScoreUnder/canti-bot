@@ -94,10 +94,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
           logger.debug(s"Adding voice role to user ${member.unambiguousString}")
           member.roles += role -> "voice state change"
         else
-          logger.debug(s"""Removing voice role from user ${member.unambiguousString},
-                          |who has roles ${member.getRoles.asScala.map(_.unambiguousString).mkString(" + ")}
-                          |to get rid of role ${role.unambiguousString}
-                          |""".stripMargin.trimnn)
+          logger.debug(s"Removing voice role from user ${member.unambiguousString}")
           member.roles -= role -> "voice state change"
       }.failed.foreach(APIHelper.failure(s"giving 'in voice' role to ${member.unambiguousString}"))
 
