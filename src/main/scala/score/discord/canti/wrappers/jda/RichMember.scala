@@ -17,7 +17,7 @@ object RichMember:
       * @return
       *   true iff they have the role
       */
-    def has(role: Role): Boolean = (member match
+    infix def has(role: Role): Boolean = (member match
       case x: MemberImpl => x.getRoleSet.nn
       case x             => x.getRoles
     ).contains(role)
@@ -36,7 +36,10 @@ object RichMember:
       *   role and reason for role change
       */
     def +=(roleReason: (Role, String)): Future[Void] =
-      member.getGuild.addRoleToMember(member, roleReason._1).reason(roleReason._2).queueFuture()
+      val (role, reason) = roleReason
+      member.getGuild.addRoleToMember(member, role).reason(reason).addCheck { () =>
+        !(member has role)
+      }.queueFuture()
 
     /** Remove a role from this member.
       *
@@ -46,4 +49,7 @@ object RichMember:
       *   role and reason for role change
       */
     def -=(roleReason: (Role, String)): Future[Void] =
-      member.getGuild.removeRoleFromMember(member, roleReason._1).reason(roleReason._2).queueFuture()
+      val (role, reason) = roleReason
+      member.getGuild.removeRoleFromMember(member, role).reason(reason).addCheck { () =>
+        member has role
+      }.queueFuture()
