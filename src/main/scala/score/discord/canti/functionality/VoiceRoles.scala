@@ -14,19 +14,19 @@ import score.discord.canti.util.ParseUtils.*
 import score.discord.canti.util.{APIHelper, BotMessages, GuildUserId}
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
+import score.discord.canti.wrappers.jda.Conversions.{richMember, richRole}
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichGuild.voiceStates
 import score.discord.canti.wrappers.jda.RichJDA.guilds
-import score.discord.canti.wrappers.jda.RichMember.{has, roles}
-import score.discord.canti.wrappers.jda.RichRole.mention
 import score.discord.canti.wrappers.jda.RichSnowflake.id
 
 import java.util.concurrent.{ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.chaining.scalaUtilChainingOps
 
@@ -35,6 +35,8 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
   messageOwnership: MessageOwnership,
   replyCache: ReplyCache
 ) extends EventListener:
+  private val logger = loggerOf[VoiceRoles]
+
   private val voiceRoleCommand = new ReplyingCommand with Command.ServerAdminOnly:
     override def name = "voicerole"
 
@@ -85,8 +87,15 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit =
     if shouldHaveRole != member.has(role) then
-      if shouldHaveRole then member.roles += role -> "voice state change"
-      else member.roles -= role -> "voice state change"
+      if shouldHaveRole then
+        member.roles += role -> "voice state change"
+        logger.debug(s"Adding voice role to user ${member.unambiguousString}")
+      else
+        member.roles -= role -> "voice state change"
+        logger.debug(s"""Removing voice role from user ${member.unambiguousString},
+                        |who has roles ${member.getRoles.asScala.map(_.unambiguousString).mkString(" + ")}
+                        |to get rid of role ${role.unambiguousString}
+                        |""".stripMargin.trimnn)
 
   private def shouldHaveRole(state: GuildVoiceState) =
     !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(
