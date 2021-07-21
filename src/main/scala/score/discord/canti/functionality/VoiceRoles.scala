@@ -86,14 +86,22 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
   val allCommands: Seq[Command] = Seq(voiceRoleCommand)
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit =
-    if shouldHaveRole != member.has(role) then {
-      if shouldHaveRole then
-        logger.debug(s"Adding voice role to user ${member.unambiguousString}")
-        member.roles += role -> "voice state change"
-      else
-        logger.debug(s"Removing voice role from user ${member.unambiguousString}")
-        member.roles -= role -> "voice state change"
-    }.failed.foreach(APIHelper.failure(s"giving 'in voice' role to ${member.unambiguousString}"))
+    if shouldHaveRole != member.has(role) then
+      val roleChangeResult =
+        if shouldHaveRole then
+          logger.debug(s"Adding voice role to user ${member.unambiguousString}")
+          member.roles += role -> "voice state change"
+        else
+          logger.debug(s"Removing voice role from user ${member.unambiguousString}")
+          member.roles -= role -> "voice state change"
+      roleChangeResult.foreach(_ =>
+        logger.debug(
+          s"Voice role change for ${member.unambiguousString} successful according to discord api"
+        )
+      )
+      roleChangeResult.failed.foreach(
+        APIHelper.failure(s"updating 'in voice' role for ${member.unambiguousString}")
+      )
 
   private def shouldHaveRole(state: GuildVoiceState) =
     !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(
