@@ -79,10 +79,6 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
           BotMessages.okay(s"The voice chat role is currently set to ${role.mention}.")
         )
     }
-
-    override given messageOwnership: MessageOwnership = VoiceRoles.this.messageOwnership
-
-    override given replyCache: ReplyCache = VoiceRoles.this.replyCache
   end voiceRoleCommand
 
   val allCommands: Seq[Command] = Seq(voiceRoleCommand)

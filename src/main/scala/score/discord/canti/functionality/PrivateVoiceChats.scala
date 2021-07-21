@@ -63,11 +63,6 @@ class PrivateVoiceChats(
 
   private case class VoiceMove(id: ID[Member], guild: ID[Guild])
 
-  sealed trait MyReplyingCommand extends ReplyingCommand:
-    override given messageOwnership: MessageOwnership = PrivateVoiceChats.this.messageOwnership
-
-    override given replyCache: ReplyCache = PrivateVoiceChats.this.replyCache
-
   sealed trait MySlashCommand extends SlashCommand:
     def executeAndGetMessage(
       origin: CommandInteraction,
@@ -90,7 +85,7 @@ class PrivateVoiceChats(
         .failed
         .foreach(APIHelper.failure(s"calling /${origin.getName}"))
 
-  object AcceptCommand extends Command.Anyone with MyReplyingCommand with MySlashCommand:
+  object AcceptCommand extends Command.Anyone with ReplyingCommand with MySlashCommand:
     override def name = "accept"
 
     override def aliases = List("acc", "accpet")
@@ -155,7 +150,7 @@ class PrivateVoiceChats(
       result.pipe(x => eitherToFutureMessage(x))
   end AcceptCommand
 
-  object InviteCommand extends Command.Anyone with MyReplyingCommand with MySlashCommand:
+  object InviteCommand extends Command.Anyone with ReplyingCommand with MySlashCommand:
     override def name = "invite"
 
     override val aliases = List("inv")
@@ -266,7 +261,7 @@ class PrivateVoiceChats(
       catch case _: PermissionException => Future.successful((Nil, users))
   end InviteCommand
 
-  object PrivateCommand extends Command.Anyone with MyReplyingCommand with MySlashCommand:
+  object PrivateCommand extends Command.Anyone with ReplyingCommand with MySlashCommand:
     override def name = "private"
 
     override val aliases = List("prv", "pv", "voice")
@@ -303,7 +298,7 @@ class PrivateVoiceChats(
         args = ""
       )
 
-  object PublicCommand extends Command.Anyone with MyReplyingCommand with MySlashCommand:
+  object PublicCommand extends Command.Anyone with ReplyingCommand with MySlashCommand:
     override def name: String = "public"
 
     override def aliases: Seq[String] = List("pbv", "pb")
@@ -337,7 +332,7 @@ class PrivateVoiceChats(
         args = ""
       )
 
-  object DefaultCategoryCommand extends MyReplyingCommand with Command.ServerAdminOnly:
+  object DefaultCategoryCommand extends ReplyingCommand with Command.ServerAdminOnly:
     override def name: String = "voicecategory"
 
     override def aliases: Seq[String] = Vector("vccat")

@@ -12,11 +12,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
-trait ReplyingCommand extends Command:
-  given messageOwnership: MessageOwnership
-
-  given replyCache: ReplyCache
-
+trait ReplyingCommand(using MessageOwnership, ReplyCache) extends Command:
   def executeAndGetMessage(message: Message, args: String): Future[Message]
 
   def executeFuture(message: Message, args: String): Future[Message] =

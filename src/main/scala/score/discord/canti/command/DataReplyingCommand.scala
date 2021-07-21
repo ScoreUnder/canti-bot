@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.chaining.scalaUtilChainingOps
 
-trait DataReplyingCommand[T] extends ReplyingCommand:
+trait DataReplyingCommand[T](using MessageOwnership, ReplyCache) extends ReplyingCommand:
   override final def executeAndGetMessage(message: Message, args: String): Future[Message] =
     executeAndGetMessageWithData(message, args).map(_._1)(ExecutionContext.parasitic)
 
