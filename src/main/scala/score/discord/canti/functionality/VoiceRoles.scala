@@ -36,6 +36,8 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
   replyCache: ReplyCache
 ) extends EventListener:
   private val logger = loggerOf[VoiceRoles]
+  private val pendingRoleUpdates = ConcurrentHashMap[GuildUserId, ScheduledFuture[Unit]]()
+  private val rng = ThreadLocalRandom.current().nn
 
   private val voiceRoleCommand = new ReplyingCommand with Command.ServerAdminOnly:
     override def name = "voicerole"
@@ -98,9 +100,6 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
     !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(
       _ != state.getGuild.getAfkChannel
     )
-
-  private val pendingRoleUpdates = ConcurrentHashMap[GuildUserId, ScheduledFuture[Unit]]()
-  private val rng = ThreadLocalRandom.current().nn
 
   private def queueRoleUpdate(member: Member): Unit =
     /*
