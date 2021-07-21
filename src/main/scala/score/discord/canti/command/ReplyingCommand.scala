@@ -32,5 +32,4 @@ trait ReplyingCommand(using MessageOwnership, ReplyCache) extends Command:
     for
       oldMessage <- myMessageOption
       myReply <- executeAndGetMessage(message, args)
-    do
-      message.getChannel.editMessage(oldMessage, myReply)
+    do message.getChannel.editMessage(oldMessage, myReply)

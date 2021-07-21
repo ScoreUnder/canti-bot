@@ -32,7 +32,8 @@ class MessageCache(capacity: Int = 2000) extends EventListener:
     } match
       case Some(msg) => Future.successful(Some(msg))
       case None =>
-        channel.findMessage(id)
+        channel
+          .findMessage(id)
           .map { msg => Some(toBareMessage(msg)) }
           .recover { case Error(UNKNOWN_CHANNEL | UNKNOWN_MESSAGE) =>
             None

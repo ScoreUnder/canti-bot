@@ -86,15 +86,14 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
   val allCommands: Seq[Command] = Seq(voiceRoleCommand)
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit =
-    if shouldHaveRole != member.has(role) then
-      {
-        if shouldHaveRole then
-          logger.debug(s"Adding voice role to user ${member.unambiguousString}")
-          member.roles += role -> "voice state change"
-        else
-          logger.debug(s"Removing voice role from user ${member.unambiguousString}")
-          member.roles -= role -> "voice state change"
-      }.failed.foreach(APIHelper.failure(s"giving 'in voice' role to ${member.unambiguousString}"))
+    if shouldHaveRole != member.has(role) then {
+      if shouldHaveRole then
+        logger.debug(s"Adding voice role to user ${member.unambiguousString}")
+        member.roles += role -> "voice state change"
+      else
+        logger.debug(s"Removing voice role from user ${member.unambiguousString}")
+        member.roles -= role -> "voice state change"
+    }.failed.foreach(APIHelper.failure(s"giving 'in voice' role to ${member.unambiguousString}"))
 
   private def shouldHaveRole(state: GuildVoiceState) =
     !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(
@@ -135,18 +134,14 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
     }
 
   private def refreshVoiceRoles(guild: Guild): Unit =
-    for
-      voiceState <- guild.voiceStates
-    do queueRoleUpdate(voiceState.getMember)
+    for voiceState <- guild.voiceStates do queueRoleUpdate(voiceState.getMember)
 
   override def onEvent(event: GenericEvent): Unit =
     event match
       case ev: ReadyEvent =>
         val jda = ev.getJDA
         async {
-          for
-            guild <- jda.guilds
-          do refreshVoiceRoles(guild)
+          for guild <- jda.guilds do refreshVoiceRoles(guild)
         }
 
       case ev: GenericGuildVoiceEvent =>

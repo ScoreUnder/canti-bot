@@ -407,9 +407,7 @@ class VoiceKick(
 
     deferredEdit match
       case Some(deferredEdit) =>
-        deferredEdit.flatMap(deferredEdit =>
-          tryEdit(deferredEdit.editOriginal, _.setActionRows())
-        )
+        deferredEdit.flatMap(deferredEdit => tryEdit(deferredEdit.editOriginal, _.setActionRows()))
       case None =>
         tryEdit(channel.editMessageById(myMessage.value, _), _.setActionRows())
 

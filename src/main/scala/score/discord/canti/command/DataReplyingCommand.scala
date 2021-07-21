@@ -41,5 +41,4 @@ trait DataReplyingCommand[T](using MessageOwnership, ReplyCache) extends Replyin
   ): Unit =
     for
       oldMessage <- myMessageOption; (myReply, data) <- executeAndGetMessageWithData(message, args)
-    do
-      message.getChannel.editMessage(oldMessage, myReply, tweakMessageAction(_, data))
+    do message.getChannel.editMessage(oldMessage, myReply, tweakMessageAction(_, data))

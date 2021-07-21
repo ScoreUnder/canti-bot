@@ -37,9 +37,13 @@ object RichMember:
       */
     def +=(roleReason: (Role, String)): Future[Void] =
       val (role, reason) = roleReason
-      member.getGuild.addRoleToMember(member, role).reason(reason).addCheck { () =>
-        !(member has role)
-      }.queueFuture()
+      member.getGuild
+        .addRoleToMember(member, role)
+        .reason(reason)
+        .addCheck { () =>
+          !(member has role)
+        }
+        .queueFuture()
 
     /** Remove a role from this member.
       *
@@ -50,6 +54,11 @@ object RichMember:
       */
     def -=(roleReason: (Role, String)): Future[Void] =
       val (role, reason) = roleReason
-      member.getGuild.removeRoleFromMember(member, role).reason(reason).addCheck { () =>
-        member has role
-      }.queueFuture()
+      member.getGuild
+        .removeRoleFromMember(member, role)
+        .reason(reason)
+        .addCheck { () =>
+          member has role
+        }
+        .queueFuture()
+end RichMember

@@ -61,18 +61,25 @@ object RichMessageChannel:
 
     def findMessage(messageId: ID[Message], logFail: Boolean = false): Future[Message] =
       val req = APIHelper.tryRequest(channel.retrieveMessageById(messageId.value))
-      if logFail then
-        req.failed.foreach(APIHelper.failure("retrieving a message"))
+      if logFail then req.failed.foreach(APIHelper.failure("retrieving a message"))
       req
 
-    def editMessage(messageId: ID[Message], newMessage: Message, transform: MessageAction => MessageAction = identity): Future[Message] =
+    def editMessage(
+      messageId: ID[Message],
+      newMessage: Message,
+      transform: MessageAction => MessageAction = identity
+    ): Future[Message] =
       APIHelper.tryRequest(
         transform(channel.editMessageById(messageId.value, newMessage)),
         onFail = APIHelper.failure("editing a message")
       )
 
     def deleteMessage(messageId: ID[Message]): Future[Unit] =
-      APIHelper.tryRequest(
-        channel.deleteMessageById(messageId.value),
-        onFail = APIHelper.failure("deleting a message")
-      ).map(_ => ())(using ExecutionContext.parasitic)
+      APIHelper
+        .tryRequest(
+          channel.deleteMessageById(messageId.value),
+          onFail = APIHelper.failure("deleting a message")
+        )
+        .map(_ => ())(using ExecutionContext.parasitic)
+  end extension
+end RichMessageChannel

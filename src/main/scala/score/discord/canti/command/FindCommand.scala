@@ -161,8 +161,7 @@ class FindCommand(using val messageOwnership: MessageOwnership, val replyCache: 
       myMsgId: ID[Message],
       idLabel: String
     ): Future[Option[(Message, String)]] =
-      for
-        msg <- channel.findMessage(myMsgId, logFail = true)
+      for msg <- channel.findMessage(myMsgId, logFail = true)
       yield (for
         embed <- msg.getEmbeds.asScala
         description = embed.getDescription ?? ""

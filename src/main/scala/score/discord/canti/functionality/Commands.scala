@@ -164,7 +164,6 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
             for
               _ <- runIfAllowed(newMsg, cmd, cmdExtra)
               replyId <- summon[ReplyCache].get(oldMsg.messageId)
-            do
-              newMsg.getChannel.deleteMessage(replyId)
+            do newMsg.getChannel.deleteMessage(replyId)
     case _ =>
 end Commands
