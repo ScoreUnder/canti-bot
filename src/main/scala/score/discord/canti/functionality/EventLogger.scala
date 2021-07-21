@@ -123,7 +123,9 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
     case ev: TextChannelDeleteEvent =>
       logger.debug(s"TEXT CHANNEL DELETE: ${ev.getChannel.unambiguousString} in ${ev.getGuild}")
     case ev: HttpRequestEvent =>
-      logger.debug(s"HTTP REQUEST: ${ev.getRequest.getRoute}")
+      if logger.isTraceEnabled then
+        logger.trace(s"HTTP REQUEST: ${ev.getRequest.getRoute}\nResponse: ${ev.getResponseRaw}")
+      else logger.debug(s"HTTP REQUEST: ${ev.getRequest.getRoute}")
     case _: GenericUserEvent | _: GenericGuildMessageEvent | _: GuildMemberUpdateEvent |
         _: RoleUpdatePositionEvent | _: GatewayPingEvent | _: GuildVoiceSelfMuteEvent |
         _: GuildVoiceMuteEvent | _: GuildVoiceGuildMuteEvent | _: GuildVoiceSelfDeafenEvent |
