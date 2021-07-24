@@ -9,7 +9,7 @@ import score.discord.canti.command.api.{
   ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions
 }
 import score.discord.canti.functionality.Commands
-import score.discord.canti.util.{BotMessages, IntStr}
+import score.discord.canti.util.BotMessages
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RetrievableMessage
