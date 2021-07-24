@@ -29,10 +29,20 @@ class HelpCommand(commands: Commands) extends GenericCommand:
 
   override def permissions = CommandPermissions.Anyone
 
+  sealed trait PageOrCommand
+  private case class Page(num: Int) extends PageOrCommand
+  private case class Command(name: String) extends PageOrCommand
+
+  private val pageOrCommandType =
+    import ArgType.*
+    val pageType = Integer.map(i => Page(i.toInt))
+    val commandType = GreedyString.map(Command(_))
+    Disjunction(pageType, commandType)
+
   private val pageOrCommandArg = ArgSpec(
     "pageOrCommand",
     "Page number or command name to look up",
-    ArgType.GreedyString,
+    pageOrCommandType,
     required = false
   )
 
@@ -41,10 +51,9 @@ class HelpCommand(commands: Commands) extends GenericCommand:
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
       val response =
-        ctx.args.get(pageOrCommandArg) match
-          case None               => showHelpPage(ctx.invoker, 1)
-          case Some(IntStr(page)) => showHelpPage(ctx.invoker, page)
-          case Some(cmdName)      => showCommandHelp(cmdName)
+        ctx.args.get(pageOrCommandArg).getOrElse(Page(1)) match
+          case Page(page)       => showHelpPage(ctx.invoker, page)
+          case Command(cmdName) => showCommandHelp(cmdName)
       await(ctx.invoker.reply(response.fold(BotMessages.error, identity)))
     }
 
