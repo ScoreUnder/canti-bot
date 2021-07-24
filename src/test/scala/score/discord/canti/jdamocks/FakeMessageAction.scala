@@ -71,9 +71,11 @@ class FakeMessageAction(message: Message) extends MessageAction:
 
   override def allowedMentions(
     allowedMentions: util.Collection[Message.MentionType]
-  ): MessageAction = ???
+  ): MessageAction =
+    if allowedMentions.isEmpty then this else ???
 
-  override def mention(mentions: Array[? <: IMentionable]): MessageAction = ???
+  override def mention(mentions: Array[? <: IMentionable]): MessageAction =
+    if mentions.isEmpty then this else ???
 
   override def mentionUsers(userIds: Array[? <: String]): MessageAction = ???
 

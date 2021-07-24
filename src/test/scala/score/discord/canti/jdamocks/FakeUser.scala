@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.{Guild, PrivateChannel, User}
 import net.dv8tion.jda.api.requests.RestAction
 
-class FakeUser(name: String, id: Long) extends User:
+class FakeUser(jda: JDA, name: String, id: Long) extends User:
   override def getName: String = name
 
   override def getDiscriminator: String = "1234"
@@ -23,7 +23,7 @@ class FakeUser(name: String, id: Long) extends User:
 
   override def isBot: Boolean = ???
 
-  override def getJDA: JDA = ???
+  override def getJDA: JDA = jda
 
   override def getIdLong: Long = id
 
