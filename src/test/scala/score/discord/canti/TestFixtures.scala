@@ -4,13 +4,14 @@ import java.util.concurrent.Executors
 
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.collections.{MessageCache, NullCacheBackend, ReplyCache}
-import score.discord.canti.command.ReplyingCommand
+import score.discord.canti.command.api.*
 import score.discord.canti.functionality.Commands
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.jdamocks.{FakeJda, FakeUser}
 import score.discord.canti.wrappers.Scheduler
 
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 object TestFixtures:
@@ -41,16 +42,15 @@ object TestFixtures:
 
     def testCommand(invocation: String): Message =
       val quotingMessage = botChannel.addMessage(invocation, commandUser)
-      val (cmdName, args) = commands
-        .splitCommand(invocation)
-        .getOrElse(throw IllegalArgumentException("Command does not start with prefix"))
+      val invoker = MessageInvoker(quotingMessage)
 
-      val future = commands.get(cmdName) match
-        case Some(cmd: ReplyingCommand) =>
-          cmd.executeFuture(quotingMessage, args)
-        case Some(_) => throw UnsupportedOperationException("Non-ReplyingCommand being tested")
-        case None    => throw IllegalArgumentException("Bad command")
+      import commands.*
+      val future = parseCommand(invoker, invocation) match
+        case ParseSuccess(cmd, name, args) =>
+          cmd.execute(CommandInvocation(prefix, name, args, invoker))
+        case ParseFailure(_, _, _) => throw UnsupportedOperationException("Bad invocation of command")
+        case NotACommand           => throw IllegalArgumentException("Bad command")
 
-      Await.result(future, Duration.Inf)
+      Await.result(future.flatMap(_.retrieve()), Duration.Inf)
 
   def default = DefaultFixture()

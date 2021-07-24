@@ -4,7 +4,11 @@ import net.dv8tion.jda.api.entities.Message
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import score.discord.canti.TestFixtures
+import score.discord.canti.command.api.*
 import score.discord.canti.util.BotMessages
+import score.discord.canti.wrappers.jda.RetrievableMessage
+
+import scala.concurrent.Future
 
 class HelpCommandTest extends AnyFlatSpec with should.Matchers:
   val fixture = TestFixtures.default
@@ -13,10 +17,12 @@ class HelpCommandTest extends AnyFlatSpec with should.Matchers:
   private val dummyDesc = "dummy command"
   private val dummyLongDesc = "this command is dummy"
 
-  private class DummyCommand(val name: String) extends Command.Anyone:
+  private class DummyCommand(val name: String) extends GenericCommand:
     override def description = dummyDesc
     override def longDescription(invocation: String) = dummyLongDesc
-    override def execute(message: Message, args: String): Unit = ???
+    override def permissions = CommandPermissions.Anyone
+    override def argSpec = Nil
+    override def execute(ctx: CommandInvocation): Future[RetrievableMessage] = ???
 
   (1 to 100)
     .map(n => s"cmd$n")

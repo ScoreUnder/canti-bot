@@ -13,7 +13,7 @@ class QuoteCommandTest extends AnyFlatSpec with should.Matchers:
   val quoterChannel = botChannel
   val quoteeChannel = exampleChannel
 
-  commands.register(QuoteCommand())
+  commands.register(QuoteCommand(messageCache))
 
   def quoteCommandTest(invocation: String, expected: String): Unit =
     testCommand(invocation).getEmbeds.get(0).nn.getDescription.nn should include(expected)
