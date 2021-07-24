@@ -60,6 +60,7 @@ class HelpCommand(commands: Commands) extends GenericCommand:
         BotMessages `plain`
           s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
              |**Restrictions:** ${command.permissions.description}
+             |**Parameters:** ${stringifyArgspec(command.argSpec)}
              |${command.description}
              |
              |${command.longDescription(commands.prefix + unprefixed)}""".stripMargin.trimnn
@@ -95,4 +96,13 @@ class HelpCommand(commands: Commands) extends GenericCommand:
       )
 
       Right(embed)
+
+  private def stringifyArgspec(argSpec: List[ArgSpec[?]]) =
+    if argSpec.isEmpty then "None"
+    else
+      argSpec
+        .map { sp =>
+          s"`${sp.name}`${if sp.required then "" else " (optional)"} -- ${sp.description}"
+        }
+        .mkString("\n", "\n", "\n")
 end HelpCommand
