@@ -207,6 +207,8 @@ class PrivateVoiceChats(
       catch case _: PermissionException => Future.successful((Nil, users))
   end InviteCommand
 
+  private val nameArgType = ArgType.GreedyString.map(_.take(maxNameLen))
+
   object PrivateCommand extends GenericCommand:
     override def name = "private"
 
@@ -227,18 +229,18 @@ class PrivateVoiceChats(
     private val limitArg = ArgSpec(
       "limit",
       "The number of users allowed in the channel",
-      ArgType.Integer,
+      ArgType.Integer.withFilter(v => v > 0L && v <= 99L).map(_.toInt),
       required = false
     )
     private val nameArg =
-      ArgSpec("name", "The name of the channel to create", ArgType.GreedyString, required = false)
+      ArgSpec("name", "The name of the channel to create", nameArgType, required = false)
 
     override val argSpec = List(limitArg, nameArg)
 
     def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
       createUserOwnedChannel(
         public = false,
-        limit = ctx.args.get(limitArg).fold(0)(_.toInt),
+        limit = ctx.args.get(limitArg).getOrElse(0),
         invoker = ctx.invoker,
         chosenName = ctx.args.get(nameArg).getOrElse(""),
         commandName = ctx.name,
@@ -261,7 +263,7 @@ class PrivateVoiceChats(
     override def permissions = CommandPermissions.Anyone
 
     private val nameArg =
-      ArgSpec("name", "The name of the channel to create", ArgType.GreedyString, required = false)
+      ArgSpec("name", "The name of the channel to create", nameArgType, required = false)
 
     override val argSpec = List(nameArg)
 
@@ -516,10 +518,10 @@ class PrivateVoiceChats(
     commandName: String,
     maybeMistake: Boolean
   ) =
-    val message = "Your channel has been created." + (if public then ""
-                                                      else
-                                                        s"\nYou can invite others with the ${commands.prefix}${InviteCommand.name} command."
-    )
+    val howToInvite =
+      if public then ""
+      else s"\nYou can invite others with the ${commands.prefix}${InviteCommand.name} command."
+    val message = "Your channel has been created." + howToInvite
 
     val successMessage = BotMessages
       .okay(message)
@@ -571,22 +573,6 @@ class PrivateVoiceChats(
     else prefix + name
 
   private val maxNameLen = 100
-
-  private def parseChannelDetails(args: String, public: Boolean) =
-    val trimmedArgs = args.trimnn
-    val (limit, name) =
-      if public then ("", trimmedArgs)
-      else
-        trimmedArgs.splitAt(trimmedArgs.indexOf(' ')) match
-          case ("", maybeLimit)  => (maybeLimit, "")
-          case (limitStr, name_) => (limitStr, name_.trimnn)
-
-    limit.toIntOption
-      .filter(x => x >= 0 && x <= 99)
-      .fold((0, trimmedArgs))((_, name)) match
-      case (limit_, name_) if name_.length > maxNameLen => (limit_, name_ take maxNameLen)
-      case (limit_, name_) if name_.length < 3          => (limit_, "")
-      case x                                            => x
 
   private def genericChannelName(originalChannel: VoiceChannel, public: Boolean) =
     val newName =
