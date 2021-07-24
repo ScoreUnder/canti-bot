@@ -3,10 +3,13 @@ package score.discord.canti.command
 import cps.*
 import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.MessageBuilder
 import score.discord.canti.collections.{MessageCache, ReplyCache}
+import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.canti.wrappers.NullWrappers.*
+import score.discord.canti.wrappers.jda.RetrievableMessage
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichSnowflake.id
 
@@ -20,8 +23,7 @@ import scala.concurrent.{Await, Future, TimeoutException, blocking}
 import scala.io.Codec
 import scala.language.implicitConversions
 
-class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache)
-    extends Command.Anyone:
+class ReadCommand(messageCache: MessageCache) extends GenericCommand:
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".splitnn(" ")
   private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".splitnn(" ")
   private val DICT_FILE = File("extra_words")
@@ -45,27 +47,39 @@ class ReadCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache
        |Example: $invocation 藁で束ねても男一匹
     """.stripMargin
 
-  override def execute(message: Message, args: String): Unit =
+  override val permissions = CommandPermissions.Anyone
+
+  private val textArg =
+    ArgSpec("text", "The text to annotate with furigana", ArgType.GreedyString, required = false)
+
+  override val argSpec = List(textArg)
+
+  private val dummyMessage = MessageBuilder("dummy").build
+
+  override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
-      val rawInput = args.trimnn match
-        case "" =>
-          val chanId = message.getChannel.id
+      val rawInput = ctx.args.get(textArg) match
+        case None =>
+          val chanId = ctx.invoker.channel.id
           messageCache
             .find(d => d.chanId == chanId && JAPANESE.findFirstMatchIn(d.text).isDefined)
             .map(_.text)
             .getOrElse("")
-        case text => text
+        case Some(text) => text
 
-      val input = CommandHelper(message).mentionsToPlaintext(rawInput)
-      if input.isEmpty then await(message ! BotMessages.error("You need to enter some text first"))
+      val input =
+        CommandHelper(ctx.invoker.originatingMessage.getOrElse(dummyMessage))
+          .mentionsToPlaintext(rawInput)
+      if input.isEmpty then
+        await(ctx.invoker.reply(BotMessages.error("You need to enter some text first")))
       else
         val furiganaFuture = queryKakasi(KAKASI_FURIGANA, input)
         val romajiFuture = queryKakasi(KAKASI_ROMAJI, input)
 
         val furigana = processFurigana(await(furiganaFuture))
 
-        await(FuriganaCommand.sendFuriMessage(message, furigana, await(romajiFuture)))
-    }.failed.foreach(APIHelper.loudFailure("displaying kakasi reading", message))
+        await(ctx.invoker.reply(FuriganaCommand.makeFuriMessage(furigana, await(romajiFuture))))
+    }
 
   private def processFurigana(raw: String): Iterable[(String, String)] =
     val spaces = WHITESPACE.findAllMatchIn(raw).map(_.start).toVector

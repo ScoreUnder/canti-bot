@@ -1,5 +1,6 @@
 package score.discord.canti.command
 
+import com.codedx.util.MapK
 import cps.*
 import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.JDA
@@ -7,14 +8,17 @@ import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
-import net.dv8tion.jda.api.interactions.components.Button
+import net.dv8tion.jda.api.interactions.components.{ActionRow, Button}
 import net.dv8tion.jda.api.requests.ErrorResponse
 import net.dv8tion.jda.api.requests.restaction.MessageAction
 import score.discord.canti.collections.{MessageCache, ReplyCache}
+import score.discord.canti.command.api.{
+  ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions, MessageInvoker
+}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.wrappers.NullWrappers.*
-import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.{ID, OutgoingMessage, RetrievableMessage}
 import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichMessageChannel.findMessage
@@ -26,12 +30,8 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.jdk.CollectionConverters.*
 
-class QuoteCommand(using
-  messageCache: MessageCache,
-  val messageOwnership: MessageOwnership,
-  val replyCache: ReplyCache
-) extends Command.Anyone
-    with DataReplyingCommand[Option[String]]:
+class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache)
+    extends GenericCommand:
   override def name: String = "quote"
 
   override val aliases: Seq[String] = List("q")
@@ -49,28 +49,36 @@ class QuoteCommand(using
        |`>>12341234`
     """.stripMargin
 
-  override def executeAndGetMessageWithData(
-    cmdMessage: Message,
-    args: String
-  ): Future[(Message, Option[String])] =
+  override def permissions = CommandPermissions.Anyone
+
+  // TODO: make this into its own ArgType
+  private val quoteArg =
+    ArgSpec("message", "ID or link to the message to quote", ArgType.GreedyString)
+
+  override val argSpec = List(quoteArg)
+
+  override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
-      val quotedMsg = await(retrieveQuoteMessageByArg(cmdMessage, args))
+      val quotedMsg = await(retrieveQuoteMessageByArg(ctx.invoker, ctx.args(quoteArg)))
       val replyMsg = quotedMsg
-        .map(message => getMessageAsQuote(cmdMessage, message.getChannel, message))
+        .map(getMessageAsQuote(ctx.invoker, _))
         .fold(BotMessages.error, identity)
         .toMessage
-      (replyMsg, quotedMsg.toOption.map(_.getJumpUrl))
+      val buttons = quotedMsg.toOption.toList.map { msg =>
+        ActionRow.of(Button.link(msg.getJumpUrl, "Go to message"))
+      }
+      await(ctx.invoker.reply(OutgoingMessage(replyMsg, actionRows = Some(buttons))))
     }
 
   private def retrieveQuoteMessageByArg(
-    cmdMessage: Message,
+    invoker: CommandInvoker,
     args: String
   ): Future[Either[String, Message]] =
     async {
       parseQuoteIDs(args) match
         case Some((quoteId, specifiedChannel)) =>
-          val channel = channelOrBestGuess(cmdMessage, quoteId, specifiedChannel)
-          checkChannelVisibility(channel, cmdMessage.getAuthor) match
+          val channel = channelOrBestGuess(invoker.channel, quoteId, specifiedChannel)
+          checkChannelVisibility(channel, invoker.user) match
             case Right(ch) =>
               await(
                 ch.findMessage(quoteId)
@@ -82,17 +90,12 @@ class QuoteCommand(using
           Left("You need to give a message ID to quote")
     }
 
-  override def tweakMessageAction(action: MessageAction, data: Option[String]): MessageAction =
-    data match
-      case None       => action
-      case Some(link) => action.setActionRow(Button.link(link, "Go to message"))
-
   private def channelOrBestGuess(
-    context: Message,
+    origChannel: MessageChannel,
     quoteId: ID[Message],
     specifiedChannel: Option[ID[MessageChannel]]
   ): Option[MessageChannel] =
-    given JDA = context.getJDA
+    given JDA = origChannel.getJDA
     specifiedChannel match
       case Some(chanID) => chanID.find
       case None =>
@@ -100,7 +103,7 @@ class QuoteCommand(using
           .find(_.messageId == quoteId)
           .map(m => m.chanId)
           .flatMap(_.find)
-          .orElse(Some(context.getChannel))
+          .orElse(Some(origChannel))
 
   private def stringifyMessageRetrievalError(
     specifiedChannel: Option[ID[MessageChannel]]
@@ -129,7 +132,8 @@ class QuoteCommand(using
       case Some(_) => Left("You do not have access to the specified channel.")
       case None    => Left("I do not have access to the specified channel.")
 
-  private def getMessageAsQuote(cmdMessage: Message, ch: MessageChannel, msg: Message) =
+  private def getMessageAsQuote(invoker: CommandInvoker, msg: Message) =
+    val ch = msg.getChannel
     val chanName = Option(ch.getName).fold("Untitled channel")("#" + _)
     val sender = msg.getAuthor
 
@@ -137,7 +141,7 @@ class QuoteCommand(using
       .plain(msg.getContentRaw)
       .setAuthor(sender.getName, null, sender.getAvatarUrl)
       .setTimestamp(msg.getTimeCreated)
-      .setFooter(s"$chanName | Requested by ${cmdMessage.getAuthor.mentionAsText}", null)
+      .setFooter(s"$chanName | Requested by ${invoker.user.mentionAsText}", null)
 
     val embeds = msg.getEmbeds.asScala
 
@@ -147,7 +151,7 @@ class QuoteCommand(using
         for image <- embeds.flatMap(_.getImage.?).headOption do quote.setImage(image.getUrl)
 
     for embed <- embeds do
-      for desc <- Option(embed.getDescription) do quote.addField("[Embed description]", desc, false)
+      for desc <- embed.getDescription.? do quote.addField("[Embed description]", desc, false)
 
       embed.getFields.asScala.foreach(quote.addField)
 
@@ -174,11 +178,25 @@ class QuoteCommand(using
           None
 
   class GreentextListener extends EventListener:
+    private val logger = loggerOf[GreentextListener]
+
     override def onEvent(event: GenericEvent): Unit = event match
       case NonBotMessage(message) =>
-        QuoteCommand.GREENTEXT_REGEX
-          .findPrefixMatchOf(message.getContentRaw)
-          .foreach(m => QuoteCommand.this.execute(message, m.after.toString))
+        Future {
+          QuoteCommand.GREENTEXT_REGEX
+            .findPrefixMatchOf(message.getContentRaw)
+            .foreach { m =>
+              val invocation =
+                CommandInvocation(
+                  "",
+                  ">>",
+                  MapK.empty + (quoteArg, m.after.toString),
+                  MessageInvoker(message)
+                )
+              logger.debug(s"running command: $invocation")
+              QuoteCommand.this.execute(invocation)
+            }
+        }
       case _ =>
 end QuoteCommand
 

@@ -4,19 +4,30 @@ import java.time.{Duration, Instant}
 
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.collections.ReplyCache
+import score.discord.canti.command.api.{
+  ArgSpec, CommandInvocation, CommandPermissions, MessageInvoker
+}
 import score.discord.canti.functionality.ownership.MessageOwnership
-import score.discord.canti.util.APIHelper
+import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.util.TimeUtils.formatTimeDiff
+import score.discord.canti.wrappers.jda.MessageConversions.given
+import score.discord.canti.wrappers.jda.RetrievableMessage
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.language.implicitConversions
 
 class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
-    extends Command.Anyone:
+    extends GenericCommand:
   override def name: String = "ping"
 
   override def description: String = "Check the lag from the bot to the server"
+
+  override def permissions = CommandPermissions.Anyone
+
+  override def argSpec = Nil
 
   def getPingMessage(
     timeSent: Instant,
@@ -43,11 +54,13 @@ class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
     times += s"(Reported gateway ping: ${formatTimeDiff(Duration.ofMillis(gatewayPing).nn)})"
     times.mkString("\n")
 
-  override def execute(message: Message, args: String): Unit =
+  override def canBeEdited = false
+
+  private def executeForMessage(message: Message) =
     def now() = Instant.now().nn
     val timeSent = now()
     var timeReallySent: Option[Instant] = None
-    (for
+    for
       pingMessage <- message
         .reply(s"⏲ Checking ping...")
         .mentionRepliedUser(false)
@@ -70,5 +83,13 @@ class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
           )
         )
         .queueFuture()
-    yield ()).failed.foreach(APIHelper.loudFailure("checking ping", message))
+    yield RetrievableMessage(pingMessage)
+
+  override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
+    ctx.invoker match
+      case MessageInvoker(message) => executeForMessage(message)
+      case _ =>
+        ctx.invoker.reply(
+          BotMessages.error("This command only works with normal messages right now")
+        )
 end PingCommand

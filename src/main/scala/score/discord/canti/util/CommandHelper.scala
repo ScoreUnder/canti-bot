@@ -6,12 +6,14 @@ import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichMessage.guild
 
 object CommandHelper:
+  val ERRMSG_MUST_RUN_WITHIN_GUILD = "You can only use this command from within a server."
+
   def apply(message: entities.Message): Message = CommandHelper.Message(message)
 
   class Message(val _me: entities.Message) extends AnyVal:
     /** Either this message's guild, or a human-readable error */
     def guild: Either[String, Guild] =
-      _me.guild.toRight("You can only use this command from within a server.")
+      _me.guild.toRight(ERRMSG_MUST_RUN_WITHIN_GUILD)
 
     /** Either this message's member, or a human-readable error */
     def member: Either[String, Member] =

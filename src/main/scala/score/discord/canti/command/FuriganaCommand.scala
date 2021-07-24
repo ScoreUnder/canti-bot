@@ -2,14 +2,18 @@ package score.discord.canti.command
 
 import cps.*
 import cps.monads.FutureAsyncMonad
+import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.Furigana
 import score.discord.canti.collections.ReplyCache
-import score.discord.canti.command.FuriganaCommand.{FURI_PATTERN, sendFuriMessage}
+import score.discord.canti.command.FuriganaCommand.*
+import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.canti.wrappers.NullWrappers.*
+import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.jda.MessageConversions.given
+import score.discord.canti.wrappers.jda.{OutgoingMessage, RetrievableMessage}
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 import score.discord.canti.wrappers.jda.RichSnowflake.id
@@ -20,7 +24,7 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.util.chaining.*
 
-class FuriganaCommand(using MessageOwnership, ReplyCache) extends Command.Anyone:
+class FuriganaCommand(using MessageOwnership, ReplyCache, Scheduler) extends GenericCommand:
   override def name = "furigana"
 
   override def aliases = List("furi", "fg", "f")
@@ -44,18 +48,16 @@ class FuriganaCommand(using MessageOwnership, ReplyCache) extends Command.Anyone
       .filter(t => !t._1.isEmpty || !t._2.isEmpty)
       .toSeq
 
-  override def execute(message: Message, args: String): Unit =
-    if args.isEmpty then
-      message ! BotMessages.error("Please provide the text to render as part of the command.")
-      return
+  private val dummyMessage = MessageBuilder("dummy").build
 
+  override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
-      message.getChannel.sendTyping().queue()
+      ctx.invoker.replyLater(false)
 
-      val commandHelper = CommandHelper(message)
+      val commandHelper = CommandHelper(ctx.invoker.originatingMessage.getOrElse(dummyMessage))
 
       val (origWithoutFuri, furiText) =
-        val orig = parseInput(args)
+        val orig = parseInput(ctx.args(furiTextArg))
         (
           orig.map(_._1).mkString,
           orig.map(t =>
@@ -63,24 +65,22 @@ class FuriganaCommand(using MessageOwnership, ReplyCache) extends Command.Anyone
           )
         )
 
-      await(sendFuriMessage(replyingTo = message, furigana = furiText, plain = origWithoutFuri))
-    }.failed foreach APIHelper.loudFailure("rendering furigana", message)
+      await(ctx.invoker.reply(makeFuriMessage(furigana = furiText, plain = origWithoutFuri)))
+    }
+
+  override def permissions = CommandPermissions.Anyone
+
+  private val furiTextArg =
+    ArgSpec("furiText", "The text to render as furigana", ArgType.GreedyString)
+
+  override val argSpec = List(furiTextArg)
+end FuriganaCommand
 
 object FuriganaCommand:
   private val FURI_PATTERN = raw"[｛{](?<left>[^：:]*)[：:](?<right>[^｝}]*)[｝}]|(?<other>[^{｛]+)".r
 
-  def sendFuriMessage(
-    replyingTo: Message,
-    furigana: Iterable[(String, String)],
-    plain: String
-  )(using messageOwnership: MessageOwnership, replyCache: ReplyCache): Future[Message] =
-    replyingTo
-      .reply(Furigana.renderPNG(furigana), "furigana.png")
-      .mentionRepliedUser(false)
-      .append(plain.take(2000))
-      .allowedMentions(Collections.emptySet)
-      .queueFuture()
-      .tap(_.foreach { newMsg =>
-        messageOwnership(newMsg) = replyingTo.getAuthor
-        replyCache += replyingTo.id -> newMsg.id
-      })
+  def makeFuriMessage(furigana: Iterable[(String, String)], plain: String): OutgoingMessage =
+    OutgoingMessage(
+      plain.take(2000).toMessage,
+      files = List("furigana.png" -> Furigana.renderPNG(furigana)),
+    )

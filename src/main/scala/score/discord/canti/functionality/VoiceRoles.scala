@@ -8,14 +8,15 @@ import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
-import score.discord.canti.command.{Command, ReplyingCommand}
+import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
+import score.discord.canti.command.GenericCommand
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.ParseUtils.*
 import score.discord.canti.util.{APIHelper, BotMessages, GuildUserId}
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.jda.Conversions.{richMember, richRole}
-import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.{ID, RetrievableMessage}
 import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichGuild.voiceStates
@@ -39,7 +40,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
   private val pendingRoleUpdates = ConcurrentHashMap[GuildUserId, ScheduledFuture[Unit]]()
   private val rng = ThreadLocalRandom.current().nn
 
-  private val voiceRoleCommand = new ReplyingCommand with Command.ServerAdminOnly:
+  private val voiceRoleCommand = new GenericCommand:
     override def name = "voicerole"
 
     override def aliases: List[String] = List("setvoicerole", "getvoicerole")
@@ -50,13 +51,30 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
       s"""Usage: `$invocation In Voice` or `$invocation 123456789` (with a role ID)
          |You can also remove the role with `$invocation none`""".stripMargin
 
-    override def executeAndGetMessage(message: Message, args: String): Future[Message] = async {
-      await(args.trimnn match
-        case ""      => showVoiceRole(message.getGuild)
-        case "none"  => delVoiceRole(message.getGuild)
-        case trimmed => setVoiceRole(trimmed, message.getGuild)
-      ).toMessage
-    }.tap(_.failed.foreach(APIHelper.loudFailure("setting voice role", message)))
+    override def permissions = CommandPermissions.ServerAdminOnly
+
+    // TODO: parse this properly with ArgTypes
+    private val roleArg = ArgSpec(
+      "role",
+      "The role to assign to users in voice chat",
+      ArgType.GreedyString,
+      required = false
+    )
+
+    override val argSpec = List(roleArg)
+
+    override def execute(ctx: CommandInvocation): Future[RetrievableMessage] = async {
+      val toSend =
+        ctx.invoker.member.map(_.getGuild) match
+          case Left(err) => BotMessages.error(err).toMessage
+          case Right(guild) =>
+            await(ctx.args.get(roleArg) match
+              case None          => showVoiceRole(guild)
+              case Some("none")  => delVoiceRole(guild)
+              case Some(trimmed) => setVoiceRole(trimmed, guild)
+            ).toMessage
+      await(ctx.invoker.reply(toSend))
+    }
 
     private def setVoiceRole(roleName: String, guild: Guild) = async {
       findRole(guild, roleName) match
@@ -83,7 +101,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
     }
   end voiceRoleCommand
 
-  val allCommands: Seq[Command] = Seq(voiceRoleCommand)
+  val allCommands: Seq[GenericCommand] = Seq(voiceRoleCommand)
 
   private def setRole(member: Member, role: Role, shouldHaveRole: Boolean): Unit =
     if shouldHaveRole != member.has(role) then

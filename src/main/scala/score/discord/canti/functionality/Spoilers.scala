@@ -6,11 +6,14 @@ import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
-import score.discord.canti.command.Command
+import score.discord.canti.command.api.{
+  ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions
+}
+import score.discord.canti.command.GenericCommand
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.wrappers.NullWrappers.*
-import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.{ID, RetrievableMessage}
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichMessageChannel.{mention, sendOwned}
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
@@ -32,7 +35,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
 
   val spoilerEmote = "🔍"
 
-  private val spoilerCommand = new Command.Anyone:
+  private val spoilerCommand = new GenericCommand:
     override def name = "spoiler"
 
     override val aliases = List("sp", "spoil", "hide")
@@ -59,46 +62,57 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
          |```
       """.stripMargin
 
-    override def execute(message: Message, args: String): Unit =
+    override def permissions = CommandPermissions.Anyone
+
+    private val spoilerArg = ArgSpec("text", "Spoiler text", ArgType.GreedyString, required = false)
+
+    override val argSpec = List(spoilerArg)
+
+    override def canBeEdited = false
+
+    override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
       async {
-        APIHelper.tryRequest(
-          message.delete(),
-          onFail = APIHelper.loudFailure("deleting a message", message)
-        )
+        for message <- ctx.invoker.originatingMessage do
+          APIHelper.tryRequest(
+            message.delete(),
+            onFail = APIHelper.loudFailure("deleting a message", ctx.invoker.asMessageReceiver)
+          )
 
-        args.trimnn match
-          case "" =>
-            await(createSpoilerConversation(message))
-          case trimmed =>
-            await(createSpoiler(message.getChannel, message.getAuthor, trimmed))
-      }.failed.foreach(APIHelper.loudFailure("running spoiler command", message))
+        ctx.args.get(spoilerArg) match
+          case None =>
+            await(createSpoilerConversation(ctx.invoker))
+          case Some(trimmed) =>
+            await(createSpoiler(ctx.invoker.channel, ctx.invoker.user, trimmed))
+      }
 
-    private def createSpoilerConversation(message: Message) =
-      val channel = message.getChannel
+    private def createSpoilerConversation(invoker: CommandInvoker): Future[RetrievableMessage] =
+      val channel = invoker.channel
       for
-        privateChannel <- message.getAuthor.openPrivateChannel().queueFuture()
-        _ <- privateChannel
+        privateChannel <- invoker.user.openPrivateChannel().queueFuture()
+        message <- privateChannel
           .sendMessage(
             s"Please enter your spoiler contents for ${channel.mention}, or reply with 'cancel' to cancel."
           )
           .queueFuture()
-      yield conversations.start(message.getAuthor, privateChannel) { conversation =>
-        conversation.message.getContentRaw match
-          case "cancel" =>
-            conversation.message.!("Did not create a spoiler.")
-          case spoiler =>
-            for _ <- createSpoiler(channel, conversation.message.getAuthor, spoiler) do
-              conversation.message.!("Created your spoiler.")
-      }
+      yield
+        conversations.start(message.getAuthor, privateChannel) { conversation =>
+          conversation.message.getContentRaw match
+            case "cancel" =>
+              conversation.message.!("Did not create a spoiler.")
+            case spoiler =>
+              for _ <- createSpoiler(channel, conversation.message.getAuthor, spoiler) do
+                conversation.message.!("Created your spoiler.")
+        }
+        RetrievableMessage(message)
   end spoilerCommand
 
-  val allCommands: Seq[Command] = Seq(spoilerCommand)
+  val allCommands: Seq[GenericCommand] = Seq(spoilerCommand)
 
   private def createSpoiler(
     spoilerChannel: MessageChannel,
     author: User,
     args: String
-  ): Future[Unit] =
+  ): Future[RetrievableMessage] =
     async {
       // Must be lowercase (to allow case insensitive string comparison)
       val hintPrefix = "hint:"
@@ -124,6 +138,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
       await(spoilerMessage.addReaction(spoilerEmote).queueFuture())
       await(spoilerDbUpdate)
       logger.info(s"Created spoiler ${spoilerMessage.id} on behalf of ${author.unambiguousString}")
+      RetrievableMessage(spoilerMessage)
     }
 
   override def onEvent(event: GenericEvent): Unit = event match

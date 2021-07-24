@@ -21,3 +21,5 @@ object MessageConversions:
   given Conversion[EmbedBuilder, MessageFromX] = MessageFromEmbedBuilder(_)
 
   given Conversion[Message, MessageFromX] = MessageFromMessage(_)
+
+  given Conversion[MessageFromX, OutgoingMessage] = x => OutgoingMessage(x.toMessage)

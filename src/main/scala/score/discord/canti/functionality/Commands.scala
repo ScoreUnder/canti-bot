@@ -1,10 +1,14 @@
 package score.discord.canti.functionality
 
+import com.codedx.util.MapK
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.collections.{MessageCache, ReplyCache}
-import score.discord.canti.command.Command
+import score.discord.canti.command.api.{
+  ArgSpec, CommandInvocation, CommandInvoker, EditedMessageInvoker, MessageInvoker
+}
+import score.discord.canti.command.GenericCommand
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.StringUtils.formatMessageForLog
 import score.discord.canti.util.{APIHelper, BotMessages}
@@ -14,7 +18,9 @@ import score.discord.canti.wrappers.jda.Conversions.{
 }
 import score.discord.canti.wrappers.jda.matching.Events.{NonBotMessage, NonBotMessageEdit}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.implicitConversions
 import scala.util.chaining.*
 
@@ -29,8 +35,8 @@ object Commands:
     */
   private def normaliseCommandName(name: String): String = name.lowernn
 
-  object CommandOrdering extends Ordering[Command]:
-    def compare(c1: Command, c2: Command): Int =
+  object CommandOrdering extends Ordering[GenericCommand]:
+    def compare(c1: GenericCommand, c2: GenericCommand): Int =
       normaliseCommandName(c1.name) compare normaliseCommandName(c2.name)
 end Commands
 
@@ -39,9 +45,9 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
 
   private val logger = loggerOf[Commands]
   // All commands and aliases, indexed by name
-  private val commands = mutable.HashMap[String, Command]()
+  private val commands = mutable.HashMap[String, GenericCommand]()
   // Commands list excluding aliases
-  private val commandList = mutable.TreeSet[Command]()(using CommandOrdering)
+  private val commandList = mutable.TreeSet[GenericCommand]()(using CommandOrdering)
   // String prepended before a command
   val prefix = "&"
 
@@ -51,7 +57,7 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
     * @param command
     *   command to register
     */
-  def register(command: Command): Unit =
+  def register(command: GenericCommand): Unit =
     commands(normaliseCommandName(command.name)) = command
     for alias <- command.aliases do commands(normaliseCommandName(alias)) = command
     commandList += command
@@ -63,7 +69,7 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
     * @return
     *   optional command
     */
-  def get(commandName: String): Option[Command] =
+  def get(commandName: String): Option[GenericCommand] =
     commands.get(normaliseCommandName(commandName))
 
   /** Retrieve all registered commands from this command registry.
@@ -71,20 +77,21 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
     * @return
     *   collection of all commands
     */
-  def all: Seq[Command] = commandList.toList
+  def all: Seq[GenericCommand] = commandList.toList
 
   /** Determines whether a command corresponding to a given message can be executed on that guild by
     * that member, and if not returns a human-readable error message.
     *
     * @param cmd
     *   command to check
-    * @param message
-    *   command message
+    * @param origin
+    *   entity invoking the command
     * @return
     *   either error or command
     */
-  def canRunCommand(cmd: Command, message: Message): Either[String, Command] =
-    Either.cond(cmd.checkPermission(message), cmd, cmd.permissionMessage)
+  def canRunCommand(cmd: GenericCommand, origin: CommandInvoker): Either[String, GenericCommand] =
+    val permission = cmd.permissions
+    Either.cond(permission.canExecute(origin), cmd, permission.description)
 
   /** Splits a raw message into command name and arguments. No validation is done to check that the
     * name is correct in any way.
@@ -108,22 +115,68 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
 
       Some((cmdName, cmdExtra))
 
-  /** Parses a command string into the command object and argument string.
+  type ArgMap = MapK[ArgSpec, [T] =>> T]
+  sealed trait ParseResult
+  case object NotACommand extends ParseResult
+  final case class ParseSuccess(command: GenericCommand, name: String, args: ArgMap)
+      extends ParseResult
+  final case class ParseFailure(command: GenericCommand, name: String, message: String)
+      extends ParseResult
+
+  /** Parses a command string into the command object and argument map.
     *
+    * @param invoker
+    *   the invoker of this command
     * @param input
     *   command string
     * @return
-    *   optionally (command, args)
+    *   ParseResult corresponding to command
     */
-  def parseCommand(input: String): Option[(Command, String)] = for
-    (cmdName, cmdExtra) <- splitCommand(input)
-    cmd <- get(cmdName)
-  yield (cmd, cmdExtra)
+  def parseCommand(invoker: CommandInvoker, input: String): ParseResult =
+    parseCommandOnly(input).fold(NotACommand) { case (cmd, cmdName, cmdExtra) =>
+      parseArgList(invoker, cmd.argSpec, cmdExtra)
+        .fold(ParseFailure(cmd, cmdName, _), ParseSuccess(cmd, cmdName, _))
+    }
 
-  def runIfAllowed(message: Message, cmd: Command, cmdExtra: String): Either[String, Command] =
-    canRunCommand(cmd, message).tap {
-      case Right(_)  => cmd.execute(message, cmdExtra)
-      case Left(err) => message ! BotMessages.error(err)
+  def parseCommandOnly(input: String): Option[(GenericCommand, String, String)] =
+    for
+      (cmdName, cmdExtra) <- splitCommand(input)
+      cmd <- get(cmdName)
+    yield (cmd, cmdName, cmdExtra)
+
+  @tailrec
+  final def parseArgList(
+    invoker: CommandInvoker,
+    argSpecs: List[ArgSpec[?]],
+    s: String,
+    acc: ArgMap = MapK.empty
+  ): Either[String, ArgMap] =
+    argSpecs match
+      case Nil => Right(acc)
+      case spec :: specs =>
+        spec.argType.fromString(invoker, s) match
+          case Some((value, remaining)) =>
+            val newAcc = acc + (spec, value)
+            parseArgList(invoker, specs, remaining, newAcc)
+          case None if spec.required =>
+            Left(s"You must specify `${spec.name}` -- ${spec.description}")
+          case None =>
+            parseArgList(invoker, specs, s, acc)
+
+  def runIfAllowed(
+    invocation: CommandInvocation,
+    cmd: GenericCommand
+  ): Either[String, GenericCommand] =
+    logger.debug(s"Command invocation $invocation")
+    canRunCommand(cmd, invocation.invoker).tap {
+      case Right(_) =>
+        cmd
+          .execute(invocation)
+          .failed
+          .foreach(
+            APIHelper.loudFailure(s"running ${invocation}", invocation.invoker.asMessageReceiver)
+          )
+      case Left(err) => invocation.invoker.reply(BotMessages.error(err))
     }
 
   private def logIfMaybeCommand(logPrefix: String, message: Message): Unit =
@@ -132,38 +185,55 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
         s"$logPrefix: ${message.rawId} ${message.getAuthor.unambiguousString} ${message.getChannel.unambiguousString}\n${formatMessageForLog(message)}"
       )
 
-  private def logCommandInvocation(message: Message, cmd: Command): Unit =
+  private def logCommandInvocation(invoker: CommandInvoker, cmd: GenericCommand): Unit =
     logger.debug(
-      s"Running command '${cmd.name}' on behalf of ${message.getAuthor.unambiguousString} in ${message.getChannel.unambiguousString}"
+      s"Running command '${cmd.name}' on behalf of ${invoker.user.unambiguousString} in ${invoker.channel.unambiguousString}"
     )
+
+  private def logAndInvoke(
+    cmd: GenericCommand,
+    name: String,
+    args: ArgMap,
+    invoker: CommandInvoker
+  ): Unit =
+    val invocation = CommandInvocation(prefix, name, args, invoker)
+    logCommandInvocation(invoker, cmd)
+    runIfAllowed(invocation, cmd)
 
   override def onEvent(event: GenericEvent): Unit = event match
     case NonBotMessage(message) =>
       logIfMaybeCommand("COMMAND?", message)
-      for (cmd, cmdExtra) <- parseCommand(message.getContentRaw) do
-        logCommandInvocation(message, cmd)
-        runIfAllowed(message, cmd, cmdExtra)
+      val invoker = MessageInvoker(message)
+      parseCommand(invoker, message.getContentRaw) match
+        case NotACommand =>
+        case ParseFailure(_, name, failure) =>
+          logger.debug(s"Command $name parse failure: $failure")
+          message ! BotMessages.error(failure)
+        case ParseSuccess(cmd, name, args) =>
+          logAndInvoke(cmd, name, args, invoker)
+
     case NonBotMessageEdit(oldMsg, newMsg) =>
       logIfMaybeCommand("COMMAND EDIT?", newMsg)
-      for (cmd, cmdExtra) <- parseCommand(newMsg.getContentRaw) do
-        parseCommand(oldMsg.text) match
-          case None =>
-            logger.debug(s"Editing non-command to command")
-            logCommandInvocation(newMsg, cmd)
-            runIfAllowed(newMsg, cmd, cmdExtra)
-          case Some((`cmd`, _)) =>
-            logger.debug(s"Editing old command in $oldMsg (same command)")
-            logCommandInvocation(newMsg, cmd)
-            canRunCommand(cmd, newMsg) match
-              case Right(_) =>
-                cmd.executeForEdit(newMsg, summon[ReplyCache].get(oldMsg.messageId), cmdExtra)
-              case Left(_) => // Do not print error for edits to command with no perms
-          case Some((_, _)) =>
-            logger.debug(s"Editing old command in $oldMsg (different command)")
-            logCommandInvocation(newMsg, cmd)
-            for
-              _ <- runIfAllowed(newMsg, cmd, cmdExtra)
-              replyId <- summon[ReplyCache].get(oldMsg.messageId)
-            do newMsg.getChannel.deleteMessage(replyId)
+
+      def prepareInvoker(cmd: GenericCommand): CommandInvoker =
+        summon[ReplyCache].get(oldMsg.messageId) match
+          case Some(replyId) =>
+            parseCommandOnly(oldMsg.text) match
+              case Some((oldCmd, _, _)) if oldCmd.canBeEdited =>
+                EditedMessageInvoker(newMsg, replyId)
+              case Some(_) =>
+                newMsg.getChannel.deleteMessage(replyId)
+                MessageInvoker(newMsg)
+              case None => MessageInvoker(newMsg)
+          case _ => MessageInvoker(newMsg)
+
+      parseCommand(MessageInvoker(newMsg), newMsg.getContentRaw) match
+        case NotACommand =>
+        case ParseFailure(cmd, name, failure) =>
+          logger.debug(s"Command $name parse failure: $failure")
+          prepareInvoker(cmd).reply(BotMessages.error(failure))
+        case ParseSuccess(cmd, name, args) =>
+          logAndInvoke(cmd, name, args, prepareInvoker(cmd))
+
     case _ =>
 end Commands

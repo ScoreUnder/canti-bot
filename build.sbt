@@ -36,6 +36,7 @@ lazy val root = (project in file("."))
       "com.github.rssh" %% "dotty-cps-async" % "0.9.0",
       "com.google.re2j" % "re2j" % "1.6",
       "org.slf4j" % "slf4j-simple" % "1.7.31",
+      "com.codedx" %% "mapk" % "1.2.0",
     ),
     assembly / assemblyMergeStrategy := {
       case "module-info.class" => MergeStrategy.discard

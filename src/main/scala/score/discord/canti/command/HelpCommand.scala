@@ -1,25 +1,24 @@
 package score.discord.canti.command
 
+import cps.*
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.Permission.*
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.{EmbedBuilder, JDA}
 import score.discord.canti.BotMeta
-import score.discord.canti.collections.ReplyCache
+import score.discord.canti.command.api.{
+  ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions
+}
 import score.discord.canti.functionality.Commands
-import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{BotMessages, IntStr}
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
+import score.discord.canti.wrappers.jda.RetrievableMessage
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
-class HelpCommand(commands: Commands)(using
-  val messageOwnership: MessageOwnership,
-  val replyCache: ReplyCache
-) extends Command.Anyone
-    with ReplyingCommand:
+class HelpCommand(commands: Commands) extends GenericCommand:
   val pageSize = 10
 
   override def name = "help"
@@ -28,13 +27,25 @@ class HelpCommand(commands: Commands)(using
 
   override def description = "Show descriptions for all commands, or view one command in detail"
 
-  override def executeAndGetMessage(message: Message, args: String): Future[Message] =
-    Future {
-      (args.trimnn match
-        case ""           => showHelpPage(message, 1)
-        case IntStr(page) => showHelpPage(message, page)
-        case cmdName      => showCommandHelp(cmdName)
-      ).fold(BotMessages.error, identity).toMessage
+  override def permissions = CommandPermissions.Anyone
+
+  private val pageOrCommandArg = ArgSpec(
+    "pageOrCommand",
+    "Page number or command name to look up",
+    ArgType.GreedyString,
+    required = false
+  )
+
+  override val argSpec = List(pageOrCommandArg)
+
+  override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
+    async {
+      val response =
+        ctx.args.get(pageOrCommandArg) match
+          case None               => showHelpPage(ctx.invoker, 1)
+          case Some(IntStr(page)) => showHelpPage(ctx.invoker, page)
+          case Some(cmdName)      => showCommandHelp(cmdName)
+      await(ctx.invoker.reply(response.fold(BotMessages.error, identity)))
     }
 
   private def inviteLink(using jda: JDA) =
@@ -48,16 +59,16 @@ class HelpCommand(commands: Commands)(using
       .map(command =>
         BotMessages `plain`
           s"""**Names:** `${(List(command.name) ++ command.aliases).mkString("`, `")}`
-             |**Restrictions:** ${command.permissionMessage}
+             |**Restrictions:** ${command.permissions.description}
              |${command.description}
              |
              |${command.longDescription(commands.prefix + unprefixed)}""".stripMargin.trimnn
       )
 
-  private def showHelpPage(message: Message, page: Int) =
-    given JDA = message.getJDA
+  private def showHelpPage(invoker: CommandInvoker, page: Int) =
+    given JDA = invoker.user.getJDA
 
-    val myCommands = commands.all.filter(_ `checkPermission` message)
+    val myCommands = commands.all.filter(_.permissions.canExecute(invoker))
     val pageOffset = pageSize * (page - 1)
     val numPages = (myCommands.length + pageSize - 1) / pageSize
 

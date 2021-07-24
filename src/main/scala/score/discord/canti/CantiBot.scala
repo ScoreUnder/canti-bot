@@ -65,14 +65,14 @@ class CantiBot:
         given MessageOwnership = MessageOwnership(
           UserByMessage(dbConfig, "message_ownership") withCache LruCache.empty(20000)
         )
-        given MessageCache = MessageCache()
+        given messageCache: MessageCache = MessageCache()
         given ReplyCache = ReplyCache()
         val userCreatedChannels =
           UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
 
         val eventWaiter = EventWaiter()
         val commands = Commands()
-        val quoteCommand = QuoteCommand()
+        val quoteCommand = QuoteCommand(messageCache)
         val findCommand = FindCommand()
         val conversations = Conversations()
         val voiceKick =
@@ -103,7 +103,7 @@ class CantiBot:
           findCommand.ReactListener,
           voiceKick,
           eventWaiter,
-          summon[MessageCache]
+          messageCache
         )
 
         val helpCommand = HelpCommand(commands)
@@ -112,18 +112,18 @@ class CantiBot:
         voiceRoles.allCommands.foreach(commands.register)
         spoilers.allCommands.foreach(commands.register)
         commands.register(helpCommand)
-        commands.register(PlayCommand(userId = config.owner))
-        commands.register(StopCommand(this, userId = config.owner))
+        commands.register(PlayCommand(owner = config.owner))
+        commands.register(StopCommand(this, owner = config.owner))
         commands.register(FuriganaCommand())
         commands.register(BlameCommand())
-        commands.register(BotInfoCommand(userId = config.owner))
+        commands.register(BotInfoCommand(owner = config.owner))
         commands.register(findCommand)
         commands.register(quoteCommand)
-        commands.register(RegisterGuildSlashCommandsCommand(userId = config.owner, slashCommands))
-        val readCommand = ReadCommand(summon[MessageCache])
+        commands.register(RegisterGuildSlashCommandsCommand(owner = config.owner, slashCommands))
+        val readCommand = ReadCommand(messageCache)
         if readCommand.available then commands.register(readCommand)
         commands.register(PingCommand())
-        commands.register(DebugCommand(userId = config.owner))
+        commands.register(DebugCommand(owner = config.owner))
 
         bot.addEventListeners(
           { e =>

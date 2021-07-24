@@ -7,7 +7,8 @@ import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{richMessage, richMessageChannel}
-import score.discord.canti.wrappers.jda.MessageConversions.given
+import score.discord.canti.wrappers.jda.MessageConversions.{*, given}
+import score.discord.canti.wrappers.jda.MessageReceiver
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -41,57 +42,14 @@ object APIHelper:
     *
     * @param whatFailed
     *   what you were doing to cause the exception, described for the users and bot owner
-    * @param reply
-    *   a function which accepts the "unknown error" message to queue as a reply somewhere
+    * @param receiver
+    *   the receiver to accept the error message
     * @param exception
     *   the exception to print
     */
-  def loudFailure(whatFailed: String, reply: Message => Unit)(exception: Throwable): Unit =
+  def loudFailure(whatFailed: String, receiver: MessageReceiver)(exception: Throwable): Unit =
     failure(whatFailed)(exception)
-    reply(BotMessages.error(describeFailure(whatFailed, exception)).toMessage)
-
-  /** Similar to [[APIHelper#failure]], but also sends an "unknown error" message in chat.
-    *
-    * @param whatFailed
-    *   what you were doing to cause the exception, described for the users and bot owner
-    * @param channel
-    *   the channel to send the "unknown error" message to
-    * @param exception
-    *   the exception to print
-    */
-  def loudFailure(whatFailed: String, channel: MessageChannel)(exception: Throwable): Unit =
-    loudFailure(whatFailed, channel ! _)(exception)
-
-  /** Similar to [[APIHelper#failure]], but also sends an "unknown error" message in chat.
-    *
-    * @param whatFailed
-    *   what you were doing to cause the exception, described for the users and bot owner
-    * @param message
-    *   the message to reply with "unknown error" to
-    * @param exception
-    *   the exception to print
-    */
-  def loudFailure(whatFailed: String, message: Message)(
-    exception: Throwable
-  )(using MessageOwnership, ReplyCache): Unit =
-    loudFailure(whatFailed, message ! _)(exception)
-
-  /** Similar to loudFailure with a MessageChannel, but uses [[APIHelper#failure]] if no
-    * MessageChannel is provided.
-    *
-    * @param whatFailed
-    *   what you were doing to cause the exception, described for the users and bot owner
-    * @param channelMaybe
-    *   Some channel to send the "unknown error" message to, or None
-    * @param exception
-    *   the exception to print
-    */
-  def loudFailure(whatFailed: String, channelMaybe: Option[MessageChannel])(
-    exception: Throwable
-  ): Unit =
-    channelMaybe match
-      case Some(channel) => loudFailure(whatFailed, channel)(exception)
-      case None          => failure(whatFailed)(exception)
+    receiver.sendMessage(BotMessages.error(describeFailure(whatFailed, exception)): MessageFromX)
 
   /** Tries to run apiCall, then queues the result if successful.
     *
