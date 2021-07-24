@@ -65,6 +65,8 @@ class PrivateVoiceChats(
 
   private case class VoiceMove(id: ID[Member], guild: ID[Guild])
 
+  private val maxNameLen = 100
+
   object AcceptCommand extends GenericCommand:
     override def name = "accept"
 
@@ -571,8 +573,6 @@ class PrivateVoiceChats(
         case largeNum  => s"$largeNum+1" // too large to parse to Int
       unnumbered + nextNumber
     else prefix + name
-
-  private val maxNameLen = 100
 
   private def genericChannelName(originalChannel: VoiceChannel, public: Boolean) =
     val newName =
