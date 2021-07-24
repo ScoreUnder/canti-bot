@@ -32,21 +32,6 @@ private class MappedArgType[T, U](prev: ArgType[T], f: T => Option[U])
 object ArgType:
   import OptionType.{INTEGER, ROLE, STRING, USER}
 
-  class MultiArg[T](orig: ArgType[T]) extends ArgType[Seq[T]](orig.asJda):
-    override def fromString(invoker: CommandInvoker, s: String): Option[(Seq[T], String)] =
-      @tailrec
-      def accumulate(acc: List[T], remaining: String): (List[T], String) =
-        orig.fromString(invoker, remaining) match
-          case Some(value, next) => accumulate(value :: acc, next)
-          case None              => (acc, remaining)
-      val (collected, remaining) = accumulate(Nil, s)
-
-      if collected.isEmpty then None
-      else Some((collected.reverse, remaining))
-
-    override def fromJda(m: OptionMapping): Option[Seq[T]] =
-      orig.fromJda(m).map(List(_))
-
   object GreedyString extends ArgType[String](STRING):
     override def fromString(invoker: CommandInvoker, s: String): Option[(String, String)] =
       val result = s.trimnn
@@ -88,23 +73,6 @@ object ArgType:
       if m.getType == asJda then
         val role = m.getAsRole
         Some(Right(role))
-      else None
-
-  object User extends ArgType[User](USER):
-    private val USER_PATTERN = RE2JPattern.compile("\\s*<@!?(-?\\d+)>").nn
-
-    override def fromString(invoker: CommandInvoker, s: String): Option[(User, String)] =
-      val matcher = USER_PATTERN.matcher(s).nn
-      if matcher.find() then
-        given JDA = invoker.user.getJDA
-        ID
-          .fromString[User](matcher.group(1).nn)
-          .find
-          .map(u => (u, s.drop(matcher.end())))
-      else None
-
-    override def fromJda(m: OptionMapping): Option[User] =
-      if m.getType == asJda then Some(m.getAsUser)
       else None
 
   object MentionedUsers extends ArgType[Seq[User]](USER):
