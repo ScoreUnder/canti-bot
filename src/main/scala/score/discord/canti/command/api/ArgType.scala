@@ -11,20 +11,24 @@ import score.discord.canti.wrappers.jda.IdConversions.*
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.given
 
-sealed trait ArgType[T](val asJda: OptionType):
+sealed trait ArgType[+T](val asJda: OptionType):
   def fromString(invoker: CommandInvoker, s: String): Option[(T, String)]
 
-  def fromJda(m: OptionMapping): Option[T]
+  def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[T]
 
   def flatMap[U](f: T => Option[U]): ArgType[U] = MappedArgType(this, f)
+
+  def map[U](f: T => U): ArgType[U] = flatMap(x => Some(f(x)))
+
+  def withFilter(f: T => Boolean): ArgType[T] = flatMap(x => if f(x) then Some(x) else None)
 
 private class MappedArgType[T, U](prev: ArgType[T], f: T => Option[U])
     extends ArgType[U](prev.asJda):
   override def fromString(invoker: CommandInvoker, s: String): Option[(U, String)] =
     prev.fromString(invoker, s).flatMap { case (value, remaining) => f(value).map((_, remaining)) }
 
-  override def fromJda(m: OptionMapping): Option[U] =
-    prev.fromJda(m).flatMap(f)
+  override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[U] =
+    prev.fromJda(invoker, m).flatMap(f)
 
   override def flatMap[V](f2: U => Option[V]): ArgType[V] =
     MappedArgType(prev, f(_).flatMap(f2))
@@ -38,7 +42,7 @@ object ArgType:
       if result.isEmpty then None
       else Some((result, ""))
 
-    override def fromJda(m: OptionMapping): Option[String] =
+    override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[String] =
       Some(m.getAsString)
 
   object Integer extends ArgType[Long](INTEGER):
@@ -50,7 +54,7 @@ object ArgType:
           case pos => trimmed.splitAt(pos)
       first.trimnn.toLongOption.map((_, remaining))
 
-    override def fromJda(m: OptionMapping): Option[Long] =
+    override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[Long] =
       if m.getType == asJda then Some(m.getAsLong)
       else None
 
@@ -62,14 +66,11 @@ object ArgType:
       val role =
         for
           member <- invoker.member
-          role <- ParseUtils
-            .findRole(member.getGuild, s.trimnn)
-            .left
-            .map(_.build.getDescription.nn) // TODO: restructure ParseUtils to avoid EmbedBuilder
+          role <- ParseUtils.findRole(member.getGuild, s.trimnn)
         yield role
       Some((role, ""))
 
-    override def fromJda(m: OptionMapping): Option[Either[String, Role]] =
+    override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[Either[String, Role]] =
       if m.getType == asJda then
         val role = m.getAsRole
         Some(Right(role))
@@ -81,7 +82,23 @@ object ArgType:
         .map(m => (m.getMentionedUsers.asScala.toSeq, s))
         .filter(_._1.nonEmpty)
 
-    override def fromJda(m: OptionMapping): Option[Seq[User]] =
+    override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[Seq[User]] =
       if m.getType == asJda then Some(Seq(m.getAsUser))
       else None
+
+  final class Disjunction[+T](types: ArgType[T]*) extends ArgType[T](STRING):
+    override def fromString(invoker: CommandInvoker, s: String): Option[(T, String)] =
+      types.view.map(_.fromString(invoker, s)).flatten.headOption
+
+    override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[T] =
+      types.view
+        .map { typ =>
+          typ
+            .fromString(invoker, m.getAsString)
+            .filter(_._2.trimnn.isEmpty) // Ensure whole buffer is consumed
+            .map(_._1)
+        }
+        .flatten
+        .headOption
+
 end ArgType

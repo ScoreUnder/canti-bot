@@ -50,7 +50,7 @@ class SlashCommands(commands: GenericCommand*)(using MessageOwnership, ReplyCach
           val invoker = SlashCommandInvoker(ev)
           Future {
             val args = cmd.argSpec.foldLeft(MapK.empty[ArgSpec, [T] =>> T]) { (acc, v) =>
-              ev.getOption(v.name).?.flatMap(v.argType.fromJda) match
+              ev.getOption(v.name).?.flatMap(v.argType.fromJda(invoker, _)) match
                 case Some(arg) => acc + (v, arg)
                 case None      => acc
             }

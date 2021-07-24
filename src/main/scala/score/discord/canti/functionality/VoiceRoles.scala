@@ -11,7 +11,6 @@ import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.command.GenericCommand
 import score.discord.canti.functionality.ownership.MessageOwnership
-import score.discord.canti.util.ParseUtils.*
 import score.discord.canti.util.{APIHelper, BotMessages, GuildUserId}
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
@@ -40,6 +39,22 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
   private val pendingRoleUpdates = ConcurrentHashMap[GuildUserId, ScheduledFuture[Unit]]()
   private val rng = ThreadLocalRandom.current().nn
 
+  sealed trait InvocationType
+  private case object DelVoiceRole extends InvocationType
+  private case class SetVoiceRole(role: Either[String, Role]) extends InvocationType
+
+  private val invocationArgType =
+    import ArgType.*
+    val delVoiceRoleArgType =
+      for
+        v <- GreedyString
+        if v.toLowerCase == "none"
+      yield DelVoiceRole
+    val setVoiceRoleArgType =
+      for v <- GreedyRole
+      yield SetVoiceRole(v)
+    Disjunction(delVoiceRoleArgType, setVoiceRoleArgType)
+
   private val voiceRoleCommand = new GenericCommand:
     override def name = "voicerole"
 
@@ -53,11 +68,10 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
 
     override def permissions = CommandPermissions.ServerAdminOnly
 
-    // TODO: parse this properly with ArgTypes
     private val roleArg = ArgSpec(
       "role",
       "The role to assign to users in voice chat",
-      ArgType.GreedyString,
+      invocationArgType,
       required = false
     )
 
@@ -69,16 +83,16 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
           case Left(err) => BotMessages.error(err).toMessage
           case Right(guild) =>
             await(ctx.args.get(roleArg) match
-              case None          => showVoiceRole(guild)
-              case Some("none")  => delVoiceRole(guild)
-              case Some(trimmed) => setVoiceRole(trimmed, guild)
+              case None                     => showVoiceRole(guild)
+              case Some(DelVoiceRole)       => delVoiceRole(guild)
+              case Some(SetVoiceRole(role)) => setVoiceRole(role, guild)
             ).toMessage
       await(ctx.invoker.reply(toSend))
     }
 
-    private def setVoiceRole(roleName: String, guild: Guild) = async {
-      findRole(guild, roleName) match
-        case Left(err) => err
+    private def setVoiceRole(roleMaybe: Either[String, Role], guild: Guild) = async {
+      roleMaybe match
+        case Left(err) => BotMessages.error(err)
         case Right(role) =>
           await(roleByGuild(guild.id) = role.id)
           refreshVoiceRoles(guild)

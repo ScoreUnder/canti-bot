@@ -46,25 +46,19 @@ object ParseUtils:
     * @return
     *   either a human readable error, or the desired role
     */
-  def findRole(guild: Guild, roleName: String): Either[EmbedBuilder, Role] =
+  def findRole(guild: Guild, roleName: String): Either[String, Role] =
     searchRoles(guild, roleName) match
       case Nil =>
-        Left(
-          BotMessages
-            .error("Could not find a role by that name.")
-            .addField("Search term", roleName, true)
-        )
+        Left("Could not find a role by that name.")
 
       case Seq(role) =>
         Right(role)
 
       case Seq(matchingRoles*) =>
-        val embed =
-          BotMessages.error("Too many roles by that name.").addField("Search term", roleName, true)
+        val msg = "Too many roles by that name."
+        val roles = for role <- matchingRoles yield s"`${role.rawId}`: ${role.mention}"
 
-        for role <- matchingRoles do embed.appendDescription(s"\n`${role.rawId}`: ${role.mention}")
-
-        Left(embed)
+        Left((msg :+ roles).mkString("\n"))
 
   /** Searches the given guild for a category by the given name/ID. If the provided string is a
     * valid Long, it will match by ID, otherwise it will match by name. Not case sensitive.
