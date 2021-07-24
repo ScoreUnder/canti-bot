@@ -28,15 +28,6 @@ object RichGuild:
     def findVoiceChannel(channel: ID[VoiceChannel]): Option[VoiceChannel] =
       guild.getVoiceChannelById(channel.value).?
 
-    /** Find a role within this guild by ID.
-      *
-      * @param role
-      *   ID of the role to find
-      * @return
-      *   the role, optionally (if found)
-      */
-    def findRole(role: ID[Role]): Option[Role] = guild.getRoleById(role.value).?
-
     /** Find a member within this guild, given its user counterpart.
       *
       * @param user
