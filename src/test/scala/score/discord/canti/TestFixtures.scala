@@ -48,8 +48,9 @@ object TestFixtures:
       val future = parseCommand(invoker, invocation) match
         case ParseSuccess(cmd, name, args) =>
           cmd.execute(CommandInvocation(prefix, name, args, invoker))
-        case ParseFailure(_, _, _) => throw UnsupportedOperationException("Bad invocation of command")
-        case NotACommand           => throw IllegalArgumentException("Bad command")
+        case ParseFailure(_, _, _) =>
+          throw UnsupportedOperationException("Bad invocation of command")
+        case NotACommand => throw IllegalArgumentException("Bad command")
 
       Await.result(future.flatMap(_.retrieve()), Duration.Inf)
 

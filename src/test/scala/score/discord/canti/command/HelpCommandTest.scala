@@ -60,3 +60,4 @@ class HelpCommandTest extends AnyFlatSpec with should.Matchers:
     val embed = testCommand("&help 3").getEmbeds.get(0).nn
     embed.getDescription.nn should include("github.com/")
   }
+end HelpCommandTest
