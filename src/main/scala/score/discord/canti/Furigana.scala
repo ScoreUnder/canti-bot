@@ -27,12 +27,14 @@ object Furigana:
 
   /** Render text into a PNG with the phonetic reading listed above the literal text.
     *
+    * May fail if input is empty or wholly non-printable, in which case None is returned.
+    *
     * @param furiText
     *   List of (Literal, Reading) pairs comprising the text
     * @return
     *   PNG data
     */
-  def renderPNG(furiText: Iterable[(String, String)]): Array[Byte] =
+  def renderPNG(furiText: Iterable[(String, String)]): Option[Array[Byte]] =
     val furiYAdjust = 0
     val lineGap = 10
 
@@ -45,35 +47,39 @@ object Furigana:
 
     val positionedFuri = positionText(furiText, -furiYAdjust, lineHeight, mainMetrics, furiMetrics)
 
-    val image = BufferedImage(
-      positionedFuri.map(f => (f.furiWidth max f.textWidth) + f.x).max,
-      positionedFuri.head.y + lineHeight,
-      BufferedImage.TYPE_INT_RGB
-    )
-    val graphics = image.createGraphics().nn
+    val totalWidth = positionedFuri.map(f => (f.furiWidth max f.textWidth) + f.x).max
+    val totalHeight = positionedFuri.head.y + lineHeight
 
-    graphics.setBackground(backgroundColor)
-    graphics.clearRect(0, 0, image.getWidth, image.getHeight)
-    graphics.setColor(Color.WHITE)
-    graphics.setRenderingHint(
-      RenderingHints.KEY_TEXT_ANTIALIASING,
-      RenderingHints.VALUE_TEXT_ANTIALIAS_ON
-    )
+    def makeImage() =
+      val image = BufferedImage(totalWidth, totalHeight, BufferedImage.TYPE_INT_RGB)
+      val graphics = image.createGraphics().nn
 
-    graphics.setFont(furiFont)
-    for PositionedFurigana(x, y, tw, fw, _, furi) <- positionedFuri do
-      graphics.drawString(furi, x + ((tw max fw) - fw) / 2, y + furiAscent)
+      graphics.setBackground(backgroundColor)
+      graphics.clearRect(0, 0, image.getWidth, image.getHeight)
+      graphics.setColor(Color.WHITE)
+      graphics.setRenderingHint(
+        RenderingHints.KEY_TEXT_ANTIALIASING,
+        RenderingHints.VALUE_TEXT_ANTIALIAS_ON
+      )
 
-    graphics.setFont(mainFont)
-    for PositionedFurigana(x, y, tw, fw, text, _) <- positionedFuri do
-      graphics.drawString(text, x + ((tw max fw) - tw) / 2, y + furiHeight + mainAscent)
+      graphics.setFont(furiFont)
+      for PositionedFurigana(x, y, tw, fw, _, furi) <- positionedFuri do
+        graphics.drawString(furi, x + ((tw max fw) - fw) / 2, y + furiAscent)
 
-    val outputStream = ByteArrayOutputStream(32768)
+      graphics.setFont(mainFont)
+      for PositionedFurigana(x, y, tw, fw, text, _) <- positionedFuri do
+        graphics.drawString(text, x + ((tw max fw) - tw) / 2, y + furiHeight + mainAscent)
 
-    ImageIO.write(image, "PNG", outputStream)
-    graphics.dispose()
+      val outputStream = ByteArrayOutputStream(32768)
 
-    outputStream.toByteArray.nn
+      ImageIO.write(image, "PNG", outputStream)
+      graphics.dispose()
+
+      outputStream.toByteArray.nn
+
+    if totalWidth <= 0 || totalHeight <= 0 then None
+    else Some(makeImage())
+  end renderPNG
 
   private def positionText(
     furiText: Iterable[(String, String)],

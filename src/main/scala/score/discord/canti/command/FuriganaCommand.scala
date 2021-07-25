@@ -80,7 +80,10 @@ object FuriganaCommand:
   private val FURI_PATTERN = raw"[｛{](?<left>[^：:]*)[：:](?<right>[^｝}]*)[｝}]|(?<other>[^{｛]+)".r
 
   def makeFuriMessage(furigana: Iterable[(String, String)], plain: String): OutgoingMessage =
-    OutgoingMessage(
-      plain.take(2000).toMessage,
-      files = List("furigana.png" -> Furigana.renderPNG(furigana)),
-    )
+    Furigana
+      .renderPNG(furigana)
+      .fold {
+        OutgoingMessage(BotMessages.error("No characters were visible in the output").toMessage)
+      } { pngData =>
+        OutgoingMessage(plain.take(2000).toMessage, files = List("furigana.png" -> pngData))
+      }
