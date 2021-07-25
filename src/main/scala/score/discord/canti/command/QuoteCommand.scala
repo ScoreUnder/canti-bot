@@ -62,8 +62,7 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
       val quotedMsg = await(retrieveQuoteMessageByArg(ctx.invoker, ctx.args(quoteArg)))
       val replyMsg = quotedMsg
         .map(getMessageAsQuote(ctx.invoker, _))
-        .fold(BotMessages.error, identity)
-        .toMessage
+        .fold(BotMessages.error(_).toMessage, identity)
       val buttons = quotedMsg.toOption.toList.map { msg =>
         ActionRow.of(Button.link(msg.getJumpUrl, "Go to message"))
       }
@@ -155,7 +154,10 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
 
       embed.getFields.asScala.foreach(quote.addField)
 
-    quote
+    for sticker <- msg.getStickers.asScala.toSeq do
+      quote.addField(s"[Sticker: ${sticker.getName}]", sticker.getDescription, true)
+
+    quote.toMessage
 
   private def parseQuoteIDs(args: String) =
     val (firstIdStr, remains) = args.trimnn.span(Character.isDigit)
