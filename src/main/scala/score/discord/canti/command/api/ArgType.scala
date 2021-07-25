@@ -22,7 +22,7 @@ sealed trait ArgType[+T](val asJda: OptionType):
 
   def withFilter(f: T => Boolean): ArgType[T] = flatMap(x => if f(x) then Some(x) else None)
 
-private class MappedArgType[T, U](prev: ArgType[T], f: T => Option[U])
+private case class MappedArgType[T, U](prev: ArgType[T], f: T => Option[U])
     extends ArgType[U](prev.asJda):
   override def fromString(invoker: CommandInvoker, s: String): Option[(U, String)] =
     prev.fromString(invoker, s).flatMap { case (value, remaining) => f(value).map((_, remaining)) }
@@ -36,7 +36,7 @@ private class MappedArgType[T, U](prev: ArgType[T], f: T => Option[U])
 object ArgType:
   import OptionType.{INTEGER, ROLE, STRING, USER}
 
-  object GreedyString extends ArgType[String](STRING):
+  case object GreedyString extends ArgType[String](STRING):
     override def fromString(invoker: CommandInvoker, s: String): Option[(String, String)] =
       val result = s.trimnn
       if result.isEmpty then None
@@ -45,7 +45,7 @@ object ArgType:
     override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[String] =
       Some(m.getAsString)
 
-  object Integer extends ArgType[Long](INTEGER):
+  case object Integer extends ArgType[Long](INTEGER):
     override def fromString(invoker: CommandInvoker, s: String): Option[(Long, String)] =
       val trimmed = s.trimnn
       val (first, remaining) =
@@ -58,7 +58,7 @@ object ArgType:
       if m.getType == asJda then Some(m.getAsLong)
       else None
 
-  object GreedyRole extends ArgType[Either[String, Role]](ROLE):
+  case object GreedyRole extends ArgType[Either[String, Role]](ROLE):
     override def fromString(
       invoker: CommandInvoker,
       s: String
@@ -76,7 +76,7 @@ object ArgType:
         Some(Right(role))
       else None
 
-  object MentionedUsers extends ArgType[Seq[User]](USER):
+  case object MentionedUsers extends ArgType[Seq[User]](USER):
     override def fromString(invoker: CommandInvoker, s: String): Option[(Seq[User], String)] =
       invoker.originatingMessage
         .map(m => (m.getMentionedUsers.asScala.toSeq, s))
@@ -86,7 +86,7 @@ object ArgType:
       if m.getType == asJda then Some(Seq(m.getAsUser))
       else None
 
-  final class Disjunction[+T](types: ArgType[T]*) extends ArgType[T](STRING):
+  final case class Disjunction[+T](types: ArgType[T]*) extends ArgType[T](STRING):
     override def fromString(invoker: CommandInvoker, s: String): Option[(T, String)] =
       types.view.map(_.fromString(invoker, s)).flatten.headOption
 
