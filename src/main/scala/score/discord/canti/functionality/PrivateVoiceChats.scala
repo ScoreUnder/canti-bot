@@ -295,10 +295,27 @@ class PrivateVoiceChats(
 
     override def permissions = CommandPermissions.ServerAdminOnly
 
+    enum Action:
+      case Show
+      case Remove
+      case Set(arg: Either[String, Category])
+
+    private val categoryActionType =
+      import ArgType.*
+      val removeCategoryActionType =
+        for
+          v <- GreedyString
+          if v == "none"
+        yield Action.Remove
+      val setCategoryActionType =
+        for v <- CategoryFind
+        yield Action.Set(v)
+      Disjunction(removeCategoryActionType, setCategoryActionType)
+
     private val blobArg = ArgSpec(
       "category",
       "Category to put voice chats in, or 'none'",
-      ArgType.GreedyString,
+      categoryActionType,
       required = false
     )
 
@@ -308,10 +325,10 @@ class PrivateVoiceChats(
       ctx.invoker.member
         .map { member =>
           val guild = member.getGuild
-          ctx.args.get(blobArg) match
-            case None         => showCurrentCategory(guild)
-            case Some("none") => removeDefaultCategory(guild)
-            case Some(arg)    => setDefaultCategory(guild, arg)
+          ctx.args.get(blobArg).getOrElse(Action.Show) match
+            case Action.Show     => showCurrentCategory(guild)
+            case Action.Remove   => removeDefaultCategory(guild)
+            case Action.Set(cat) => setDefaultCategory(guild, cat)
         }
         .pipe(x => eitherToFutureMessage(x))
         .flatMap(ctx.invoker.reply(_))
@@ -333,9 +350,11 @@ class PrivateVoiceChats(
         BotMessages.okay(describeCategoryBehaviour(None)).toMessage
       }
 
-    private def setDefaultCategory(guild: Guild, categoryName: String): Future[Message] =
-      ParseUtils
-        .findCategory(guild, categoryName)
+    private def setDefaultCategory(
+      guild: Guild,
+      category: Either[String, Category]
+    ): Future[Message] =
+      category
         .map { cat =>
           (defaultCategoryByGuild(guild.id) = cat.id)
             .map(_ => describeCategoryBehaviour(Some(cat)))
@@ -344,12 +363,11 @@ class PrivateVoiceChats(
 
     private def describeCategoryBehaviour(category: Option[Category]): String =
       category
-        .map(cat =>
-          s"User-created voice channels will be placed in <#${cat.getIdLong}> (${cat.getName})."
-        )
-        .getOrElse(
+        .fold {
           "User-created voice channels will be placed in the same category as the channel they were created from."
-        )
+        } { cat =>
+          s"User-created voice channels will be placed in <#${cat.getIdLong}> (${cat.getName})."
+        }
   end DefaultCategoryCommand
 
   def allCommands: Seq[GenericCommand] =

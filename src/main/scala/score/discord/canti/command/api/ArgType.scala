@@ -1,7 +1,7 @@
 package score.discord.canti.command.api
 
 import com.google.re2j.{Pattern as RE2JPattern}
-import net.dv8tion.jda.api.entities.{Guild, Role, User}
+import net.dv8tion.jda.api.entities.{Category, Guild, GuildChannel, Role, User}
 import net.dv8tion.jda.api.interactions.commands.{OptionMapping, OptionType}
 import net.dv8tion.jda.api.JDA
 import score.discord.canti.util.{CommandHelper, ParseUtils}
@@ -34,7 +34,7 @@ private case class MappedArgType[T, U](prev: ArgType[T], f: T => Option[U])
     MappedArgType(prev, f(_).flatMap(f2))
 
 object ArgType:
-  import OptionType.{INTEGER, ROLE, STRING, USER}
+  import OptionType.{CHANNEL, INTEGER, ROLE, STRING, USER}
 
   case object GreedyString extends ArgType[String](STRING):
     override def fromString(invoker: CommandInvoker, s: String): Option[(String, String)] =
@@ -63,12 +63,15 @@ object ArgType:
       invoker: CommandInvoker,
       s: String
     ): Option[(Either[String, Role], String)] =
-      val role =
-        for
-          member <- invoker.member
-          role <- ParseUtils.findRole(member.getGuild, s.trimnn)
-        yield role
-      Some((role, ""))
+      val arg = s.trimnn
+      if arg.isEmpty then None
+      else
+        val role =
+          for
+            member <- invoker.member
+            role <- ParseUtils.findRole(member.getGuild, arg)
+          yield role
+        Some((role, ""))
 
     override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[Either[String, Role]] =
       if m.getType == asJda then
@@ -84,6 +87,32 @@ object ArgType:
 
     override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[Seq[User]] =
       if m.getType == asJda then Some(Seq(m.getAsUser))
+      else None
+
+  case object CategoryFind extends ArgType[Either[String, Category]](CHANNEL):
+    override def fromString(
+      invoker: CommandInvoker,
+      s: String
+    ): Option[(Either[String, Category], String)] =
+      val arg = s.trimnn
+      if arg.isEmpty then None
+      else
+        val result =
+          for
+            member <- invoker.member
+            guild = member.getGuild
+            category <- ParseUtils.findCategory(guild, arg)
+          yield category
+        Some((result, ""))
+
+    override def fromJda(
+      invoker: CommandInvoker,
+      m: OptionMapping
+    ): Option[Either[String, Category]] =
+      if m.getType == asJda then
+        m.getAsGuildChannel match
+          case cat: Category => Some(Right(cat))
+          case _             => Some(Left("That channel is not a category."))
       else None
 
   final case class Disjunction[+T](types: ArgType[T]*) extends ArgType[T](STRING):

@@ -58,7 +58,7 @@ object ParseUtils:
         val msg = "Too many roles by that name."
         val roles = for role <- matchingRoles yield s"`${role.rawId}`: ${role.mention}"
 
-        Left((msg :+ roles).mkString("\n"))
+        Left((msg +: roles).mkString("\n"))
 
   /** Searches the given guild for a category by the given name/ID. If the provided string is a
     * valid Long, it will match by ID, otherwise it will match by name. Not case sensitive.
@@ -84,25 +84,17 @@ object ParseUtils:
     * @return
     *   either a human readable error, or the desired category
     */
-  def findCategory(guild: Guild, categoryName: String): Either[EmbedBuilder, Category] =
+  def findCategory(guild: Guild, categoryName: String): Either[String, Category] =
     searchCategories(guild, categoryName) match
       case Nil =>
-        Left(
-          BotMessages
-            .error("Could not find a category by that name.")
-            .addField("Search term", categoryName, true)
-        )
+        Left("Could not find a category by that name.")
 
       case Seq(category) =>
         Right(category)
 
       case Seq(matchingCategories*) =>
-        val embed = BotMessages
-          .error("Too many categories by that name.")
-          .addField("Search term", categoryName, true)
+        val msg = "Too many categories by that name."
+        val roles = for category <- matchingCategories yield s"`${category.rawId}`: <#$category>"
 
-        for category <- matchingCategories do
-          embed.appendDescription(s"\n`${category.rawId}`: <#$category>")
-
-        Left(embed)
+        Left((msg +: roles).mkString("\n"))
 end ParseUtils
