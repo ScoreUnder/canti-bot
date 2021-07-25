@@ -1,7 +1,7 @@
 package score.discord.canti.command
 
 import cps.*
-import cps.monads.FutureAsyncMonad
+import score.discord.canti.util.FutureAsyncMonadButGood
 import net.dv8tion.jda.api.Permission.*
 import net.dv8tion.jda.api.{EmbedBuilder, JDA}
 import score.discord.canti.BotMeta

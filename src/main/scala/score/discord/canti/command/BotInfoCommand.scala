@@ -1,7 +1,7 @@
 package score.discord.canti.command
 
 import cps.*
-import cps.monads.FutureAsyncMonad
+import score.discord.canti.util.FutureAsyncMonadButGood
 import net.dv8tion.jda.api.entities.{Message, User}
 import score.discord.canti.command.api.*
 import score.discord.canti.collections.ReplyCache

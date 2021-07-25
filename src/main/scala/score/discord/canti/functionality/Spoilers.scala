@@ -1,7 +1,7 @@
 package score.discord.canti.functionality
 
 import cps.*
-import cps.monads.FutureAsyncMonad
+import score.discord.canti.util.FutureAsyncMonadButGood
 import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
