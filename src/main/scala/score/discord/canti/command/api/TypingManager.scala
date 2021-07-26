@@ -15,7 +15,7 @@ import scala.language.postfixOps
 class TypingManager(channel: MessageChannel):
   private var typingAttemptsLeft = 0
 
-  private var typingFuture = Future.successful(())
+  private var typingFuture = Future.unit
 
   def sendTypingNotification()(using Scheduler): Future[Unit] =
     synchronized {
@@ -48,6 +48,6 @@ class TypingManager(channel: MessageChannel):
           v <- f
         yield v
       typingAttemptsLeft = 0
-      typingFuture = Future.successful(())
+      typingFuture = Future.unit
       result
     }
