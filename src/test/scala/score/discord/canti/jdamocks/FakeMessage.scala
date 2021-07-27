@@ -4,7 +4,7 @@ import java.util
 import java.util.Collections
 
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{Message, MessageActivity, MessageChannel, MessageEmbed, User}
+import net.dv8tion.jda.api.entities.{Message, MessageActivity, MessageChannel, MessageEmbed, MessageSticker, User}
 import net.dv8tion.jda.internal.entities.AbstractMessage
 import score.discord.canti.SnowflakeOrdering
 
@@ -37,3 +37,5 @@ class FakeMessage(
   override def getIdLong: Long = id
 
   override def getActivity: MessageActivity = ???
+
+  override def getStickers: util.List[MessageSticker] = Nil.asJava
