@@ -35,7 +35,7 @@ lazy val root = (project in file("."))
       "com.typesafe" % "config" % "1.4.1",
       "com.github.rssh" %% "dotty-cps-async" % "0.9.1",
       "com.google.re2j" % "re2j" % "1.6",
-      "org.slf4j" % "slf4j-simple" % "1.7.31",
+      "org.slf4j" % "slf4j-simple" % "1.7.32",
       "com.codedx" %% "mapk" % "1.2.0",
     ),
     assembly / assemblyMergeStrategy := {
