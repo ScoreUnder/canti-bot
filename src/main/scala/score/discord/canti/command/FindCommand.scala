@@ -57,16 +57,14 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
   override def permissions = CommandPermissions.Anyone
 
   private val arg =
-    ArgSpec("searchTerms", "Terms to search for", ArgType.GreedyString, required = false)
+    ArgSpec("searchTerms", "Terms to search for (regex)", ArgType.GreedyString, required = true)
 
   override val argSpec = List(arg)
 
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
-      await(ctx.args.get(arg) match
-        case None => ctx.invoker.reply(BotMessages.error("Please enter a term to search for."))
-        case Some(searchTerm) => ctx.invoker.reply(makeSearchReply(ctx.invoker.channel, searchTerm))
-      )
+      val reply = makeSearchReply(ctx.invoker.channel, ctx.args(arg))
+      await(ctx.invoker.reply(reply))
     }
 
   private def makeSearchReply(channel: MessageChannel, searchTerm: String): OutgoingMessage =
