@@ -50,6 +50,8 @@ class FuriganaCommand(using MessageOwnership, ReplyCache, Scheduler) extends Gen
 
   private val dummyMessage = MessageBuilder("dummy").build
 
+  override def canBeEdited = false
+
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
       ctx.invoker.replyLater(false)

@@ -56,6 +56,8 @@ class ReadCommand(messageCache: MessageCache) extends GenericCommand:
 
   private val dummyMessage = MessageBuilder("dummy").build
 
+  override def canBeEdited = false
+
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
       val rawInput = ctx.args.get(textArg) match
