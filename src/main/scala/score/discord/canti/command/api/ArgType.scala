@@ -1,14 +1,12 @@
 package score.discord.canti.command.api
 
-import com.google.re2j.{Pattern as RE2JPattern}
 import net.dv8tion.jda.api.entities.{Category, Guild, GuildChannel, Role, User}
 import net.dv8tion.jda.api.interactions.commands.{OptionMapping, OptionType}
 import net.dv8tion.jda.api.JDA
-import score.discord.canti.util.{CommandHelper, ParseUtils}
+import score.discord.canti.util.ParseUtils
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.IdConversions.*
-import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.given
 
 sealed trait ArgType[+T](val asJda: OptionType):
