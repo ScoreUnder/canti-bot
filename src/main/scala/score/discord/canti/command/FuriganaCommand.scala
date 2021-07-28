@@ -2,7 +2,7 @@ package score.discord.canti.command
 
 import cps.*
 import score.discord.canti.util.FutureAsyncMonadButGood
-import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.Furigana
 import score.discord.canti.collections.ReplyCache
@@ -48,24 +48,19 @@ class FuriganaCommand(using Scheduler) extends GenericCommand:
       .filter(t => !t._1.isEmpty || !t._2.isEmpty)
       .toSeq
 
-  private val dummyMessage = MessageBuilder("dummy").build
-
   override def canBeEdited = false
 
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
+      given JDA = ctx.jda
       ctx.invoker.replyLater(false)
 
-      val commandHelper = CommandHelper(ctx.invoker.originatingMessage.getOrElse(dummyMessage))
+      val guild = ctx.invoker.member.toOption.map(_.getGuild)
+      val cleanup = CommandHelper.mentionsToPlaintext(guild, _)
 
       val (origWithoutFuri, furiText) =
         val orig = parseInput(ctx.args(furiTextArg))
-        (
-          orig.map(_._1).mkString,
-          orig.map(t =>
-            (commandHelper.mentionsToPlaintext(t._1), commandHelper.mentionsToPlaintext(t._2))
-          )
-        )
+        (orig.map(_._1).mkString, orig.map(t => (cleanup(t._1), cleanup(t._2))))
 
       await(ctx.invoker.reply(makeFuriMessage(furigana = furiText, plain = origWithoutFuri)))
     }

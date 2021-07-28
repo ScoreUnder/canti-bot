@@ -3,12 +3,13 @@ package score.discord.canti.command
 import cps.*
 import score.discord.canti.util.FutureAsyncMonadButGood
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.JDA
 import score.discord.canti.collections.{MessageCache, ReplyCache}
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages, CommandHelper}
 import score.discord.canti.wrappers.NullWrappers.*
+import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.jda.RetrievableMessage
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichSnowflake.id
@@ -23,7 +24,7 @@ import scala.concurrent.{Await, Future, TimeoutException, blocking}
 import scala.io.Codec
 import scala.language.implicitConversions
 
-class ReadCommand(messageCache: MessageCache) extends GenericCommand:
+class ReadCommand(messageCache: MessageCache)(using Scheduler) extends GenericCommand:
   private val KAKASI_FURIGANA = "kakasi -s -f -ieuc -oeuc -JH".splitnn(" ")
   private val KAKASI_ROMAJI = "kakasi -s -ieuc -oeuc -Ja -Ka -Ha -Ea -ka -ja".splitnn(" ")
   private val DICT_FILE = File("extra_words")
@@ -54,12 +55,13 @@ class ReadCommand(messageCache: MessageCache) extends GenericCommand:
 
   override val argSpec = List(textArg)
 
-  private val dummyMessage = MessageBuilder("dummy").build
-
   override def canBeEdited = false
 
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
+      given JDA = ctx.jda
+      ctx.invoker.replyLater(false)
+
       val rawInput = ctx.args.get(textArg) match
         case None =>
           val chanId = ctx.invoker.channel.id
@@ -69,9 +71,8 @@ class ReadCommand(messageCache: MessageCache) extends GenericCommand:
             .getOrElse("")
         case Some(text) => text
 
-      val input =
-        CommandHelper(ctx.invoker.originatingMessage.getOrElse(dummyMessage))
-          .mentionsToPlaintext(rawInput)
+      val guild = ctx.invoker.member.toOption.map(_.getGuild)
+      val input = CommandHelper.mentionsToPlaintext(guild, rawInput)
       if input.isEmpty then
         await(ctx.invoker.reply(BotMessages.error("You need to enter some text first")))
       else

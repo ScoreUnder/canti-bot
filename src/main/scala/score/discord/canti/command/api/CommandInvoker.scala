@@ -8,7 +8,6 @@ import score.discord.canti.collections.ReplyCache
 import score.discord.canti.command.api.TypingManager
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper.Error
-import score.discord.canti.util.CommandHelper
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.jda.{ID, MessageReceiver, RetrievableMessage}
@@ -26,7 +25,8 @@ import scala.language.implicitConversions
 trait CommandInvoker:
   def user: User = getUser()
 
-  def member: Either[String, Member] = getMember() ?<> CommandHelper.ERRMSG_MUST_RUN_WITHIN_GUILD
+  def member: Either[String, Member] =
+    getMember() ?<> "You can only use this command from within a server."
 
   def channel: MessageChannel = getChannel()
 
