@@ -24,7 +24,7 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.util.chaining.*
 
-class FuriganaCommand(using MessageOwnership, ReplyCache, Scheduler) extends GenericCommand:
+class FuriganaCommand(using Scheduler) extends GenericCommand:
   override def name = "furigana"
 
   override def aliases = List("furi", "fg", "f")

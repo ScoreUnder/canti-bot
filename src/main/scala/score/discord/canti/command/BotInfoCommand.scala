@@ -21,7 +21,7 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.util.chaining.*
 
-class BotInfoCommand(owner: ID[User])(using MessageOwnership, ReplyCache) extends GenericCommand:
+class BotInfoCommand(owner: ID[User]) extends GenericCommand:
   override def name = "botinfo"
 
   override def description = "Show miscellaneous info about the bot"
