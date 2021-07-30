@@ -122,8 +122,10 @@ object ArgType:
         .map { typ =>
           typ
             .fromString(invoker, m.getAsString)
-            .filter(_._2.trimnn.isEmpty) // Ensure whole buffer is consumed
-            .map(_._1)
+            .collect {
+              // Ensure whole buffer is consumed
+              case (parsed, remaining) if remaining.trimnn.isEmpty => parsed
+            }
         }
         .flatten
         .headOption
