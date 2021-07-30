@@ -52,21 +52,10 @@ class VoiceKick(
 )(using MessageOwnership, ReplyCache, Scheduler)
     extends EventListener:
 
-  sealed trait VoteType:
-    val emoji: String
-    val id: String
-
-  case object KickVote extends VoteType:
-    val emoji = "👟"
-    val id = "kick"
-
-  case object StayVote extends VoteType:
-    val emoji = "📥"
-    val id = "stay"
-
-  case object AbstainVote extends VoteType:
-    val emoji = "🤷"
-    val id = "abstain"
+  enum VoteType(val emoji: String, val id: String):
+    case Kick extends VoteType("👟", "kick")
+    case Stay extends VoteType("📥", "stay")
+    case Abstain extends VoteType("🤷", "abstain")
 
   case class KickState(
     votes: Map[ID[Member], Option[VoteType]],
@@ -79,20 +68,20 @@ class VoiceKick(
     private def hasEnoughUsers = votes.size >= 2
 
     val passed: Boolean = sumVotes {
-      case StayVote    => 0
-      case AbstainVote => 1
-      case KickVote    => 2
+      case VoteType.Stay    => 0
+      case VoteType.Abstain => 1
+      case VoteType.Kick    => 2
     } > votes.size && hasEnoughUsers
 
     val failed: Boolean = sumVotes {
-      case StayVote    => 2
-      case AbstainVote => 1
-      case KickVote    => 0
+      case VoteType.Stay    => 2
+      case VoteType.Abstain => 1
+      case VoteType.Kick    => 0
     } >= votes.size || !hasEnoughUsers
 
     def overallVote: Option[VoteType] =
-      if passed then Some(KickVote)
-      else if failed then Some(StayVote)
+      if passed then Some(VoteType.Kick)
+      else if failed then Some(VoteType.Stay)
       else None
 
     def expired: Boolean = System.currentTimeMillis() >= expiry
@@ -174,7 +163,7 @@ class VoiceKick(
         )
       yield
         val votes = voteEligibleUsers.map { mem =>
-          mem.id -> (if mem == member then Some(KickVote) else None)
+          mem.id -> (if mem == member then Some(VoteType.Kick) else None)
         }.toMap
         val kickState = KickState(
           votes = votes,
@@ -266,30 +255,30 @@ class VoiceKick(
 
     if !kickState.ended then
       s"A vote to kick $targetMention from $chanMention has been called.\n" +
-        s"$usersWhoShouldVote, please vote for (${KickVote.emoji}) " +
-        s"or against (${StayVote.emoji}) the kick, " +
-        s"or abstain (${AbstainVote.emoji}) to exclude yourself from the vote.\n\n" +
+        s"$usersWhoShouldVote, please vote for (${VoteType.Kick.emoji}) " +
+        s"or against (${VoteType.Stay.emoji}) the kick, " +
+        s"or abstain (${VoteType.Abstain.emoji}) to exclude yourself from the vote.\n\n" +
         s"**Votes**: $votesSoFar\n$finalResult"
     else
       s"A vote to kick $targetMention from $chanMention was called and has concluded.\n$usersWhoShouldVote\n\n" +
         s"**Votes**: $votesSoFar\n$finalResult"
 
   private def getEmojiMeaning(emoji: String): Option[VoteType] = emoji match
-    case KickVote.emoji    => Some(KickVote)
-    case AbstainVote.emoji => Some(AbstainVote)
-    case StayVote.emoji    => Some(StayVote)
-    case _                 => None
+    case VoteType.Kick.emoji    => Some(VoteType.Kick)
+    case VoteType.Abstain.emoji => Some(VoteType.Abstain)
+    case VoteType.Stay.emoji    => Some(VoteType.Stay)
+    case _                      => None
 
   private def getButtonMeaning(id: String): Option[VoteType] = id match
-    case KickVote.id    => Some(KickVote)
-    case AbstainVote.id => Some(AbstainVote)
-    case StayVote.id    => Some(StayVote)
-    case _              => None
+    case VoteType.Kick.id    => Some(VoteType.Kick)
+    case VoteType.Abstain.id => Some(VoteType.Abstain)
+    case VoteType.Stay.id    => Some(VoteType.Stay)
+    case _                   => None
 
   private val kickVoteComponents = Seq(
-    Button.success(StayVote.id, s"${StayVote.emoji} Stay"),
-    Button.secondary(AbstainVote.id, s"${AbstainVote.emoji} Abstain"),
-    Button.danger(KickVote.id, s"${KickVote.emoji} Kick"),
+    Button.success(VoteType.Stay.id, s"${VoteType.Stay.emoji} Stay"),
+    Button.secondary(VoteType.Abstain.id, s"${VoteType.Abstain.emoji} Abstain"),
+    Button.danger(VoteType.Kick.id, s"${VoteType.Kick.emoji} Kick"),
   )
 
   def removeTemporaryVoiceBan(
@@ -477,8 +466,8 @@ class VoiceKick(
     kickState: KickState
   ): Unit =
     kickState.overallVote match
-      case Some(KickVote) => completeKick(channel, kickState, myMessage, deferredEdit)
-      case _              => updateVoteKickMessage(channel, kickState, myMessage, deferredEdit)
+      case Some(VoteType.Kick) => completeKick(channel, kickState, myMessage, deferredEdit)
+      case _                   => updateVoteKickMessage(channel, kickState, myMessage, deferredEdit)
 
   private def removeUserFromVote(member: Member): Unit = Future {
     given JDA = member.getJDA
