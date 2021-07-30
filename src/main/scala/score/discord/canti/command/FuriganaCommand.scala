@@ -2,7 +2,7 @@ package score.discord.canti.command
 
 import cps.*
 import score.discord.canti.util.FutureAsyncMonadButGood
-import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.{JDA, MessageBuilder}
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.Furigana
 import score.discord.canti.collections.ReplyCache
@@ -82,5 +82,8 @@ object FuriganaCommand:
       .fold {
         OutgoingMessage(BotMessages.error("No characters were visible in the output").toMessage)
       } { pngData =>
-        OutgoingMessage(plain.take(2000).toMessage, files = List("furigana.png" -> pngData))
+        OutgoingMessage(
+          MessageBuilder(plain.take(2000)).setAllowedMentions(Collections.emptySet).build,
+          files = List("furigana.png" -> pngData)
+        )
       }

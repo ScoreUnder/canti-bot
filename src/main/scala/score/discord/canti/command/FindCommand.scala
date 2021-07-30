@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.interactions.components.{ActionRow, Button}
 import net.dv8tion.jda.api.requests.restaction.MessageAction
-import net.dv8tion.jda.api.{EmbedBuilder, JDA}
+import net.dv8tion.jda.api.{EmbedBuilder, JDA, MessageBuilder}
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.functionality.ownership.MessageOwnership
@@ -17,7 +17,6 @@ import score.discord.canti.util.{APIHelper, BotMessages, MessageUtils}
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.MessageConversions.given
-import score.discord.canti.wrappers.jda.OutgoingMessage
 import score.discord.canti.wrappers.jda.RetrievableMessage
 import score.discord.canti.wrappers.jda.RichGenericComponentInteractionCreateEvent.messageId
 import score.discord.canti.wrappers.jda.RichMessage.{!, guild}
@@ -67,7 +66,7 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
       await(ctx.invoker.reply(reply))
     }
 
-  private def makeSearchReply(channel: MessageChannel, searchTerm: String): OutgoingMessage =
+  private def makeSearchReply(channel: MessageChannel, searchTerm: String): Message =
     val maxResults = 10
     val searchTermSanitised = MessageUtils.sanitiseCode(searchTerm)
     Try(RE2JPattern.compile(searchTerm, RE2JPattern.CASE_INSENSITIVE).nn)
@@ -79,9 +78,7 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
           .toVector
 
         if results.isEmpty then
-          OutgoingMessage(
-            BotMessages.plain(s"No results found for ``$searchTermSanitised``").toMessage
-          )
+          BotMessages.plain(s"No results found for ``$searchTermSanitised``").toMessage
         else
           val header =
             if results.size > maxResults then
@@ -105,19 +102,15 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
               .map(buttons => ActionRow.of(buttons.asJava))
               .toSeq
 
-          OutgoingMessage(
+          MessageBuilder(
             BotMessages
               .okay(s"$header\n${results take maxResults map (_._1) mkString "\n"}$footer")
-              .toMessage,
-            actionRows = Some(buttonRows),
-          )
+          ).setActionRows(buttonRows*).build
       }
       .recover { case e: PatternSyntaxException =>
-        OutgoingMessage(
-          BotMessages
-            .error(s"Could not parse regex for $name command: ${e.getDescription}")
-            .toMessage
-        )
+        BotMessages
+          .error(s"Could not parse regex for $name command: ${e.getDescription}")
+          .toMessage
       }
       .get
   end makeSearchReply

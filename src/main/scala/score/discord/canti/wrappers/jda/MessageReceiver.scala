@@ -23,18 +23,12 @@ private class InteractionMessageReceiver(origin: Interaction) extends MessageRec
   override def sendMessage(outgoingMessage: OutgoingMessage): Future[RetrievableMessage] =
     val req = origin.reply(outgoingMessage.message)
     for case (name, data) <- outgoingMessage.files do req.addFile(data, name)
-    for actionRows <- outgoingMessage.actionRows do req.addActionRows(actionRows.asJava)
-    req.allowedMentions(outgoingMessage.allowedMentions.asJava)
-    req.mention(outgoingMessage.mentions.asJava)
     req.queueFuture().map(RetrievableMessage(_))(using ExecutionContext.parasitic)
 
 private class InteractionHookMessageReceiver(origin: InteractionHook) extends MessageReceiver:
   override def sendMessage(outgoingMessage: OutgoingMessage): Future[RetrievableMessage] =
     val req = origin.sendMessage(outgoingMessage.message)
     for case (name, data) <- outgoingMessage.files do req.addFile(data, name)
-    for actionRows <- outgoingMessage.actionRows do req.addActionRows(actionRows.asJava)
-    req.allowedMentions(outgoingMessage.allowedMentions.asJava)
-    req.mention(outgoingMessage.mentions.asJava)
     req.queueFuture().map(RetrievableMessage(_))(using ExecutionContext.parasitic)
 
 private class MessageReplyMessageReceiver(origin: Message)(using
@@ -81,7 +75,4 @@ object MessageReceiver:
 
   def applyOutgoingMessage(req: MessageAction, outgoingMessage: OutgoingMessage): Unit =
     for case (name, data) <- outgoingMessage.files do req.addFile(data, name)
-    for actionRows <- outgoingMessage.actionRows do req.setActionRows(actionRows.asJava)
     req.mentionRepliedUser(false)
-    req.allowedMentions(outgoingMessage.allowedMentions.asJava)
-    req.mention(outgoingMessage.mentions.asJava)

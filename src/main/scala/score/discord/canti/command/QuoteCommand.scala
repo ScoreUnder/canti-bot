@@ -3,7 +3,7 @@ package score.discord.canti.command
 import com.codedx.util.MapK
 import cps.*
 import score.discord.canti.util.FutureAsyncMonadButGood
-import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.{JDA, MessageBuilder}
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
@@ -18,7 +18,7 @@ import score.discord.canti.command.api.{
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.wrappers.NullWrappers.*
-import score.discord.canti.wrappers.jda.{ID, OutgoingMessage, RetrievableMessage}
+import score.discord.canti.wrappers.jda.{ID, RetrievableMessage}
 import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichMessageChannel.findMessage
@@ -60,13 +60,15 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
       val quotedMsg = await(retrieveQuoteMessageByArg(ctx.invoker, ctx.args(quoteArg)))
-      val replyMsg = quotedMsg
-        .map(getMessageAsQuote(ctx.invoker, _))
-        .fold(BotMessages.error(_).toMessage, identity)
       val buttons = quotedMsg.toOption.toList.map { msg =>
         ActionRow.of(Button.link(msg.getJumpUrl, "Go to message"))
       }
-      await(ctx.invoker.reply(OutgoingMessage(replyMsg, actionRows = Some(buttons))))
+      val replyMsg = quotedMsg
+        .map(getMessageAsQuote(ctx.invoker, _))
+        .fold(e => MessageBuilder(BotMessages.error(e)), MessageBuilder(_))
+        .setActionRows(buttons*)
+        .build
+      await(ctx.invoker.reply(replyMsg))
     }
 
   private def retrieveQuoteMessageByArg(

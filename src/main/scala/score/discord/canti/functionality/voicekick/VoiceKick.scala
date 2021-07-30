@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.managers.Manager
 import net.dv8tion.jda.api.requests.ErrorResponse.*
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.{MessageAction, WebhookMessageUpdateAction}
-import net.dv8tion.jda.api.{JDA, Permission}
+import net.dv8tion.jda.api.{JDA, MessageBuilder, Permission}
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.command.GenericCommand
@@ -26,7 +26,7 @@ import score.discord.canti.wrappers.collections.AsyncMapConversions.*
 import score.discord.canti.wrappers.jda.Conversions.{
   richMessage, richMessageChannel, richUser, richVoiceChannel
 }
-import score.discord.canti.wrappers.jda.{ID, MessageReceiver, OutgoingMessage, RetrievableMessage}
+import score.discord.canti.wrappers.jda.{ID, MessageReceiver, RetrievableMessage}
 import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichGenericComponentInteractionCreateEvent.messageId
@@ -199,10 +199,9 @@ class VoiceKick(
                 )
               case _ =>
                 val msgWithButtons = ctx.invoker.reply(
-                  OutgoingMessage(
-                    message = successMsg.toMessage,
-                    actionRows = Some(List(ActionRow.of(kickVoteComponents*)))
-                  )
+                  MessageBuilder(successMsg)
+                    .setActionRows(ActionRow.of(kickVoteComponents*))
+                    .build
                 )
 
                 val botMsg = await(await(msgWithButtons).retrieve())
