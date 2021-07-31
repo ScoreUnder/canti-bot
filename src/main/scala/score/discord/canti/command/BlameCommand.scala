@@ -44,7 +44,7 @@ class BlameCommand(using val messageOwnership: MessageOwnership, val replyCache:
     }
 
   private val messageID =
-    ArgSpec("messageID", "The ID of the message (from this bot) to look up", ArgType.Integer)
+    ArgSpec("message_id", "The ID of the message (from this bot) to look up", ArgType.Integer)
 
   override def argSpec: List[ArgSpec[?]] = List(messageID)
 

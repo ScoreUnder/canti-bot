@@ -56,7 +56,7 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
   override def permissions = CommandPermissions.Anyone
 
   private val arg =
-    ArgSpec("searchTerms", "Terms to search for (regex)", ArgType.GreedyString, required = true)
+    ArgSpec("search_terms", "Terms to search for (regex)", ArgType.GreedyString, required = true)
 
   override val argSpec = List(arg)
 

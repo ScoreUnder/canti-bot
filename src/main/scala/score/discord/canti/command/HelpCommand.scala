@@ -40,7 +40,7 @@ class HelpCommand(commands: Commands) extends GenericCommand:
     Disjunction(pageType, commandType)
 
   private val pageOrCommandArg = ArgSpec(
-    "pageOrCommand",
+    "page_or_command",
     "Page number or command name to look up",
     pageOrCommandType,
     required = false

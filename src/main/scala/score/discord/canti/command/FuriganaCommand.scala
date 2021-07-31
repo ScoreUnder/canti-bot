@@ -68,7 +68,7 @@ class FuriganaCommand(using Scheduler) extends GenericCommand:
   override def permissions = CommandPermissions.Anyone
 
   private val furiTextArg =
-    ArgSpec("furiText", "The text to render as furigana", ArgType.GreedyString)
+    ArgSpec("furi_text", "The text to render as furigana", ArgType.GreedyString)
 
   override val argSpec = List(furiTextArg)
 end FuriganaCommand
