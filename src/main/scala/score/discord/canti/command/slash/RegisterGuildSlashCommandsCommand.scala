@@ -16,8 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
-class RegisterGuildSlashCommandsCommand(owner: ID[User], slashCommands: SlashCommands)
-    extends GenericCommand:
+class RegisterGuildSlashCommandsCommand(owner: ID[User]) extends GenericCommand:
   override def name: String = "regslash"
 
   override def description: String = "Register slash commands in guild (debug purposes)"
@@ -36,14 +35,19 @@ class RegisterGuildSlashCommandsCommand(owner: ID[User], slashCommands: SlashCom
 
   override val argSpec = List(offArg)
 
+  var slashCommands: Option[SlashCommands] = None
+
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
-    val result =
-      for member <- ctx.invoker.member
-      yield
-        val action = member.getGuild.updateCommands()
-        val offArgStr = ctx.args.get(offArg).getOrElse("")
-        (if offArgStr == "off" then action else slashCommands.registerCommands(action))
-          .queueFuture()
-          .map { _ => BotMessages.okay("Registered commands!") }
-          .flatMap(ctx.invoker.reply(_))
-    result.fold(m => ctx.invoker.reply(BotMessages.error(m)), x => x)
+    slashCommands match
+      case None => ctx.invoker.reply(BotMessages.error("No slash commands initialised"))
+      case Some(slashCommands) =>
+        val result =
+          for member <- ctx.invoker.member
+          yield
+            val action = member.getGuild.updateCommands()
+            val offArgStr = ctx.args.get(offArg).getOrElse("")
+            (if offArgStr == "off" then action else slashCommands.registerCommands(action))
+              .queueFuture()
+              .map { _ => BotMessages.okay("Registered commands!") }
+              .flatMap(ctx.invoker.reply(_))
+        result.fold(m => ctx.invoker.reply(BotMessages.error(m)), x => x)

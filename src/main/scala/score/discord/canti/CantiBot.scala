@@ -90,7 +90,29 @@ class CantiBot:
           StringByMessage(dbConfig, "spoilers_by_message") withCache LruCache.empty(100),
           conversations
         )
-        val slashCommands = SlashCommands(privateVoiceChats.allSlashCommands*)
+
+        val registerSlashCommandsCommand = RegisterGuildSlashCommandsCommand(owner = config.owner)
+        val helpCommand = HelpCommand(commands)
+        privateVoiceChats.allCommands.foreach(commands.register)
+        voiceKick.allCommands.foreach(commands.register)
+        voiceRoles.allCommands.foreach(commands.register)
+        spoilers.allCommands.foreach(commands.register)
+        commands.register(helpCommand)
+        commands.register(PlayCommand(owner = config.owner))
+        commands.register(StopCommand(this, owner = config.owner))
+        commands.register(FuriganaCommand())
+        commands.register(BlameCommand())
+        commands.register(BotInfoCommand(owner = config.owner))
+        commands.register(findCommand)
+        commands.register(quoteCommand)
+        commands.register(registerSlashCommandsCommand)
+        val readCommand = ReadCommand(messageCache)
+        if readCommand.available then commands.register(readCommand)
+        commands.register(PingCommand())
+        commands.register(DebugCommand(owner = config.owner))
+
+        val slashCommands = SlashCommands(commands.all*)
+        registerSlashCommandsCommand.slashCommands = Some(slashCommands)
         bot.addEventListeners(
           commands,
           slashCommands,
@@ -105,25 +127,6 @@ class CantiBot:
           eventWaiter,
           messageCache
         )
-
-        val helpCommand = HelpCommand(commands)
-        privateVoiceChats.allCommands.foreach(commands.register)
-        voiceKick.allCommands.foreach(commands.register)
-        voiceRoles.allCommands.foreach(commands.register)
-        spoilers.allCommands.foreach(commands.register)
-        commands.register(helpCommand)
-        commands.register(PlayCommand(owner = config.owner))
-        commands.register(StopCommand(this, owner = config.owner))
-        commands.register(FuriganaCommand())
-        commands.register(BlameCommand())
-        commands.register(BotInfoCommand(owner = config.owner))
-        commands.register(findCommand)
-        commands.register(quoteCommand)
-        commands.register(RegisterGuildSlashCommandsCommand(owner = config.owner, slashCommands))
-        val readCommand = ReadCommand(messageCache)
-        if readCommand.available then commands.register(readCommand)
-        commands.register(PingCommand())
-        commands.register(DebugCommand(owner = config.owner))
 
         bot.addEventListeners(
           { e =>
