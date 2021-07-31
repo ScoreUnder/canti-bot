@@ -61,7 +61,7 @@ class HelpCommand(commands: Commands) extends GenericCommand:
     jda.getInviteUrl(MANAGE_ROLES, MANAGE_CHANNEL, MESSAGE_MANAGE, VOICE_MOVE_OTHERS)
 
   private def showCommandHelp(command: String) =
-    val unprefixed = command.stripPrefix(commands.prefix)
+    val unprefixed = command.stripPrefix(commands.prefix).stripPrefix("/")
     commands
       .get(unprefixed)
       .toRight("Expected a page number or command name, but got something else.")
