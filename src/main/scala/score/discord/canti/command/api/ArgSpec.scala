@@ -1,6 +1,9 @@
 package score.discord.canti.command.api
 
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
+import score.discord.canti.wrappers.NullWrappers.*
+
+import scala.annotation.threadUnsafe
 
 final case class ArgSpec[T](
   name: String,
@@ -8,4 +11,4 @@ final case class ArgSpec[T](
   argType: ArgType[T],
   required: Boolean = true
 ):
-  def asJda = OptionData(argType.asJda, name, description, required)
+  @threadUnsafe lazy val asJda = OptionData(argType.asJda, name.lowernn, description, required)

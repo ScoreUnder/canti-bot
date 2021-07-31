@@ -29,7 +29,7 @@ class SlashCommands(commands: GenericCommand*)(using MessageOwnership, ReplyCach
 
   def registerCommands(what: CommandListUpdateAction): CommandListUpdateAction =
     what.addCommands(commands.map { cmd =>
-      CommandData(cmd.name, cmd.description).addOptions(cmd.argSpec.map(_.asJda)*)
+      CommandData(cmd.name.lowernn, cmd.description).addOptions(cmd.argSpec.map(_.asJda)*)
     }*)
 
   override def onEvent(event: GenericEvent): Unit = event match
@@ -50,13 +50,11 @@ class SlashCommands(commands: GenericCommand*)(using MessageOwnership, ReplyCach
           val invoker = SlashCommandInvoker(ev)
           Future {
             val args = cmd.argSpec.foldLeft(MapK.empty[ArgSpec, [T] =>> T]) { (acc, v) =>
-              ev.getOption(v.name).?.flatMap(v.argType.fromJda(invoker, _)) match
+              ev.getOption(v.asJda.getName).?.flatMap(v.argType.fromJda(invoker, _)) match
                 case Some(arg) => acc + (v, arg)
                 case None      => acc
             }
+            Commands.logCommandInvocation(invoker, cmd)
             CommandInvocation("/", ev.getName, args, invoker)
-          }
-            .flatMap(cmd.execute)
-            .failed
-            .foreach(APIHelper.loudFailure(s"running /${ev.getName}", invoker.asMessageReceiver))
+          }.foreach(Commands.runIfAllowed(_, cmd))
     case _ =>

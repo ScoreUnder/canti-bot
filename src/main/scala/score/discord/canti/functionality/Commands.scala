@@ -25,6 +25,8 @@ import scala.language.implicitConversions
 import scala.util.chaining.*
 
 object Commands:
+  private val logger = loggerOf[Commands]
+
   /** Normalises a command name string into a form suitable to be looked up as a key in the command
     * map. Not guaranteed to behave similarly between versions.
     *
@@ -38,12 +40,46 @@ object Commands:
   object CommandOrdering extends Ordering[GenericCommand]:
     def compare(c1: GenericCommand, c2: GenericCommand): Int =
       normaliseCommandName(c1.name) compare normaliseCommandName(c2.name)
+
+  /** Determines whether a command corresponding to a given message can be executed on that guild by
+    * that member, and if not returns a human-readable error message.
+    *
+    * @param cmd
+    *   command to check
+    * @param origin
+    *   entity invoking the command
+    * @return
+    *   either error or command
+    */
+  def canRunCommand(cmd: GenericCommand, origin: CommandInvoker): Either[String, GenericCommand] =
+    val permission = cmd.permissions
+    Either.cond(permission.canExecute(origin), cmd, permission.description)
+
+  def runIfAllowed(
+    invocation: CommandInvocation,
+    cmd: GenericCommand
+  ): Either[String, GenericCommand] =
+    logger.debug(s"Command invocation $invocation")
+    canRunCommand(cmd, invocation.invoker).tap {
+      case Right(_) =>
+        cmd
+          .execute(invocation)
+          .failed
+          .foreach(
+            APIHelper.loudFailure(s"running ${invocation}", invocation.invoker.asMessageReceiver)
+          )
+      case Left(err) => invocation.invoker.reply(BotMessages.error(err))
+    }
+
+  def logCommandInvocation(invoker: CommandInvoker, cmd: GenericCommand): Unit =
+    logger.debug(
+      s"Running command '${cmd.name}' on behalf of ${invoker.user.unambiguousString} in ${invoker.channel.unambiguousString}"
+    )
 end Commands
 
 class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventListener:
   import Commands.*
 
-  private val logger = loggerOf[Commands]
   // All commands and aliases, indexed by name
   private val commands = mutable.HashMap[String, GenericCommand]()
   // Commands list excluding aliases
@@ -78,20 +114,6 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
     *   collection of all commands
     */
   def all: Seq[GenericCommand] = commandList.toList
-
-  /** Determines whether a command corresponding to a given message can be executed on that guild by
-    * that member, and if not returns a human-readable error message.
-    *
-    * @param cmd
-    *   command to check
-    * @param origin
-    *   entity invoking the command
-    * @return
-    *   either error or command
-    */
-  def canRunCommand(cmd: GenericCommand, origin: CommandInvoker): Either[String, GenericCommand] =
-    val permission = cmd.permissions
-    Either.cond(permission.canExecute(origin), cmd, permission.description)
 
   /** Splits a raw message into command name and arguments. No validation is done to check that the
     * name is correct in any way.
@@ -163,32 +185,11 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
           case None =>
             parseArgList(invoker, specs, s, acc)
 
-  def runIfAllowed(
-    invocation: CommandInvocation,
-    cmd: GenericCommand
-  ): Either[String, GenericCommand] =
-    logger.debug(s"Command invocation $invocation")
-    canRunCommand(cmd, invocation.invoker).tap {
-      case Right(_) =>
-        cmd
-          .execute(invocation)
-          .failed
-          .foreach(
-            APIHelper.loudFailure(s"running ${invocation}", invocation.invoker.asMessageReceiver)
-          )
-      case Left(err) => invocation.invoker.reply(BotMessages.error(err))
-    }
-
   private def logIfMaybeCommand(logPrefix: String, message: Message): Unit =
     if message.getContentRaw.startsWith(prefix) then
       logger.debug(
         s"$logPrefix: ${message.rawId} ${message.getAuthor.unambiguousString} ${message.getChannel.unambiguousString}\n${formatMessageForLog(message)}"
       )
-
-  private def logCommandInvocation(invoker: CommandInvoker, cmd: GenericCommand): Unit =
-    logger.debug(
-      s"Running command '${cmd.name}' on behalf of ${invoker.user.unambiguousString} in ${invoker.channel.unambiguousString}"
-    )
 
   private def logAndInvoke(
     cmd: GenericCommand,
