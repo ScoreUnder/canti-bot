@@ -6,9 +6,7 @@ import scala.concurrent.duration.*
 import scala.quoted.*
 import scala.util.*
 
-given FutureAsyncMonadButGood(using
-  ExecutionContext
-): CpsSchedulingMonad[Future] with CpsEffectMonad[Future] with
+given FutureAsyncMonadButGood(using ExecutionContext): CpsSchedulingMonad[Future] with
   type F[+T] = Future[T]
   override type WF[T] = F[T]
 
@@ -37,16 +35,7 @@ given FutureAsyncMonadButGood(using
     source(p.complete(_))
     p.future
 
-  override def spawn[A](op: => F[A]): F[A] =
-    val p = Promise[A]
-    summon[ExecutionContext].execute(() => p.completeWith(op))
-    p.future
+  override inline def spawn[A](op: => F[A]): F[A] = Future(op).flatten
 
   override def tryCancel[A](op: Future[A]): Future[Unit] =
     Future.failed(UnsupportedOperationException("FutureAsyncMonad.tryCancel is unsupported"))
-
-  override inline def delayedUnit = Future.unit
-
-  override inline def delay[T](x: => T): F[T] = Future(x)
-
-  override inline def flatDelay[T](x: => F[T]): F[T] = Future(x).flatten
