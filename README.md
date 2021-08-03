@@ -35,6 +35,12 @@ To host this bot yourself:
 
 Yes, use the [issues][issues] page.
 
+## Permission problems
+
+The private voice chat commands attempt to copy the permissions from the category, so if Canti reports a permission error every time someone runs `&private` or `&public`, check all permissions on the category. Any "deny" rules that apply to Canti (e.g. `@everyone` permissions) which would remove "manage channel", "move voice member" or similar permissions should be counteracted with a permission override for Canti on that category which enables those permissions.
+
+Due to discord's new permission hierarchy for channel creation, it may also be necessary to enable some other permissions for Canti, e.g. if there are users who are allowed or denied the "deafen others" permission on the category, you may also need to allow Canti that permission.
+
 [discord-developer]: https://discord.com/developers/
 [releases]: https://github.com/ScoreUnder/canti-bot/releases
 [issues]: https://github.com/ScoreUnder/canti-bot/issues
