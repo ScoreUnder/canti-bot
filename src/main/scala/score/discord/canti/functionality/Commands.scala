@@ -66,7 +66,10 @@ object Commands:
           .execute(invocation)
           .failed
           .foreach(
-            APIHelper.loudFailure(s"running ${invocation}", invocation.invoker.asMessageReceiver)
+            APIHelper.loudFailure(
+              s"running ${invocation.prefix}${invocation.name}",
+              invocation.invoker.asMessageReceiver
+            )
           )
       case Left(err) => invocation.invoker.reply(BotMessages.error(err))
     }
