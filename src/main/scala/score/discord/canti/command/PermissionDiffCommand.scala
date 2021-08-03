@@ -51,11 +51,9 @@ class PermissionDiffCommand extends GenericCommand:
       }
     }
 
-  private def makeDiffMessage(
-    baseChannel: GuildChannel,
-    compareChannel: GuildChannel,
-    diffs: PermissionDiffs
-  )(using JDA) =
+  private def makeDiffMessage(baseChannel: GuildChannel, compareChannel: GuildChannel, diffs: PermissionDiffs)(
+    using JDA
+  ) =
     val embed = BotMessages.plain(
       s"Difference between permissions on ${baseChannel.getAsMention} and ${compareChannel.getAsMention}"
     )
