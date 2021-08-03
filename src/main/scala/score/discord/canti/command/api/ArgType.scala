@@ -113,6 +113,19 @@ object ArgType:
           case _             => Some(Left("That channel is not a category."))
       else None
 
+  case object Channel extends ArgType[GuildChannel](CHANNEL):
+    private val channelRegex = raw"\s*(?:<#)?(\d+)>?".r
+
+    override def fromString(invoker: CommandInvoker, s: String): Option[(GuildChannel, String)] =
+      for
+        matchResult <- channelRegex.findPrefixMatchOf(s)
+        channel <- invoker.user.getJDA.getGuildChannelById(matchResult.group(1)).?
+      yield (channel, matchResult.after.toString)
+
+    override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[GuildChannel] =
+      if m.getType == asJda then Some(m.getAsGuildChannel)
+      else None
+
   final case class Disjunction[+T](types: ArgType[T]*) extends ArgType[T](STRING):
     override def fromString(invoker: CommandInvoker, s: String): Option[(T, String)] =
       types.view.map(_.fromString(invoker, s)).flatten.headOption

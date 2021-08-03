@@ -48,3 +48,8 @@ object MessageUtils:
     */
   def sanitiseCode(message: String): String =
     message.replacenn("`", "`\u200C")
+
+  /** Backtick-quote a string safely */
+  def quote(s: String) =
+    s"``${sanitiseCode(s)}``"
+end MessageUtils
