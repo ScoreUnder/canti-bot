@@ -109,7 +109,6 @@ class CantiBot:
         val readCommand = ReadCommand(messageCache)
         if readCommand.available then commands.register(readCommand)
         commands.register(PingCommand())
-        commands.register(DebugCommand(owner = config.owner))
         commands.register(PermissionDiffCommand())
 
         val slashCommands = SlashCommands(commands.all*)
