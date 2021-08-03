@@ -105,11 +105,15 @@ class PermissionDiffCommand extends GenericCommand:
           .mkString("\n")
 
     def toEmbed(embed: EmbedBuilder)(using JDA) =
-      embed.addField("Removed overrides", permHoldersStr(removedPerms)(_.toString), false)
-      embed.addField("Added overrides", permHoldersStr(addedPerms)(_.toString), false)
+      embed.addField(
+        "Removed overrides",
+        permHoldersStr(removedPerms)(_.toString).take(1024),
+        false
+      )
+      embed.addField("Added overrides", permHoldersStr(addedPerms)(_.toString).take(1024), false)
       embed.addField(
         "Changed overrides",
-        permHoldersStr(changedPerms) { case (oldV, newV) => s"$oldV -> $newV" },
+        permHoldersStr(changedPerms) { case (oldV, newV) => s"$oldV -> $newV" }.take(1024),
         false
       )
 
