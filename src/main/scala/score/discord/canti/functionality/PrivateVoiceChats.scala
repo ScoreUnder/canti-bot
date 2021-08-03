@@ -24,6 +24,7 @@ import score.discord.canti.util.*
 import score.discord.canti.wrappers.FutureEither.*
 import score.discord.canti.wrappers.collections.AsyncMapConversions.*
 import score.discord.canti.wrappers.NullWrappers.*
+import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.jda.Conversions.{
   richChannelAction, richGuildChannel, richMember, richUser, richVoiceChannel
 }
@@ -52,7 +53,7 @@ class PrivateVoiceChats(
   defaultCategoryByGuild: AsyncMap[ID[Guild], ID[GuildChannel]],
   commands: Commands,
   eventWaiter: EventWaiter,
-)(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
+)(using messageOwnership: MessageOwnership, replyCache: ReplyCache)(using Scheduler)
     extends EventListener:
   private val logger = loggerOf[PrivateVoiceChats]
 
@@ -525,6 +526,7 @@ class PrivateVoiceChats(
         aux()
       }
 
+    invoker.replyLater(transientIfPossible = false)
     invoker.member
       .map(retryingParseAndCreateChannel)
       .pipe(x => eitherToFutureMessage(x))
