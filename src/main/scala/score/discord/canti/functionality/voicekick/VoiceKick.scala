@@ -16,7 +16,9 @@ import net.dv8tion.jda.api.{JDA, MessageBuilder, Permission}
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.command.GenericCommand
-import score.discord.canti.discord.permissions.{PermissionAttachment, PermissionCollection}
+import score.discord.canti.discord.permissions.{
+  PermissionAttachment, PermissionCollection, PermissionValue
+}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper.Error
 import score.discord.canti.util.{APIHelper, BotMessages}
@@ -289,7 +291,7 @@ class VoiceKick(
   ): Unit =
     for permissionOverride <- voiceChannel.getPermissionOverride(member).? do
       val originalPerms = PermissionAttachment(permissionOverride)
-      val permsWithoutVoiceBan = originalPerms.clear(Permission.VOICE_CONNECT)
+      val permsWithoutVoiceBan = originalPerms.clear(Set(Permission.VOICE_CONNECT))
 
       APIHelper.tryRequest(
         {
@@ -325,14 +327,14 @@ class VoiceKick(
   ): Unit =
     val originalPerms = voiceChannel.getPermissionAttachment(member)
 
-    if !originalPerms.denies.contains(Permission.VOICE_CONNECT) then
-      val permsWithVoiceBan = originalPerms.deny(Permission.VOICE_CONNECT)
+    if originalPerms.get(Permission.VOICE_CONNECT) != PermissionValue.Deny then
+      val permsWithVoiceBan = originalPerms.deny(Set(Permission.VOICE_CONNECT))
       val futureReq = APIHelper.tryRequest(
         {
           // XXX Oh my god static mutable globals in a multithreaded environment
           // XXX Hack: JDA seems to consistently get the wrong idea about permissions here for some reason.
           Manager.setPermissionChecksEnabled(false)
-          try voiceChannel.applyPerms(PermissionCollection(Seq(member -> permsWithVoiceBan)))
+          try voiceChannel.applyPerms(PermissionCollection(member -> permsWithVoiceBan))
           finally Manager.setPermissionChecksEnabled(true)
         },
         onFail = APIHelper.loudFailure(
@@ -342,7 +344,7 @@ class VoiceKick(
       )
 
       // Whether we need to explicitly grant the permission back
-      val explicitGrant = originalPerms.allows.contains(Permission.VOICE_CONNECT)
+      val explicitGrant = originalPerms.get(Permission.VOICE_CONNECT) == PermissionValue.Allow
 
       for _ <- futureReq do
         // Take note (in DB) of when the voice ban should expire

@@ -2,12 +2,13 @@ package score.discord.canti.command
 
 import cps.*
 import net.dv8tion.jda.api.{EmbedBuilder, JDA, Permission}
-import net.dv8tion.jda.api.entities.{GuildChannel, PermissionOverride, Role, User}
+import net.dv8tion.jda.api.entities.{GuildChannel, PermissionOverride}
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
+import score.discord.canti.discord.permissions.*
 import score.discord.canti.util.BotMessages
 import score.discord.canti.util.MessageUtils.{quote, sanitiseCode}
 import score.discord.canti.wrappers.NullWrappers.*
-import score.discord.canti.wrappers.jda.{ID, MessageConversions, RetrievableMessage}
+import score.discord.canti.wrappers.jda.{MessageConversions, RetrievableMessage}
 import score.discord.canti.wrappers.jda.Conversions.richUser
 import score.discord.canti.wrappers.jda.IdConversions.*
 import scala.concurrent.Future
@@ -60,27 +61,6 @@ class PermissionDiffCommand extends GenericCommand:
     diffs.toEmbed(embed)
     embed
 
-  sealed trait PermissionHolder:
-    def asMention: String
-
-  final case class Role(id: ID[Role]) extends PermissionHolder:
-    def asMention = s"<@&${id.value}>"
-  final case class Member(id: ID[User]) extends PermissionHolder:
-    def asMention = s"<@${id.value}>"
-  final case class Unknown(id: ID[?]) extends PermissionHolder:
-    def asMention = toString
-
-  object PermissionHolder:
-    def apply(permissionOverride: PermissionOverride): PermissionHolder =
-      if permissionOverride.isMemberOverride then Member(ID(permissionOverride.getIdLong))
-      else if permissionOverride.isRoleOverride then Role(ID(permissionOverride.getIdLong))
-      else Unknown(ID(permissionOverride.getIdLong))
-
-  enum PermissionValue:
-    case Allow
-    case Inherit
-    case Deny
-
   final case class PermissionDiffs(
     removedPerms: Map[PermissionHolder, Map[Permission, PermissionValue]],
     addedPerms: Map[PermissionHolder, Map[Permission, PermissionValue]],
@@ -120,9 +100,7 @@ class PermissionDiffCommand extends GenericCommand:
   private def permOverrideToMap(
     permOverride: PermissionOverride
   ): Map[Permission, PermissionValue] =
-    import PermissionValue.*
-    (permOverride.getAllowed.asScala.view.map(_ -> Allow) ++
-      permOverride.getDenied.asScala.view.map(_ -> Deny)).toMap.withDefaultValue(Inherit)
+    PermissionAttachment(permOverride).permissions
 
   private def compareChannels(baseChannel: GuildChannel, compareChannel: GuildChannel) =
     def permMap(ch: GuildChannel) =

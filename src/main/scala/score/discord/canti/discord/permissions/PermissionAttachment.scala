@@ -4,29 +4,39 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.PermissionOverride
 import scala.jdk.CollectionConverters.*
 
-case class PermissionAttachment(
-  allows: Set[Permission] = Set.empty,
-  denies: Set[Permission] = Set.empty
-):
-  def allow(perms: Permission*): PermissionAttachment =
-    copy(allows = allows | perms.toSet, denies = denies &~ perms.toSet)
+import PermissionValue.*
 
-  def deny(perms: Permission*): PermissionAttachment =
-    copy(allows = allows &~ perms.toSet, denies = denies | perms.toSet)
+case class PermissionAttachment(permissions: Map[Permission, PermissionValue]):
+  def allow(perms: Iterable[Permission]): PermissionAttachment =
+    copy(permissions = permissions ++ perms.map(_ -> Allow))
 
-  def clear(perms: Permission*): PermissionAttachment =
-    copy(allows = allows &~ perms.toSet, denies = denies &~ perms.toSet)
+  def deny(perms: Iterable[Permission]): PermissionAttachment =
+    copy(permissions = permissions ++ perms.map(_ -> Deny))
+
+  def clear(perms: Iterable[Permission]): PermissionAttachment =
+    copy(permissions = permissions -- perms)
 
   def merge(other: PermissionAttachment): PermissionAttachment =
-    copy(
-      allows = allows &~ other.denies | other.allows,
-      denies = denies &~ other.allows | other.denies
-    )
+    copy(permissions = permissions ++ other.permissions.filter { case (_, v) =>
+      v != Inherit
+    })
 
-  def isEmpty: Boolean = allows.isEmpty && denies.isEmpty
+  def allows: Set[Permission] =
+    permissions.view.collect { case (k, Allow) => k }.toSet
+
+  def denies: Set[Permission] =
+    permissions.view.collect { case (k, Deny) => k }.toSet
+
+  def get(perm: Permission): PermissionValue =
+    permissions.getOrElse(perm, Inherit)
+
+  export permissions.isEmpty
 
 object PermissionAttachment:
   def apply(ov: PermissionOverride): PermissionAttachment =
-    PermissionAttachment(allows = ov.getAllowed.asScala.toSet, denies = ov.getDenied.asScala.toSet)
+    empty.allow(ov.getAllowed.asScala).deny(ov.getDenied.asScala)
 
-  def empty: PermissionAttachment = PermissionAttachment(Set.empty, Set.empty)
+  val empty: PermissionAttachment =
+    PermissionAttachment(Map.empty.withDefaultValue(Inherit))
+
+  export empty.{allow, deny}

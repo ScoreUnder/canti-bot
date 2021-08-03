@@ -199,7 +199,7 @@ class PrivateVoiceChats(
             .foldLeft(Vector.empty[(Member, PermissionAttachment)]) { (acc, member) =>
               acc :+ member -> channel
                 .getPermissionAttachment(member)
-                .allow(Permission.VOICE_CONNECT)
+                .allow(Set(Permission.VOICE_CONNECT))
             }
         )
 
@@ -459,11 +459,11 @@ class PrivateVoiceChats(
     ) =
       async {
         val categoryPerms =
-          category.fold(PermissionCollection.empty[IPermissionHolder])(_.permissionAttachments)
+          category.fold(PermissionCollection.empty)(_.permissionAttachments)
         val channelPerms = getChannelPermissions(member, limit, public)
         val newPerms = categoryPerms
           .merge(channelPerms)
-          .mapValues(_.clear(Permission.MANAGE_ROLES, Permission.MANAGE_PERMISSIONS))
+          .mapValues(_.clear(Set(Permission.MANAGE_ROLES, Permission.MANAGE_PERMISSIONS)))
         channelReq.applyPerms(newPerms)
 
         if limit != 0 && !public then channelReq.setUserlimit(limit)
@@ -575,13 +575,11 @@ class PrivateVoiceChats(
 
     if !public && limit == 0 then
       // If no limit, deny access to all users by default
-      collection :+= guild.getPublicRole -> PermissionAttachment(denies =
-        Set(Permission.VOICE_CONNECT)
-      )
+      collection :+= guild.getPublicRole -> PermissionAttachment.deny(Set(Permission.VOICE_CONNECT))
 
     collection :+
-      guild.getSelfMember -> PermissionAttachment(allows = SELF_PRIVATE_CHANNEL_PERMISSIONS) :+
-      member -> PermissionAttachment(allows = CREATOR_PRIVATE_CHANNEL_PERMISSIONS)
+      guild.getSelfMember -> PermissionAttachment.allow(SELF_PRIVATE_CHANNEL_PERMISSIONS) :+
+      member -> PermissionAttachment.allow(CREATOR_PRIVATE_CHANNEL_PERMISSIONS)
 
   private def prefixOrUpdateNumber(name: String, prefix: String): String =
     if name.startsWith(prefix) then

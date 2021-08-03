@@ -1,6 +1,7 @@
 package score.discord.canti.discord.permissions
 
 import net.dv8tion.jda.api.entities.IPermissionHolder
+import scala.annotation.targetName
 
 case class PermissionCollection[+T <: IPermissionHolder](values: Seq[(T, PermissionAttachment)]):
   def :+[U >: T <: IPermissionHolder](value: (U, PermissionAttachment)): PermissionCollection[U] =
@@ -24,4 +25,8 @@ case class PermissionCollection[+T <: IPermissionHolder](values: Seq[(T, Permiss
     PermissionCollection(values.map { case (k, v) => k -> f(v) })
 
 object PermissionCollection:
-  def empty[T <: IPermissionHolder]: PermissionCollection[T] = PermissionCollection(Seq.empty)
+  @targetName("apply_varargs")
+  def apply[T <: IPermissionHolder](values: (T, PermissionAttachment)*): PermissionCollection[T] =
+    PermissionCollection(values)
+
+  val empty: PermissionCollection[Nothing] = PermissionCollection(Seq.empty)
