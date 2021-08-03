@@ -97,7 +97,10 @@ class PermissionDiffCommand extends GenericCommand:
               changes.view.map { case (perm, v) =>
                 s"$perm: ${stringify(v)}"
               }
-            holder.asMention + changesStrs.map(sanitiseCode).mkString("\n```\n", "\n", "```")
+            val changesStr =
+              if changesStrs.isEmpty then " (empty)"
+              else changesStrs.map(sanitiseCode).mkString("\n```\n", "\n", "```")
+            holder.asMention + changesStr
           }
           .mkString("\n")
 
