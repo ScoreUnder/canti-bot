@@ -182,6 +182,7 @@ class VoiceKick(
           case Right((kickState, guildTextChannel, successMsg, voiceChan, mentioned)) =>
             await(ownerByChannel(voiceChan)) match
               case Some(owner) if owner == ctx.invoker.user =>
+                addTemporaryVoiceBan(voiceChan, mentioned, MessageReceiver(textChannel))
                 kickVoiceMember(voiceChan, mentioned, textChannel)
                 ctx.invoker.reply(
                   BotMessages.okay(
