@@ -3,11 +3,11 @@ package score.discord.canti.discord.permissions
 import net.dv8tion.jda.api.entities.IPermissionHolder
 import scala.annotation.targetName
 
-case class PermissionCollection[+T <: IPermissionHolder](values: Seq[(T, PermissionAttachment)]):
-  def :+[U >: T <: IPermissionHolder](value: (U, PermissionAttachment)): PermissionCollection[U] =
+case class PermissionCollection[+T <: PermissionHolder](values: Seq[(T, PermissionAttachment)]):
+  def :+[U >: T <: PermissionHolder](value: (U, PermissionAttachment)): PermissionCollection[U] =
     copy(values = values :+ value)
 
-  def merge[U >: T <: IPermissionHolder](other: PermissionCollection[U]): PermissionCollection[U] =
+  def merge[U >: T <: PermissionHolder](other: PermissionCollection[U]): PermissionCollection[U] =
     if values.isEmpty then other
     else if other.values.isEmpty then this
     else
@@ -26,7 +26,7 @@ case class PermissionCollection[+T <: IPermissionHolder](values: Seq[(T, Permiss
 
 object PermissionCollection:
   @targetName("apply_varargs")
-  def apply[T <: IPermissionHolder](values: (T, PermissionAttachment)*): PermissionCollection[T] =
+  def apply[T <: PermissionHolder](values: (T, PermissionAttachment)*): PermissionCollection[T] =
     PermissionCollection(values)
 
   val empty: PermissionCollection[Nothing] = PermissionCollection(Seq.empty)

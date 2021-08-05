@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.{JDA, MessageBuilder, Permission}
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.command.GenericCommand
+import score.discord.canti.discord.permissions.PermissionHolder.asPermissionHolder
 import score.discord.canti.discord.permissions.{
   PermissionAttachment, PermissionCollection, PermissionValue
 }
@@ -335,7 +336,10 @@ class VoiceKick(
           // XXX Oh my god static mutable globals in a multithreaded environment
           // XXX Hack: JDA seems to consistently get the wrong idea about permissions here for some reason.
           Manager.setPermissionChecksEnabled(false)
-          try voiceChannel.applyPerms(PermissionCollection(member -> permsWithVoiceBan))
+          try
+            voiceChannel.applyPerms(
+              PermissionCollection(member.asPermissionHolder -> permsWithVoiceBan)
+            )
           finally Manager.setPermissionChecksEnabled(true)
         },
         onFail = APIHelper.loudFailure(

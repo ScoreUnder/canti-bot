@@ -17,7 +17,10 @@ import score.discord.canti.command.api.{
   ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions
 }
 import score.discord.canti.command.GenericCommand
-import score.discord.canti.discord.permissions.{PermissionAttachment, PermissionCollection}
+import score.discord.canti.discord.permissions.PermissionHolder.asPermissionHolder
+import score.discord.canti.discord.permissions.{
+  PermissionAttachment, PermissionCollection, PermissionHolder
+}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper.Error
 import score.discord.canti.util.*
@@ -196,8 +199,8 @@ class PrivateVoiceChats(
         val grants = PermissionCollection(
           members
             .flatMap(_._2)
-            .foldLeft(Vector.empty[(Member, PermissionAttachment)]) { (acc, member) =>
-              acc :+ member -> channel
+            .foldLeft(Vector.empty[(PermissionHolder, PermissionAttachment)]) { (acc, member) =>
+              acc :+ member.asPermissionHolder -> channel
                 .getPermissionAttachment(member)
                 .allow(Set(Permission.VOICE_CONNECT))
             }
@@ -569,17 +572,21 @@ class PrivateVoiceChats(
     member: Member,
     limit: Int,
     public: Boolean
-  ): PermissionCollection[IPermissionHolder] =
+  ): PermissionCollection[PermissionHolder] =
     val guild = member.getGuild
-    var collection: PermissionCollection[IPermissionHolder] = PermissionCollection.empty
+    var collection: PermissionCollection[PermissionHolder] = PermissionCollection.empty
 
     if !public && limit == 0 then
       // If no limit, deny access to all users by default
-      collection :+= guild.getPublicRole -> PermissionAttachment.deny(Set(Permission.VOICE_CONNECT))
+      collection :+= guild.getPublicRole.asPermissionHolder -> PermissionAttachment.deny(
+        Set(Permission.VOICE_CONNECT)
+      )
 
     collection :+
-      guild.getSelfMember -> PermissionAttachment.allow(SELF_PRIVATE_CHANNEL_PERMISSIONS) :+
-      member -> PermissionAttachment.allow(CREATOR_PRIVATE_CHANNEL_PERMISSIONS)
+      guild.getSelfMember.asPermissionHolder -> PermissionAttachment.allow(
+        SELF_PRIVATE_CHANNEL_PERMISSIONS
+      ) :+
+      member.asPermissionHolder -> PermissionAttachment.allow(CREATOR_PRIVATE_CHANNEL_PERMISSIONS)
 
   private def prefixOrUpdateNumber(name: String, prefix: String): String =
     if name.startsWith(prefix) then
