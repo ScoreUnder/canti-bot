@@ -1,7 +1,7 @@
 package score.discord.canti.util
 
 import net.dv8tion.jda.api.entities.{Message, MessageChannel}
-import net.dv8tion.jda.api.exceptions.{ErrorResponseException, PermissionException}
+import net.dv8tion.jda.api.exceptions.{ErrorResponseException, InsufficientPermissionException, PermissionException}
 import net.dv8tion.jda.api.requests.{ErrorResponse, RestAction}
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
@@ -33,6 +33,8 @@ object APIHelper:
 
   private def describeFailure(whatFailed: String, exception: Throwable): String =
     exception match
+      case e: InsufficientPermissionException if e.getChannelId != 0 =>
+        s"Error when $whatFailed: I don't have permission for that. Missing `${e.getPermission.nn.getName}` on <#${e.getChannelId}>."
       case e: PermissionException =>
         s"Error when $whatFailed: I don't have permission for that. Missing `${e.getPermission.nn.getName}`."
       case Error(x) => s"Error when $whatFailed: ${x.getMeaning}"
