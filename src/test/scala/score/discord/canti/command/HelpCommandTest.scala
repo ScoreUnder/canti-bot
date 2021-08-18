@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 class HelpCommandTest extends AnyFlatSpec with should.Matchers:
   val fixture = TestFixtures.default
-  import fixture.{*, given}
+  import fixture.{given, *}
 
   private val dummyDesc = "dummy command"
   private val dummyLongDesc = "this command is dummy"

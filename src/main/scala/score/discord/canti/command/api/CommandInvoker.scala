@@ -56,7 +56,7 @@ private abstract class TypingCommandInvoker(channel: MessageChannel) extends Com
 
 final case class MessageInvoker(origin: Message)(using MessageOwnership, ReplyCache)
     extends TypingCommandInvoker(origin.getChannel):
-  export origin.{getAuthor as getUser, getMember, getChannel}
+  export origin.{getAuthor as getUser, getChannel, getMember}
 
   override def originatingMessage = Some(origin)
 
@@ -95,7 +95,7 @@ final case class EditedMessageInvoker(origin: Message, myMessage: ID[Message])(u
   MessageOwnership,
   ReplyCache
 ) extends TypingCommandInvoker(origin.getChannel):
-  export origin.{getAuthor as getUser, getMember, getChannel}
+  export origin.{getAuthor as getUser, getChannel, getMember}
 
   override def originatingMessage = Some(origin)
 
