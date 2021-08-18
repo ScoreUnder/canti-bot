@@ -8,7 +8,7 @@ import score.discord.canti.collections.NullCacheBackend
 
 class PrivateVoiceChatsTest extends AnyFlatSpec with should.Matchers with PrivateMethodTester:
   val fixture = TestFixtures.default
-  import fixture.{*, given}
+  import fixture.{given, *}
 
   val pvc = PrivateVoiceChats(NullCacheBackend(), NullCacheBackend(), commands, EventWaiter())
 
