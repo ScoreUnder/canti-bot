@@ -1,6 +1,6 @@
 package score.discord.canti.jdamocks
 
-import java.util.stream.Stream as JStream
+import java.util.stream.{Stream as JStream}
 
 import net.dv8tion.jda.api.entities.ISnowflake
 import net.dv8tion.jda.api.utils.cache.SortedSnowflakeCacheView

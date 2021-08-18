@@ -25,7 +25,7 @@ import net.dv8tion.jda.api.events.role.update.RoleUpdatePositionEvent
 import net.dv8tion.jda.api.events.user.GenericUserEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.functionality.ownership.MessageOwnership
-import score.discord.canti.util.StringUtils.formatMessageForLog as formatMessage
+import score.discord.canti.util.StringUtils.{formatMessageForLog as formatMessage}
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{
   richGuild, richMember, richMessageChannel, richUser, richVoiceChannel

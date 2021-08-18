@@ -1,4 +1,4 @@
-import Dependencies.*
+import Dependencies._
 
 enablePlugins(GitVersioning, ReproducibleBuildsPlugin)
 

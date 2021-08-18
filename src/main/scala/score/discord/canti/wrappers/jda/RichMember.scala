@@ -3,7 +3,7 @@ package score.discord.canti.wrappers.jda
 import net.dv8tion.jda.api.entities.{Member, Role}
 import net.dv8tion.jda.internal.entities.MemberImpl
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
-import score.discord.canti.wrappers.jda.RichUser.unambiguousString as userUnambiguousString
+import score.discord.canti.wrappers.jda.RichUser.{unambiguousString as userUnambiguousString}
 
 import scala.concurrent.Future
 

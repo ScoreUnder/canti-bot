@@ -1,15 +1,13 @@
 package score.discord.canti.util
 
 import net.dv8tion.jda.api.entities.{Message, MessageChannel}
-import net.dv8tion.jda.api.exceptions.{
-  ErrorResponseException, InsufficientPermissionException, PermissionException
-}
+import net.dv8tion.jda.api.exceptions.{ErrorResponseException, InsufficientPermissionException, PermissionException}
 import net.dv8tion.jda.api.requests.{ErrorResponse, RestAction}
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{richMessage, richMessageChannel}
-import score.discord.canti.wrappers.jda.MessageConversions.{given, *}
+import score.discord.canti.wrappers.jda.MessageConversions.{*, given}
 import score.discord.canti.wrappers.jda.MessageReceiver
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 
