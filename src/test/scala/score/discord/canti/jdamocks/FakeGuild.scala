@@ -289,4 +289,6 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
     ???
 
   override def requestToSpeak(): Task[Void] = ???
+
+  override def getNSFWLevel(): Guild.NSFWLevel = ???
 end FakeGuild
