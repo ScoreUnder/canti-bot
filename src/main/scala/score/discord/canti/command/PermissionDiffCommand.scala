@@ -14,7 +14,7 @@ import score.discord.canti.wrappers.jda.IdConversions.*
 import scala.concurrent.Future
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import score.discord.canti.util.FutureAsyncMonadButGood
+import cps.monads.FutureAsyncMonad
 import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
 import scala.util.chaining.*

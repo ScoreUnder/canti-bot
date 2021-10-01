@@ -1,7 +1,7 @@
 package score.discord.canti.functionality
 
 import cps.*
-import score.discord.canti.util.FutureAsyncMonadButGood
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent

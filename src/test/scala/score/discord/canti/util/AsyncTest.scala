@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.adhocExtensions // AnyFlatSpec
 
 class AsyncTest extends AnyFlatSpec with should.Matchers:
-  // using FutureAsyncMonadButGood from this package
+  import cps.monads.FutureAsyncMonad
 
   "async" `should` "report errors" in {
     def raise(x: Throwable): Unit = throw x
