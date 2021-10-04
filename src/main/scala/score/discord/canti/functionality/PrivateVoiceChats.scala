@@ -1,10 +1,10 @@
 package score.discord.canti.functionality
 
 import cps.*
-import score.discord.canti.util.FutureAsyncMonadButGood
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
-import net.dv8tion.jda.api.exceptions.PermissionException
+import net.dv8tion.jda.api.exceptions.{InsufficientPermissionException, PermissionException}
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
@@ -391,6 +391,8 @@ class PrivateVoiceChats(
   @threadUnsafe private lazy val translateChannelMoveError: PartialFunction[Throwable, String] =
     case _: IllegalStateException =>
       "You need to join voice chat before I can move you into a channel."
+    case e: InsufficientPermissionException if e.getChannelId != 0 =>
+      s"I don't have permission to move you to another voice channel. A server administrator will need to fix this. Missing `${e.getPermission.nn.getName}` on <#${e.getChannelId}>."
     case e: PermissionException =>
       s"I don't have permission to move you to another voice channel. A server administrator will need to fix this. Missing `${e.getPermission.nn.getName}`."
 
@@ -607,6 +609,8 @@ class PrivateVoiceChats(
   private def createChannel(name: String, guild: Guild, category: Option[Category]) =
     Try(category.fold(guild.createVoiceChannel(name))(_.createVoiceChannel(name))).toEither.left
       .map({
+        case e: InsufficientPermissionException if e.getChannelId != 0 =>
+          s"I don't have permission to create a voice channel. A server administrator will need to fix this. Missing `${e.getPermission.nn.getName}` on <#${e.getChannelId}>."
         case e: PermissionException =>
           s"I don't have permission to create a voice channel. A server administrator will need to fix this. Missing `${e.getPermission.nn.getName}`."
         case x =>

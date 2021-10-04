@@ -1,6 +1,7 @@
 package score.discord.canti.command.api
 
 import net.dv8tion.jda.api.entities.{Category, Guild, GuildChannel, Role, User}
+import net.dv8tion.jda.api.interactions.commands.Command.Choice
 import net.dv8tion.jda.api.interactions.commands.{OptionMapping, OptionType}
 import net.dv8tion.jda.api.JDA
 import score.discord.canti.util.ParseUtils
@@ -20,6 +21,10 @@ sealed trait ArgType[+T](val asJda: OptionType):
 
   def withFilter(f: T => Boolean): ArgType[T] = flatMap(x => if f(x) then Some(x) else None)
 
+  def choices: Seq[Choice] = Nil
+
+  def withChoices(choices: Choice*): ArgType[T] = ChoiceArgType(this, choices)
+
 private case class MappedArgType[T, U](prev: ArgType[T], f: T => Option[U])
     extends ArgType[U](prev.asJda):
   override def fromString(invoker: CommandInvoker, s: String): Option[(U, String)] =
@@ -30,6 +35,17 @@ private case class MappedArgType[T, U](prev: ArgType[T], f: T => Option[U])
 
   override def flatMap[V](f2: U => Option[V]): ArgType[V] =
     MappedArgType(prev, f(_).flatMap(f2))
+
+  override def withChoices(choices: Choice*): ArgType[U] =
+    MappedArgType(prev.withChoices(choices*), f)
+
+  override def choices = prev.choices
+
+private case class ChoiceArgType[T](prev: ArgType[T], override val choices: Seq[Choice])
+    extends ArgType[T](prev.asJda):
+  export prev.{fromJda, fromString}
+
+  override def withChoices(choices: Choice*) = prev.withChoices(choices*)
 
 object ArgType:
   import OptionType.{CHANNEL, INTEGER, ROLE, STRING, USER}

@@ -1,8 +1,8 @@
 package score.discord.canti.command
 
 import cps.*
-import score.discord.canti.util.FutureAsyncMonadButGood
-import com.google.re2j.{PatternSyntaxException, Pattern as RE2JPattern}
+import cps.monads.FutureAsyncMonad
+import com.google.re2j.{Pattern as RE2JPattern, PatternSyntaxException}
 import net.dv8tion.jda.api.entities.{GuildChannel, Message, MessageChannel}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent

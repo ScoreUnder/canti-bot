@@ -3,7 +3,7 @@ import Dependencies._
 enablePlugins(GitVersioning, ReproducibleBuildsPlugin)
 
 ThisBuild / organization := "score.discord"
-ThisBuild / scalaVersion := "3.0.1"
+ThisBuild / scalaVersion := "3.0.2"
 ThisBuild / git.useGitDescribe := true
 ThisBuild / scalacOptions ++= List("-deprecation", "-unchecked", "-feature")
 ThisBuild / resolvers ++= Seq(
@@ -31,9 +31,9 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       scalaTest % Test,
       jda,
-      "org.xerial" % "sqlite-jdbc" % "3.36.0.1",
+      "org.xerial" % "sqlite-jdbc" % "3.36.0.3",
       "com.typesafe" % "config" % "1.4.1",
-      "com.github.rssh" %% "dotty-cps-async" % "0.9.1",
+      "com.github.rssh" %% "dotty-cps-async" % "0.9.3",
       "com.google.re2j" % "re2j" % "1.6",
       "org.slf4j" % "slf4j-simple" % "1.7.32",
       "com.codedx" %% "mapk" % "1.2.0",

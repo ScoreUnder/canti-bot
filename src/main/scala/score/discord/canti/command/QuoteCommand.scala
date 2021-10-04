@@ -2,7 +2,7 @@ package score.discord.canti.command
 
 import com.codedx.util.MapK
 import cps.*
-import score.discord.canti.util.FutureAsyncMonadButGood
+import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.{JDA, MessageBuilder}
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.GenericEvent
