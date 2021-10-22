@@ -76,6 +76,7 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
     args: String
   ): Future[Either[String, Message]] =
     async {
+      given JDA = invoker.user.getJDA
       parseQuoteIDs(args) match
         case Some((quoteId, specifiedChannel)) =>
           val channel = channelOrBestGuess(invoker.channel, quoteId, specifiedChannel)
@@ -92,11 +93,10 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
     }
 
   private def channelOrBestGuess(
-    origChannel: MessageChannel,
+    origChannel: Option[MessageChannel],
     quoteId: ID[Message],
     specifiedChannel: Option[ID[MessageChannel]]
-  ): Option[MessageChannel] =
-    given JDA = origChannel.getJDA
+  )(using JDA): Option[MessageChannel] =
     specifiedChannel match
       case Some(chanID) => chanID.find
       case None =>
@@ -104,7 +104,7 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
           .find(_.messageId == quoteId)
           .map(m => m.chanId)
           .flatMap(_.find)
-          .orElse(Some(origChannel))
+          .orElse(origChannel)
 
   private def stringifyMessageRetrievalError(
     specifiedChannel: Option[ID[MessageChannel]]

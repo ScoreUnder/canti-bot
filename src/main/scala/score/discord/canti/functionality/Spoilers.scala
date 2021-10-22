@@ -13,7 +13,8 @@ import score.discord.canti.command.GenericCommand
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.wrappers.NullWrappers.*
-import score.discord.canti.wrappers.jda.{ID, RetrievableMessage}
+import score.discord.canti.wrappers.jda.{ID, MessageReceiver, RetrievableMessage}
+import score.discord.canti.wrappers.jda.MessageConversions.*
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichMessageChannel.{mention, sendOwned}
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
@@ -82,7 +83,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
           case None =>
             await(createSpoilerConversation(ctx.invoker))
           case Some(trimmed) =>
-            await(createSpoiler(ctx.invoker.channel, ctx.invoker.user, trimmed))
+            await(createSpoiler(ctx.invoker.asMessageReceiver, ctx.invoker.user, trimmed))
       }
 
     private def createSpoilerConversation(invoker: CommandInvoker): Future[RetrievableMessage] =
@@ -90,9 +91,10 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
       for
         privateChannel <- invoker.user.openPrivateChannel().queueFuture()
         message <- privateChannel
-          .sendMessage(
-            s"Please enter your spoiler contents for ${channel.mention}, or reply with 'cancel' to cancel."
-          )
+          .sendMessage({
+            val channelText = channel.fold("")(c => s" for ${c.mention}")
+            s"Please enter your spoiler contents$channelText, or reply with 'cancel' to cancel."
+          })
           .queueFuture()
       yield
         conversations.start(message.getAuthor, privateChannel) { conversation =>
@@ -100,8 +102,13 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
             case "cancel" =>
               conversation.message.!("Did not create a spoiler.")
             case spoiler =>
-              for _ <- createSpoiler(channel, conversation.message.getAuthor, spoiler) do
-                conversation.message.!("Created your spoiler.")
+              for
+                _ <- createSpoiler(
+                  invoker.asMessageReceiver,
+                  conversation.message.getAuthor,
+                  spoiler
+                )
+              do conversation.message.!("Created your spoiler.")
         }
         RetrievableMessage(message)
   end spoilerCommand
@@ -109,7 +116,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
   val allCommands: Seq[GenericCommand] = Seq(spoilerCommand)
 
   private def createSpoiler(
-    spoilerChannel: MessageChannel,
+    replyHook: MessageReceiver,
     author: User,
     args: String
   ): Future[RetrievableMessage] =
@@ -124,15 +131,15 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
 
       val hintText = if hintTextMaybe.isEmpty then "spoilers" else hintTextMaybe
 
-      val spoilerMessage = await(
-        spoilerChannel.sendOwned(
+      val spoilerMessageHook = await(
+        replyHook.sendMessage(
           BotMessages.okay(
             s"**Click the magnifying glass** to see ${hintText.trim} (from ${author.mentionWithName})"
-          ),
-          owner = author
+          ): MessageFromX
         )
       )
 
+      val spoilerMessage = await(spoilerMessageHook.retrieve())
       val spoilerDbUpdate =
         spoilerTexts(spoilerMessage.id) = spoilerText.trimnn
       await(spoilerMessage.addReaction(spoilerEmote).queueFuture())

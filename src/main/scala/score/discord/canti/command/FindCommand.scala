@@ -3,7 +3,7 @@ package score.discord.canti.command
 import cps.*
 import cps.monads.FutureAsyncMonad
 import com.google.re2j.{Pattern as RE2JPattern, PatternSyntaxException}
-import net.dv8tion.jda.api.entities.{GuildChannel, Message, MessageChannel}
+import net.dv8tion.jda.api.entities.{Guild, GuildChannel, Message, MessageChannel}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.hooks.EventListener
@@ -35,6 +35,8 @@ import scala.util.chaining.scalaUtilChainingOps
 
 class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
     extends GenericCommand:
+  private val logger = loggerOf[FindCommand]
+
   override def name: String = "find"
 
   override val aliases: Seq[String] = List("id")
@@ -62,16 +64,21 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
 
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
-      val reply = makeSearchReply(ctx.invoker.channel, ctx.args(arg))
+      val guild = ctx.invoker.member.toOption.map(_.getGuild)
+      val reply = makeSearchReply(ctx.invoker.channel, guild, ctx.args(arg))
       await(ctx.invoker.reply(reply))
     }
 
-  private def makeSearchReply(channel: MessageChannel, searchTerm: String): Message =
+  private def makeSearchReply(
+    channel: Option[MessageChannel],
+    guild: Option[Guild],
+    searchTerm: String
+  ): Message =
     val maxResults = 10
     val searchTermSanitised = MessageUtils.sanitiseCode(searchTerm)
     Try(RE2JPattern.compile(searchTerm, RE2JPattern.CASE_INSENSITIVE).nn)
       .map { searchPattern =>
-        val results = getSearchResults(channel, searchPattern)
+        val results = getSearchResults(channel, guild, searchPattern)
           .take(maxResults + 1)
           .zip(ReactListener.ICONS.iterator ++ Iterator.continually(""))
           .map { case ((msg, id), icon) => (s"$icon: $msg", id) }
@@ -116,16 +123,16 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
   end makeSearchReply
 
   private def getSearchResults(
-    channel: MessageChannel,
+    channel: Option[MessageChannel],
+    guild: Option[Guild],
     searchPattern: RE2JPattern
   ): Seq[(String, String)] =
     inline def containsSearchTerm(haystack: String) =
       searchPattern.matcher(haystack).nn.find()
 
     var results: Seq[(String, String)] = Vector.empty
-    channel match
-      case ch: GuildChannel =>
-        val guild = ch.getGuild
+    guild match
+      case Some(guild) =>
         results ++= guild.getRoles.asScala.view
           .filter(r => containsSearchTerm(s"@${r.getName}"))
           .map(r =>
@@ -148,11 +155,16 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
               .fold("")(name => s" (aka $name)")
             (s"**User** ${u.mentionWithName}$nick: `${u.getId}`", u.getId)
           )
-      case _ =>
+      case None =>
         // Private chat
-        results ++= channel.participants
-          .filter(u => containsSearchTerm(s"@${u.name}#${u.discriminator}"))
-          .map(u => (s"**User** ${u.mentionWithName}: `${u.getId}`", u.getId))
+        channel match
+          case Some(channel) =>
+            results ++= channel.participants
+              .filter(u => containsSearchTerm(s"@${u.name}#${u.discriminator}"))
+              .map(u => (s"**User** ${u.mentionWithName}: `${u.getId}`", u.getId))
+          case None =>
+            logger.warn("Not sure where I am (running find command outside of channel and guild)")
+            results ++= Vector.fill(10)(("Where am I?", "???")) // Error or creepypasta?
     results
 
   object ReactListener extends EventListener:

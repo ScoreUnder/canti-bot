@@ -76,7 +76,8 @@ object Commands:
 
   def logCommandInvocation(invoker: CommandInvoker, cmd: GenericCommand): Unit =
     logger.debug(
-      s"Running command '${cmd.name}' on behalf of ${invoker.user.unambiguousString} in ${invoker.channel.unambiguousString}"
+      s"Running command '${cmd.name}' on behalf of ${invoker.user.unambiguousString} in ${invoker.channel
+        .fold("<unknown>")(_.unambiguousString)}"
     )
 end Commands
 

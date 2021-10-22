@@ -117,7 +117,6 @@ class VoiceKick(
     override def canBeEdited = false
 
     override def execute(ctx: CommandInvocation): Future[RetrievableMessage] = async {
-      val textChannel = ctx.invoker.channel
       val result = for
         member <- ctx.invoker.member
         guild = member.getGuild
@@ -130,7 +129,7 @@ class VoiceKick(
           "You cannot kick a user from the guild AFK channel"
         )
 
-        guildTextChannel <- ensureIsGuildTextChannel(textChannel)
+        guildTextChannel <- ensureIsGuildTextChannel(ctx.invoker.channel)
 
         mentionedUser <- singleMentionedUser(ctx.args(kickUserArg))
         mentioned <- guild.getMember(mentionedUser) ?<> "Cannot find that user in this server"
@@ -183,8 +182,8 @@ class VoiceKick(
           case Right((kickState, guildTextChannel, successMsg, voiceChan, mentioned)) =>
             await(ownerByChannel(voiceChan)) match
               case Some(owner) if owner == ctx.invoker.user =>
-                addTemporaryVoiceBan(voiceChan, mentioned, MessageReceiver(textChannel))
-                kickVoiceMember(voiceChan, mentioned, textChannel)
+                addTemporaryVoiceBan(voiceChan, mentioned, MessageReceiver(guildTextChannel))
+                kickVoiceMember(voiceChan, mentioned, guildTextChannel)
                 ctx.invoker.reply(
                   BotMessages.okay(
                     s"${mentioned.getAsMention} was forcibly kicked from #${voiceChan.name} by the owner ${owner.getAsMention}"
@@ -219,9 +218,12 @@ class VoiceKick(
       await(msg)
     }
 
-    private def ensureIsGuildTextChannel(textChannel: MessageChannel): Either[String, TextChannel] =
+    private def ensureIsGuildTextChannel(
+      textChannel: Option[MessageChannel]
+    ): Either[String, TextChannel] =
       textChannel match
-        case c: TextChannel => Right(c)
+        case Some(c: TextChannel) => Right(c)
+        case None => Left("I cannot read the member list of this channel") // Executed in thread
         case _ =>
           Left(
             "Internal error: Command not run from within a guild, but `message.getMember()` disagrees"
@@ -336,10 +338,9 @@ class VoiceKick(
           // XXX Oh my god static mutable globals in a multithreaded environment
           // XXX Hack: JDA seems to consistently get the wrong idea about permissions here for some reason.
           Manager.setPermissionChecksEnabled(false)
-          try
-            voiceChannel.applyPerms(
-              PermissionCollection(member.asPermissionHolder -> permsWithVoiceBan)
-            )
+          try voiceChannel.applyPerms(
+            PermissionCollection(member.asPermissionHolder -> permsWithVoiceBan)
+          )
           finally Manager.setPermissionChecksEnabled(true)
         },
         onFail = APIHelper.loudFailure(

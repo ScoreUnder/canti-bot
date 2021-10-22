@@ -28,13 +28,13 @@ trait CommandInvoker:
   def member: Either[String, Member] =
     getMember() ?<> "You can only use this command from within a server."
 
-  def channel: MessageChannel = getChannel()
+  def channel: Option[MessageChannel] = getChannel().?
 
   protected def getUser(): User
 
   protected def getMember(): Member | Null
 
-  protected def getChannel(): MessageChannel
+  protected def getChannel(): MessageChannel | Null
 
   def replyLater(transientIfPossible: Boolean)(using Scheduler): Future[Unit]
 

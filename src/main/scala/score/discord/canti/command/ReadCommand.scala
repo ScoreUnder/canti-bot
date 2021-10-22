@@ -64,10 +64,13 @@ class ReadCommand(messageCache: MessageCache)(using Scheduler) extends GenericCo
 
       val rawInput = ctx.args.get(textArg) match
         case None =>
-          val chanId = ctx.invoker.channel.id
-          messageCache
-            .find(d => d.chanId == chanId && JAPANESE.findFirstMatchIn(d.text).isDefined)
-            .map(_.text)
+          ctx.invoker.channel
+            .map(_.id)
+            .flatMap(chanId =>
+              messageCache
+                .find(d => d.chanId == chanId && JAPANESE.findFirstMatchIn(d.text).isDefined)
+                .map(_.text)
+            )
             .getOrElse("")
         case Some(text) => text
 

@@ -45,7 +45,7 @@ class SlashCommands(commands: GenericCommand*)(using MessageOwnership, ReplyCach
         case Some(cmd) =>
           val guildStr = ev.getGuild.?.fold("no guild")(_.unambiguousString)
           logger.debug(
-            s"Running slash command ${cmd.name} on behalf of user ${ev.getUser.unambiguousString} in ${ev.getChannel.unambiguousString} ($guildStr)"
+            s"Running slash command ${cmd.name} on behalf of user ${ev.getUser.unambiguousString} in ${ev.getChannel.?.fold("<unknown channel>")(_.unambiguousString)} ($guildStr)"
           )
           val invoker = SlashCommandInvoker(ev)
           Future {
