@@ -22,12 +22,15 @@ import score.discord.canti.wrappers.jda.RichGuild.voiceStates
 import score.discord.canti.wrappers.jda.RichJDA.guilds
 import score.discord.canti.wrappers.jda.RichSnowflake.id
 
-import java.util.concurrent.{ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom}
+import java.util.concurrent.{
+  CancellationException, ConcurrentHashMap, ScheduledFuture, ThreadLocalRandom
+}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.*
 import scala.jdk.CollectionConverters.*
 import scala.language.{implicitConversions, postfixOps}
+import scala.util.{Failure, Success}
 import scala.util.chaining.scalaUtilChainingOps
 
 class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
@@ -126,14 +129,16 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
         else
           logger.debug(s"Removing voice role from user ${member.unambiguousString}")
           member.roles -= role -> "voice state change"
-      roleChangeResult.foreach(_ =>
-        logger.debug(
-          s"Voice role change for ${member.unambiguousString} successful according to discord api"
-        )
-      )
-      roleChangeResult.failed.foreach(
-        APIHelper.failure(s"updating 'in voice' role for ${member.unambiguousString}")
-      )
+      roleChangeResult.onComplete {
+        case Success(_) =>
+          logger.debug(
+            s"Voice role change for ${member.unambiguousString} successful according to discord api"
+          )
+        case Failure(_: CancellationException) =>
+          logger.debug(s"Voice role change for ${member.unambiguousString} was cancelled")
+        case Failure(ex) =>
+          APIHelper.failure(s"updating 'in voice' role for ${member.unambiguousString}")(ex)
+      }
 
   private def shouldHaveRole(state: GuildVoiceState) =
     !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(
