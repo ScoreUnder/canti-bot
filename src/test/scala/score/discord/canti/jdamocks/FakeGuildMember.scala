@@ -88,4 +88,6 @@ class FakeGuildMember(guild: Guild, user: User) extends Member:
   override def canSync(targetChannel: GuildChannel, syncSource: GuildChannel): Boolean = ???
 
   override def canSync(channel: GuildChannel): Boolean = ???
+
+  override def getAvatarId(): String | Null = ???
 end FakeGuildMember
