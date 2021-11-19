@@ -36,3 +36,5 @@ class FakeUser(jda: JDA, name: String, id: Long) extends User:
   override def getFlagsRaw: Int = ???
 
   override def isSystem: Boolean = ???
+
+  override def retrieveProfile(): RestAction[User.Profile] = ???
