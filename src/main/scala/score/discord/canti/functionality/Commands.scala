@@ -1,7 +1,7 @@
 package score.discord.canti.functionality
 
 import com.codedx.util.MapK
-import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.{Message, MessageChannel}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.collections.{MessageCache, ReplyCache}
@@ -16,11 +16,15 @@ import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{
   richMessage, richMessageChannel, richSnowflake, richUser
 }
+import score.discord.canti.wrappers.jda.ID
+import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.matching.Events.{NonBotMessage, NonBotMessageEdit}
 
+import java.time.Instant
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.util.chaining.*
 
@@ -90,6 +94,22 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
   private val commandList = mutable.TreeSet[GenericCommand]()(using CommandOrdering)
   // String prepended before a command
   val prefix = "&"
+
+  // Warning users about message command deprecation
+  private val lastWarningsGiven = new scala.collection.concurrent.TrieMap[ID[MessageChannel], Instant]()
+  private def warningsMessage(command: GenericCommand) = s"""Discord is phasing out this kind of command.
+    |There is a significant chance that it may disappear in future.
+    |In future, please use the slash command instead: `/${command.name}`
+    |This Discord change will also remove the shorter aliases for the commands, and make many of them more difficult to use. Unfortunately, this is out of my control. This decision has been a [subject of major controversy](https://gist.github.com/Rapptz/4a2f62751b9600a31a0d3c78100287f1) in the bot developer scene.
+    |For more info, see [the official documentation](https://dis.gd/mcfaq).""".stripMargin.trimnn
+
+  private def giveWarnings(reply: Message, command: GenericCommand): Unit = Future {
+    val now = Instant.now().nn
+    val needsWarning = lastWarningsGiven.get(reply.getChannel.id).forall(_.isBefore(now))
+    if needsWarning then
+      lastWarningsGiven.put(reply.getChannel.id, now.plusSeconds(30).nn)
+      reply ! BotMessages.warn(warningsMessage(command))
+  }
 
   /** Register a command with this command registry. The command may then be retrieved via its main
     * name or any of its aliases, and will be available to the command-dispatching event listener.
@@ -215,6 +235,7 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
           logger.debug(s"Command $name parse failure: $failure")
           message ! BotMessages.error(failure)
         case ParseSuccess(cmd, name, args) =>
+          giveWarnings(message, cmd)
           logAndInvoke(cmd, name, args, invoker)
 
     case NonBotMessageEdit(oldMsg, newMsg) =>
