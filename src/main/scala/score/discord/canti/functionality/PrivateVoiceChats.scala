@@ -669,12 +669,27 @@ class PrivateVoiceChats(
         }
         await(removed) // Propagate exceptions
       }.failed.foreach(APIHelper.failure("processing initial private voice chat state"))
-    case GuildVoiceUpdate(_, Some(leftChannel), _) if leftChannel.getMembers.isEmpty =>
-      // Last person to leave a channel
-      async {
-        val user = await(ownerByChannel(leftChannel))
-        if user.isDefined then await(deleteUserOwnedChannel(leftChannel))
-      }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+    case GuildVoiceUpdate(member, Some(leftChannel), _) =>
+      if leftChannel.getMembers.isEmpty then
+        // Last person to leave a channel
+        async {
+          val user = await(ownerByChannel(leftChannel))
+          if user.isDefined then
+            logger.debug(
+              s"Last person (${member.unambiguousString}) left; will delete user-owned voice chat ${leftChannel.unambiguousString}"
+            )
+            await(deleteUserOwnedChannel(leftChannel))
+          else
+            logger.debug(
+              s"Last person (${member.unambiguousString}) left channel ${leftChannel.unambiguousString}, which is not user-owned"
+            )
+        }.failed.foreach(APIHelper.failure("deleting unused private channel"))
+      else
+        val remainingMembers =
+          leftChannel.getMembers.asScala.map(_.unambiguousString).mkString("[", ", ", "]")
+        logger.debug(
+          s"Someone (${member.unambiguousString}) left channel ${leftChannel.unambiguousString}, now these users remain: ${remainingMembers}"
+        )
 
     case _ =>
 end PrivateVoiceChats
