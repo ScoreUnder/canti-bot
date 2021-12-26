@@ -96,12 +96,14 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
   val prefix = "&"
 
   // Warning users about message command deprecation
-  private val lastWarningsGiven = new scala.collection.concurrent.TrieMap[ID[MessageChannel], Instant]()
-  private def warningsMessage(command: GenericCommand) = s"""Discord is phasing out this kind of command.
-    |There is a significant chance that it may disappear in future.
-    |In future, please use the slash command instead: `/${command.name}`
-    |This Discord change will also remove the shorter aliases for the commands, and make many of them more difficult to use. Unfortunately, this is out of my control. This decision has been a [subject of major controversy](https://gist.github.com/Rapptz/4a2f62751b9600a31a0d3c78100287f1) in the bot developer scene.
-    |For more info, see [the official documentation](https://dis.gd/mcfaq).""".stripMargin.trimnn
+  private val lastWarningsGiven =
+    new scala.collection.concurrent.TrieMap[ID[MessageChannel], Instant]()
+  private def warningsMessage(command: GenericCommand) =
+    s"""Discord is phasing out this kind of command.
+       |There is a significant chance that it may disappear in future.
+       |In future, please use the slash command instead: `/${command.name}`
+       |This Discord change will also remove the shorter aliases for the commands, and make many of them more difficult to use. Unfortunately, this is out of my control. This decision has been a [subject of major controversy](https://gist.github.com/Rapptz/4a2f62751b9600a31a0d3c78100287f1) in the bot developer scene.
+       |For more info, see [the official documentation](https://dis.gd/mcfaq).""".stripMargin.trimnn
 
   private def giveWarnings(reply: Message, command: GenericCommand): Unit =
     if reply.getChannelType != ChannelType.PRIVATE then

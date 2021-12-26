@@ -10,12 +10,13 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile],
-                      tableName: String) extends AsyncMap[ID[Message], String] {
+class StringByMessage(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String)
+    extends AsyncMap[ID[Message], String] {
 
   import dbConfig.profile.api._
 
-  private class StringByMessage(tag: Tag, name: String) extends Table[(ID[Message], String)](tag, name) {
+  private class StringByMessage(tag: Tag, name: String)
+      extends Table[(ID[Message], String)](tag, name) {
     val messageId = column[ID[Message]]("message", O.PrimaryKey)
     val text = column[String]("text")
 

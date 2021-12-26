@@ -10,12 +10,13 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class UserByVoiceChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
-  tableName: String) extends AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]] {
+class UserByVoiceChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String)
+    extends AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]] {
 
   import dbConfig.profile.api._
 
-  private class UserByChannelTable(tag: Tag) extends Table[(ID[Guild], ID[VoiceChannel], ID[User])](tag, tableName) {
+  private class UserByChannelTable(tag: Tag)
+      extends Table[(ID[Guild], ID[VoiceChannel], ID[User])](tag, tableName) {
     val guildId = column[ID[Guild]]("guild")
     val channelId = column[ID[VoiceChannel]]("channel")
     val userId = column[ID[User]]("user")
@@ -25,9 +26,12 @@ class UserByVoiceChannel(dbConfig: DatabaseConfig[_ <: JdbcProfile],
   }
 
   private val userByChannelTable = TableQuery[UserByChannelTable]
-  private val lookupQuery = Compiled((guildId: ConstColumn[ID[Guild]], channelId: ConstColumn[ID[VoiceChannel]]) => {
-    userByChannelTable.filter(t => t.guildId === guildId && t.channelId === channelId).map(_.userId)
-  })
+  private val lookupQuery =
+    Compiled((guildId: ConstColumn[ID[Guild]], channelId: ConstColumn[ID[VoiceChannel]]) => {
+      userByChannelTable
+        .filter(t => t.guildId === guildId && t.channelId === channelId)
+        .map(_.userId)
+    })
 
   DBUtils.ensureTableCreated(dbConfig, userByChannelTable, tableName)
 

@@ -338,9 +338,10 @@ class VoiceKick(
           // XXX Oh my god static mutable globals in a multithreaded environment
           // XXX Hack: JDA seems to consistently get the wrong idea about permissions here for some reason.
           Manager.setPermissionChecksEnabled(false)
-          try voiceChannel.applyPerms(
-            PermissionCollection(member.asPermissionHolder -> permsWithVoiceBan)
-          )
+          try
+            voiceChannel.applyPerms(
+              PermissionCollection(member.asPermissionHolder -> permsWithVoiceBan)
+            )
           finally Manager.setPermissionChecksEnabled(true)
         },
         onFail = APIHelper.loudFailure(

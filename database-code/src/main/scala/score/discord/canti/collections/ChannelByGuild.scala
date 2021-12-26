@@ -10,14 +10,13 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ChannelByGuild(
-  dbConfig: DatabaseConfig[_ <: JdbcProfile],
-  tableName: String
-) extends AsyncMap[ID[Guild], ID[Channel]] {
+class ChannelByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String)
+    extends AsyncMap[ID[Guild], ID[Channel]] {
 
   import dbConfig.profile.api._
 
-  private class ChannelByGuild(tag: Tag, name: String) extends Table[(ID[Guild], ID[Channel])](tag, name) {
+  private class ChannelByGuild(tag: Tag, name: String)
+      extends Table[(ID[Guild], ID[Channel])](tag, name) {
     val guildId = column[ID[Guild]]("guild", O.PrimaryKey)
     val channelId = column[ID[Channel]]("channel")
 
@@ -25,7 +24,8 @@ class ChannelByGuild(
   }
 
   private val database = dbConfig.db
-  private val channelByGuildTable = TableQuery[ChannelByGuild](new ChannelByGuild(_: Tag, tableName))
+  private val channelByGuildTable =
+    TableQuery[ChannelByGuild](new ChannelByGuild(_: Tag, tableName))
   private val lookupQuery = Compiled((guildId: ConstColumn[ID[Guild]]) => {
     channelByGuildTable.filter(t => t.guildId === guildId).map(_.channelId)
   })
@@ -40,5 +40,6 @@ class ChannelByGuild(
   override def remove(guild: ID[Guild]): Future[Int] =
     database.run(lookupQuery(guild).delete)
 
-  override def items: Future[Seq[(ID[Guild], ID[Channel])]] = throw new UnsupportedOperationException()
+  override def items: Future[Seq[(ID[Guild], ID[Channel])]] =
+    throw new UnsupportedOperationException()
 }

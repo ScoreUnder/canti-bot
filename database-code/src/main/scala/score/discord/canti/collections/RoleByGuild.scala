@@ -10,12 +10,13 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile],
-  tableName: String) extends AsyncMap[ID[Guild], ID[Role]] {
+class RoleByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String)
+    extends AsyncMap[ID[Guild], ID[Role]] {
 
   import dbConfig.profile.api._
 
-  private class RoleByGuild(tag: Tag, name: String) extends Table[(ID[Guild], ID[Role])](tag, name) {
+  private class RoleByGuild(tag: Tag, name: String)
+      extends Table[(ID[Guild], ID[Role])](tag, name) {
     val guildId = column[ID[Guild]]("guild", O.PrimaryKey)
     val roleId = column[ID[Role]]("role")
 
