@@ -211,4 +211,4 @@ object QuoteCommand:
   private val CHANNEL_REGEX = "\\s*<#(\\d+)>".r
   // To avoid false positives, trigger on message URL or 9+ digits
   // 1 second past discord epoch is already 10 digits in their snowflake format.
-  private val GREENTEXT_REGEX = s">>(?=\\d{9,}|$LINK_REGEX_STR)".r
+  private val GREENTEXT_REGEX = s">>\\s*(?=\\d{9,}|$LINK_REGEX_STR)".r
