@@ -25,6 +25,7 @@ import java.util
 import java.util.concurrent.{Executors, ScheduledExecutorService}
 import scala.compiletime.uninitialized
 import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
 import scala.language.postfixOps
 
 @main def main() =
@@ -44,15 +45,18 @@ class CantiBot:
           .create(
             config.token, {
               import GatewayIntent.*
-              util.Arrays.asList(
-                GUILD_EMOJIS, /* &find */
-                GUILD_MEMBERS, /* &find, voice roles, probably other things too */
-                GUILD_MESSAGE_REACTIONS, /* Voice kick, &help, &spoiler, delete owned messages */
-                GUILD_MESSAGES, /* commands in general */
-                GUILD_VOICE_STATES, /* Voice kick, private voice chats */
-                DIRECT_MESSAGES, /* Same as GUILD_MESSAGES */
-                DIRECT_MESSAGE_REACTIONS, /* Same as GUILD_MESSAGE_REACTIONS */
-              )
+              var intents =
+                GUILD_EMOJIS :: /* &find */
+                  GUILD_MESSAGE_REACTIONS :: /* Voice kick, &help, &spoiler, delete owned messages */
+                  GUILD_VOICE_STATES :: /* Voice kick, private voice chats */
+                  DIRECT_MESSAGES :: /* Same as GUILD_MESSAGES, plus spoiler-in-DM */
+                  DIRECT_MESSAGE_REACTIONS :: /* Same as GUILD_MESSAGE_REACTIONS */
+                  Nil
+              if config.hasGuildMembersIntent then
+                intents ::= GUILD_MEMBERS /* &find, voice roles, probably other things too */
+              if config.hasMessageIntent then
+                intents ::= GUILD_MESSAGES /* commands in general, &quote, &read */
+              intents.asJava
             }
           )
           .disableCache({
@@ -104,24 +108,27 @@ class CantiBot:
         commands.register(BlameCommand())
         commands.register(BotInfoCommand(owner = config.owner))
         commands.register(findCommand)
-        commands.register(quoteCommand)
         commands.register(registerSlashCommandsCommand)
         val readCommand = ReadCommand(messageCache)
         if readCommand.available then commands.register(readCommand)
         commands.register(PingCommand())
         commands.register(PermissionDiffCommand())
 
+        if config.hasMessageIntent then commands.register(quoteCommand)
+
         val slashCommands = SlashCommands(commands.all*)
         registerSlashCommandsCommand.slashCommands = Some(slashCommands)
+
+        if config.hasMessageIntent then
+          bot.addEventListeners(commands, quoteCommand.GreentextListener())
+
         bot.addEventListeners(
-          commands,
           slashCommands,
           voiceRoles,
           privateVoiceChats,
           DeleteOwnedMessages(),
           conversations,
           spoilers,
-          quoteCommand.GreentextListener(),
           findCommand.ReactListener,
           voiceKick,
           eventWaiter,

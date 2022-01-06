@@ -1,5 +1,7 @@
 token = "123123asdf"
 owner = 132
+has_message_intent = true
+has_guild_members_intent = true
 database {
   profile = "slick.jdbc.SQLiteProfile$"
   db {
