@@ -18,7 +18,7 @@ import okhttp3.OkHttpClient
 
 import scala.jdk.CollectionConverters.*
 
-class FakeJda extends FakeJdaShim with JDA:
+class FakeJda extends JDA:
   private var guilds = Map.empty[Long, Guild]
   private var _nextId: Long = 123456789900L
 
@@ -35,9 +35,9 @@ class FakeJda extends FakeJdaShim with JDA:
 
   override def setEventManager(manager: IEventManager): Unit = ???
 
-  override def addEventListener(listeners: util.List[? <: AnyRef | Null]): Unit = ???
+  override def addEventListener(listeners: Array[? <: Object | Null]): Unit = ???
 
-  override def removeEventListener(listeners: util.List[? <: AnyRef | Null]): Unit = ???
+  override def removeEventListener(listeners: Array[? <: Object | Null]): Unit = ???
 
   override def getRegisteredListeners: util.List[AnyRef] = ???
 

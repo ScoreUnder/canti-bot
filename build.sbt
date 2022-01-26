@@ -3,7 +3,7 @@ import Dependencies._
 enablePlugins(GitVersioning, ReproducibleBuildsPlugin)
 
 ThisBuild / organization := "score.discord"
-ThisBuild / scalaVersion := "3.1.0"
+ThisBuild / scalaVersion := "3.1.1"
 ThisBuild / git.useGitDescribe := true
 ThisBuild / scalacOptions ++= List("-deprecation", "-unchecked", "-feature")
 ThisBuild / resolvers ++= Seq(
