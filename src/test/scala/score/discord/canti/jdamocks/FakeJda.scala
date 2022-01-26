@@ -51,10 +51,6 @@ class FakeJda extends JDA:
 
   override def getMutualGuilds(users: util.Collection[User]): util.List[Guild] = ???
 
-  override def retrieveUserById(id: String): RestAction[User] = ???
-
-  override def retrieveUserById(id: Long): RestAction[User] = ???
-
   override def getGuildCache: SnowflakeCacheView[Guild] = ???
 
   override def getRoleCache: SnowflakeCacheView[Role] = ???
