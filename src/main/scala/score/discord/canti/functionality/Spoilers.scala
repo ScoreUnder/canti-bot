@@ -79,11 +79,14 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
             onFail = APIHelper.loudFailure("deleting a message", ctx.invoker.asMessageReceiver)
           )
 
-        ctx.args.get(spoilerArg) match
-          case None =>
-            await(createSpoilerConversation(ctx.invoker))
-          case Some(trimmed) =>
-            await(createSpoiler(ctx.invoker.asMessageReceiver, ctx.invoker.user, trimmed))
+        val futureSpoilerMessage =
+          ctx.args.get(spoilerArg) match
+            case None =>
+              createSpoilerConversation(ctx.invoker)
+            case Some(trimmed) =>
+              createSpoiler(ctx.invoker.asMessageReceiver, ctx.invoker.user, trimmed)
+
+        await(futureSpoilerMessage)
       }
 
     private def createSpoilerConversation(invoker: CommandInvoker): Future[RetrievableMessage] =
