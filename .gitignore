@@ -5,3 +5,5 @@ state.db
 *.iml
 application.conf
 null
+/project/project
+/project/metals.sbt
