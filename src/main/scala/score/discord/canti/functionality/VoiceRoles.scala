@@ -4,6 +4,7 @@ import cps.*
 import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
 import net.dv8tion.jda.api.hooks.EventListener
@@ -178,6 +179,9 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
       await(roleByGuild.get(member.getGuild.id)).flatMap(_.find).foreach(queueUpdate)
     }
 
+  private def dequeueRoleUpdate(memberId: GuildUserId): Unit =
+    pendingRoleUpdates.remove(memberId).?.foreach(_.cancel(false))
+
   private def refreshVoiceRoles(guild: Guild): Unit =
     for voiceState <- guild.voiceStates do queueRoleUpdate(voiceState.getMember)
 
@@ -191,6 +195,9 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
 
       case ev: GenericGuildVoiceEvent =>
         queueRoleUpdate(ev.getMember)
+
+      case ev: GuildMemberRemoveEvent =>
+        dequeueRoleUpdate(GuildUserId(ev.getGuild.id, ev.getUser.id))
 
       case _ =>
 end VoiceRoles
