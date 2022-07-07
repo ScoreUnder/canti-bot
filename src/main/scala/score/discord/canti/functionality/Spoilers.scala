@@ -117,6 +117,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
   end spoilerCommand
 
   val allCommands: Seq[GenericCommand] = Seq(spoilerCommand)
+    : @unchecked  // safe-init checks trigger a compile-time bug here (dotty 3.1.3, dotty-cps-async 0.9.9)
 
   private def createSpoiler(
     replyHook: MessageReceiver,
