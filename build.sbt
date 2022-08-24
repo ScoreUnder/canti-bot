@@ -39,8 +39,8 @@ lazy val root = (project in file("."))
       "com.codedx" %% "mapk" % "1.2.0",
     ),
     assembly / assemblyMergeStrategy := {
-      case "module-info.class" => MergeStrategy.discard
-      case tastyFile()         => MergeStrategy.discard
+      case PathList(ps @ _*) if ps.last == "module-info.class" => MergeStrategy.discard
+      case tastyFile()                                         => MergeStrategy.discard
       case x =>
         val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
