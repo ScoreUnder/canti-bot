@@ -10,6 +10,7 @@ ThisBuild / resolvers ++= Seq(
   "jcenter-bintray" at "https://jcenter.bintray.com",
   "m2-dv8tion" at "https://m2.dv8tion.net/releases",
 )
+ThisBuild / run / fork := true
 
 lazy val common = project in file("common-code")
 
