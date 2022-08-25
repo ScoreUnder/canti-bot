@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.utils.cache.SortedSnowflakeCacheView
 
 import scala.jdk.CollectionConverters.*
 
-class ScalaSnowflakeCacheView[Q <: Comparable[Q], T <: Q with ISnowflake](
+class ScalaSnowflakeCacheView[Q <: Comparable[Q], T <: Q & ISnowflake](
   cache: collection.Map[Long, T],
   getName: T => String
 ) extends ScalaCacheView[T](cache.values, getName)
