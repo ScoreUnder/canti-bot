@@ -17,6 +17,7 @@ import score.discord.canti.command.api.{
 }
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
+import score.discord.canti.util.StringUtils.trimToSize
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.{ID, RetrievableMessage}
 import score.discord.canti.wrappers.jda.IdConversions.*
@@ -151,8 +152,11 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
       case None =>
         for image <- embeds.flatMap(_.getImage.?).headOption do quote.setImage(image.getUrl)
 
-    for embed <- embeds do
-      for desc <- embed.getDescription.? do quote.addField("[Embed description]", desc, false)
+    for
+      embed <- embeds
+      desc <- embed.getDescription.?
+    do
+      quote.addField("[Embed description]", trimToSize(desc, chars = 1000, lines = 4), false)
 
       embed.getFields.asScala.foreach(quote.addField)
 
