@@ -17,7 +17,7 @@ lazy val common = project in file("common-code")
 lazy val database = (project in file("database-code"))
   .dependsOn(common)
   .settings(
-    scalaVersion := "2.13.7",
+    scalaVersion := "2.13.10",
     scalacOptions += "-Ytasty-reader",
     libraryDependencies ++= Seq(jda, "com.typesafe.slick" %% "slick" % "3.3.3"),
   )
