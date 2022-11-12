@@ -1,5 +1,10 @@
 pipeline {
     agent any
+
+    environment {
+        SBT_NATIVE_CLIENT = 'true'
+    }
+
     stages {
         stage('Build') {
             steps {
