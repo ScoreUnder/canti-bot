@@ -204,7 +204,7 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
               logger.debug(s"running command: $invocation")
               QuoteCommand.this.execute(invocation)
             }
-        }
+        }.failed.foreach(APIHelper.failure("Processing potential >> invocation"))
       case _ =>
 end QuoteCommand
 
