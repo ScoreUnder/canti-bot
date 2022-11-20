@@ -9,18 +9,15 @@ import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.interactions.InteractionHook
 import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.{CommandInteraction, OptionType}
+import net.dv8tion.jda.api.requests.ErrorResponse
 import net.dv8tion.jda.api.requests.ErrorResponse.UNKNOWN_CHANNEL
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
 import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
-import score.discord.canti.command.api.{
-  ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions
-}
+import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions}
 import score.discord.canti.command.GenericCommand
 import score.discord.canti.discord.permissions.PermissionHolder.asPermissionHolder
-import score.discord.canti.discord.permissions.{
-  PermissionAttachment, PermissionCollection, PermissionHolder
-}
+import score.discord.canti.discord.permissions.{PermissionAttachment, PermissionCollection, PermissionHolder}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper.Error
 import score.discord.canti.util.*
@@ -28,9 +25,7 @@ import score.discord.canti.wrappers.FutureEither.*
 import score.discord.canti.wrappers.collections.AsyncMapConversions.*
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
-import score.discord.canti.wrappers.jda.Conversions.{
-  richChannelAction, richGuildChannel, richMember, richUser, richVoiceChannel
-}
+import score.discord.canti.wrappers.jda.Conversions.{richChannelAction, richGuildChannel, richMember, richUser, richVoiceChannel}
 import score.discord.canti.wrappers.jda.{ID, MessageReceiver, RetrievableMessage}
 import score.discord.canti.wrappers.jda.IdConversions.*
 import score.discord.canti.wrappers.jda.MessageConversions.{MessageFromX, given}
@@ -519,6 +514,10 @@ class PrivateVoiceChats(
               (for channelReq <- createChannel(name, member.getGuild, category)
               yield asyncCreateChannel(member, limit, name, category, channelReq))
                 .pipe(x => eitherToFutureMessage(x))
+                .recover {
+                  case Error(ErrorResponse.MISSING_PERMISSIONS) =>
+                    diagnosePermissionFailure(invoker, category)
+                }
 
             case None =>
               waitForVoiceJoin(
@@ -537,6 +536,32 @@ class PrivateVoiceChats(
       .pipe(x => eitherToFutureMessage(x))
       .flatMap(invoker.reply(_))
   end createUserOwnedChannel
+
+  private def diagnosePermissionFailure(invoker: CommandInvoker, baseCategory: Option[Category]): Message =
+    baseCategory
+      .flatMap { category =>
+        val permsCollection = category.permissionAttachments
+        val allSetPerms = permsCollection.values.map(_._2).foldLeft(PermissionAttachment.empty) { (acc, perms) =>
+          acc.merge(perms)
+        }
+        val selfMember = category.getGuild.getSelfMember
+        val myPerms = permsCollection.get(PermissionHolder.Member(selfMember.id)).getOrElse(PermissionAttachment.empty)
+        val myDefaultPerms = PermissionAttachment.empty.allow(selfMember.getPermissions.asScala)
+        val myEffectivePerms = myDefaultPerms.merge(myPerms)
+        val myEffectivePermSet = myEffectivePerms.allows
+        val allSetPermsSet = allSetPerms.allows ++ allSetPerms.denies
+        val missingPerms = allSetPermsSet -- myEffectivePermSet
+        val missingPermsString = missingPerms.map(_.getName).mkString(", ")
+
+        if missingPerms.nonEmpty then
+          Some(BotMessages.error(
+            s"""Cannot create channel, probably because I don't have these permissions in the category ${category.getName}:
+               |$missingPermsString
+               |(I need to have these permissions to copy them from the category)""".stripMargin
+          ).toMessage)
+        else None
+      }
+      .getOrElse(BotMessages.error("An unexplained permission error occurred when creating the channel, sorry.").toMessage)
 
   private def makeCreateChannelSuccessMessage(
     name: String,
