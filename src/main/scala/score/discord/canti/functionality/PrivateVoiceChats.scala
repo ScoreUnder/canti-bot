@@ -500,7 +500,7 @@ class PrivateVoiceChats(
           err <- result.left
         do invoker.reply(BotMessages.error(err).toMessage)
 
-        makeCreateChannelSuccessMessage(name, limit, public, commandName, maybeMistake).toMessage
+        makeCreateChannelSuccessMessage(name, public, commandName, maybeMistake).toMessage
       }
 
     def retryingParseAndCreateChannel(member: Member): Future[Message] =
@@ -516,7 +516,7 @@ class PrivateVoiceChats(
                 .pipe(x => eitherToFutureMessage(x))
                 .recover {
                   case Error(ErrorResponse.MISSING_PERMISSIONS) =>
-                    diagnosePermissionFailure(invoker, category)
+                    diagnosePermissionFailure(category)
                 }
 
             case None =>
@@ -537,7 +537,7 @@ class PrivateVoiceChats(
       .flatMap(invoker.reply(_))
   end createUserOwnedChannel
 
-  private def diagnosePermissionFailure(invoker: CommandInvoker, baseCategory: Option[Category]): Message =
+  private def diagnosePermissionFailure(baseCategory: Option[Category]): Message =
     baseCategory
       .flatMap { category =>
         val permsCollection = category.permissionAttachments
@@ -565,7 +565,6 @@ class PrivateVoiceChats(
 
   private def makeCreateChannelSuccessMessage(
     name: String,
-    limit: Int,
     public: Boolean,
     commandName: String,
     maybeMistake: Boolean
