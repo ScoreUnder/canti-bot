@@ -6,15 +6,14 @@ import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
-import score.discord.canti.command.api.{
-  ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions
-}
+import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions}
 import score.discord.canti.command.GenericCommand
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.wrappers.NullWrappers.*
-import score.discord.canti.wrappers.jda.{ID, MessageReceiver, RetrievableMessage}
+import score.discord.canti.wrappers.jda.{ID, MessageReceiver, OutgoingMessage, RetrievableMessage}
 import score.discord.canti.wrappers.jda.MessageConversions.*
+import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RichMessage.!
 import score.discord.canti.wrappers.jda.RichMessageChannel.{mention, sendOwned}
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
@@ -82,7 +81,14 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
         val futureSpoilerMessage =
           ctx.args.get(spoilerArg) match
             case None =>
-              createSpoilerConversation(ctx.invoker)
+              ctx.invoker.originatingMessage.fold{
+                ctx.invoker.reply(OutgoingMessage(
+                  BotMessages.error("You can't use this command as an application command (yet)").toMessage,
+                  ephemeral = true
+                ))
+              } { _ =>
+                createSpoilerConversation(ctx.invoker)
+              }
             case Some(trimmed) =>
               createSpoiler(ctx.invoker.asMessageReceiver, ctx.invoker.user, trimmed)
 
@@ -100,7 +106,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
           })
           .queueFuture()
       yield
-        conversations.start(message.getAuthor, privateChannel) { conversation =>
+        conversations.start(invoker.user, privateChannel) { conversation =>
           conversation.message.getContentRaw match
             case "cancel" =>
               conversation.message.!("Did not create a spoiler.")

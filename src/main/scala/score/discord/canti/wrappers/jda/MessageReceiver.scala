@@ -23,12 +23,14 @@ private class InteractionMessageReceiver(origin: Interaction) extends MessageRec
   override def sendMessage(outgoingMessage: OutgoingMessage): Future[RetrievableMessage] =
     val req = origin.reply(outgoingMessage.message)
     for case (name, data) <- outgoingMessage.files do req.addFile(data, name)
+    req.setEphemeral(outgoingMessage.ephemeral)
     req.queueFuture().map(RetrievableMessage(_))(using ExecutionContext.parasitic)
 
 private class InteractionHookMessageReceiver(origin: InteractionHook) extends MessageReceiver:
   override def sendMessage(outgoingMessage: OutgoingMessage): Future[RetrievableMessage] =
     val req = origin.sendMessage(outgoingMessage.message)
     for case (name, data) <- outgoingMessage.files do req.addFile(data, name)
+    req.setEphemeral(outgoingMessage.ephemeral)
     req.queueFuture().map(RetrievableMessage(_))(using ExecutionContext.parasitic)
 
 private class MessageReplyMessageReceiver(origin: Message)(using
