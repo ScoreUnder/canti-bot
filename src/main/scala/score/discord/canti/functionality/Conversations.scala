@@ -8,25 +8,19 @@ import score.discord.canti.wrappers.jda.RichSnowflake.id
 import score.discord.canti.wrappers.jda.matching.Events.*
 
 import scala.collection.concurrent.TrieMap
+import scala.concurrent.{Future, Promise}
 
 class Conversations extends EventListener:
-
-  case class Conversation(
-    message: Message,
-    private val userId: ID[User],
-    private val chanId: ID[MessageChannel]
-  ):
-    def next(action: Conversation => Unit): Unit =
-      start(userId, chanId)(action)
-
   private val ongoingConversation =
-    TrieMap[(ID[User], ID[MessageChannel]), Conversation => Unit]()
+    TrieMap[(ID[User], ID[MessageChannel]), Promise[Message]]()
 
-  def start(user: User, channel: MessageChannel)(action: Conversation => Unit): Unit =
-    start(user.id, channel.id)(action)
+  def awaitMessage(user: ID[User], channel: ID[MessageChannel]): Future[Message] =
+    val promise = Promise[Message]()
+    ongoingConversation((user, channel)) = promise
+    promise.future
 
-  def start(user: ID[User], channel: ID[MessageChannel])(action: Conversation => Unit): Unit =
-    ongoingConversation((user, channel)) = action
+  def awaitMessage(user: User, channel: MessageChannel): Future[Message] =
+    awaitMessage(user.id, channel.id)
 
   override def onEvent(event: GenericEvent): Unit = event match
     case NonBotMessage(msg) =>
@@ -34,5 +28,5 @@ class Conversations extends EventListener:
       val chanId = msg.getChannel.id
       ongoingConversation
         .remove((userId, chanId))
-        .foreach(_(Conversation(msg, userId, chanId)))
+        .foreach(_.success(msg))
     case _ =>

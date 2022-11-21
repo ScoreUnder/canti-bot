@@ -114,19 +114,14 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
             s"Please enter your spoiler contents$channelText, or reply with 'cancel' to cancel."
           })
           .queueFuture()
+        spoilerTextMessage <- conversations.awaitMessage(invoker.user, privateChannel)
       yield
-        conversations.start(invoker.user, privateChannel) { conversation =>
-          conversation.message.getContentRaw.trimnn match
-            case "cancel" | "" =>
-              conversation.message.!("Did not create a spoiler.")
-            case spoiler =>
-              for _ <- createSpoiler(
-                  invoker.asMessageReceiver,
-                  conversation.message.getAuthor,
-                  spoiler
-                )
-              do conversation.message.!("Created your spoiler.")
-        }
+        spoilerTextMessage.getContentRaw.trimnn match
+          case "cancel" | "" =>
+            spoilerTextMessage ! "Did not create a spoiler."
+          case spoiler =>
+            for _ <- createSpoiler(invoker.asMessageReceiver, invoker.user, spoiler)
+            do spoilerTextMessage ! "Created your spoiler."
         RetrievableMessage(message)
   end spoilerCommand
 
