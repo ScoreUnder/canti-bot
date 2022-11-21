@@ -9,7 +9,7 @@ import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{richMessage, richMessageChannel}
-import score.discord.canti.wrappers.jda.MessageConversions.{given, *}
+import score.discord.canti.wrappers.jda.MessageConversions.{*, given}
 import score.discord.canti.wrappers.jda.MessageReceiver
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 

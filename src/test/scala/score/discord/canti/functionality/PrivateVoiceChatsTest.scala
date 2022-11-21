@@ -8,9 +8,10 @@ import score.discord.canti.collections.NullCacheBackend
 
 class PrivateVoiceChatsTest extends AnyFlatSpec with should.Matchers with PrivateMethodTester:
   private val fixture = TestFixtures.default
-  import fixture.{given, *}
+  import fixture.{*, given}
 
-  private val pvc = PrivateVoiceChats(NullCacheBackend(), NullCacheBackend(), commands, EventWaiter())
+  private val pvc =
+    PrivateVoiceChats(NullCacheBackend(), NullCacheBackend(), commands, EventWaiter())
 
   private val prefixOrUpdateNumberM = PrivateMethod[String](Symbol("prefixOrUpdateNumber"))
   def prefixOrUpdateNumber(name: String, prefix: String): String =

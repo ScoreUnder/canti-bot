@@ -24,7 +24,9 @@ case class PermissionCollection[+T <: PermissionHolder](values: Seq[(T, Permissi
   def mapValues(f: PermissionAttachment => PermissionAttachment): PermissionCollection[T] =
     PermissionCollection(values.map { case (k, v) => k -> f(v) })
 
-  def get(holder: Any): Option[PermissionAttachment] = values.collectFirst { case (k, v) if k == holder => v }
+  def get(holder: Any): Option[PermissionAttachment] = values.collectFirst {
+    case (k, v) if k == holder => v
+  }
 
 object PermissionCollection:
   @targetName("apply_varargs")

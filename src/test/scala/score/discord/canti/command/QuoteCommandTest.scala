@@ -8,7 +8,7 @@ import score.discord.canti.TestFixtures
 class QuoteCommandTest extends AnyFlatSpec with should.Matchers:
   private val fixture = TestFixtures.default
 
-  import fixture.{given, *}
+  import fixture.{*, given}
 
   private val quoterChannel = botChannel
   private val quoteeChannel = exampleChannel

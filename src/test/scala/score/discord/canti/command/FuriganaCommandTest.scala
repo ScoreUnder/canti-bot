@@ -32,7 +32,9 @@ class FuriganaCommandTest extends AnyFlatSpec with should.Matchers:
   }
 
   it `should` "split newlines properly" in {
-    furiganaCommand.parseInput("asdf\nghi") `should` equal(Seq(("asdf", ""), ("\n", ""), ("ghi", "")))
+    furiganaCommand.parseInput("asdf\nghi") `should` equal(
+      Seq(("asdf", ""), ("\n", ""), ("ghi", ""))
+    )
     furiganaCommand.parseInput("a\n\n\na").count(_ == ("\n", "")) `should` be(3)
   }
 
