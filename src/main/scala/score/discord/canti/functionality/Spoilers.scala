@@ -2,11 +2,16 @@ package score.discord.canti.functionality
 
 import cps.*
 import cps.monads.FutureAsyncMonad
-import net.dv8tion.jda.api.entities.{Message, MessageChannel, TextChannel, User}
+import net.dv8tion.jda.api.MessageBuilder
+import net.dv8tion.jda.api.entities.{Emoji, Message, MessageChannel, TextChannel, User}
 import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.events.interaction.GenericComponentInteractionCreateEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.interactions.components.{ActionRow, Button, ButtonStyle}
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
-import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions}
+import score.discord.canti.command.api.{
+  ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions
+}
 import score.discord.canti.command.GenericCommand
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.{APIHelper, BotMessages}
@@ -81,11 +86,15 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
         val futureSpoilerMessage =
           ctx.args.get(spoilerArg) match
             case None =>
-              ctx.invoker.originatingMessage.fold{
-                ctx.invoker.reply(OutgoingMessage(
-                  BotMessages.error("You can't use this command as an application command (yet)").toMessage,
-                  ephemeral = true
-                ))
+              ctx.invoker.originatingMessage.fold {
+                ctx.invoker.reply(
+                  OutgoingMessage(
+                    BotMessages
+                      .error("You can't use this command as an application command (yet)")
+                      .toMessage,
+                    ephemeral = true
+                  )
+                )
               } { _ =>
                 createSpoilerConversation(ctx.invoker)
               }
@@ -107,12 +116,11 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
           .queueFuture()
       yield
         conversations.start(invoker.user, privateChannel) { conversation =>
-          conversation.message.getContentRaw match
-            case "cancel" =>
+          conversation.message.getContentRaw.trimnn match
+            case "cancel" | "" =>
               conversation.message.!("Did not create a spoiler.")
             case spoiler =>
-              for
-                _ <- createSpoiler(
+              for _ <- createSpoiler(
                   invoker.asMessageReceiver,
                   conversation.message.getAuthor,
                   spoiler
@@ -142,27 +150,43 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
 
       val spoilerMessageHook = await(
         replyHook.sendMessage(
-          BotMessages.okay(
-            s"**Click the magnifying glass** to see ${hintText.trim} (from ${author.mentionWithName})"
-          ): MessageFromX
+          OutgoingMessage(
+            MessageBuilder(
+              BotMessages.okay(
+                s"""**Click the button** to see ${hintText.trim} (from ${author.mentionWithName})
+                   |If the buttons are gone, you can react with a :mag: emoji.""".stripMargin
+              )
+            )
+              .setActionRows(
+                ActionRow.of(
+                  Button.of(
+                    ButtonStyle.PRIMARY,
+                    "show-spoiler",
+                    "Show spoiler",
+                    Emoji.fromUnicode(spoilerEmote)
+                  )
+                )
+              )
+              .build()
+          )
         )
       )
 
       val spoilerMessage = await(spoilerMessageHook.retrieve())
-      val spoilerDbUpdate =
-        spoilerTexts(spoilerMessage.id) = spoilerText.trimnn
-      await(spoilerMessage.addReaction(spoilerEmote).queueFuture())
-      await(spoilerDbUpdate)
+      await(spoilerTexts(spoilerMessage.id) = spoilerText.trimnn)
       logger.info(s"Created spoiler ${spoilerMessage.id} on behalf of ${author.unambiguousString}")
       RetrievableMessage(spoilerMessage)
     }
 
+  private def getChannelName(channel: MessageChannel) =
+    val channelName = channel match
+      case ch: TextChannel => ch.getAsMention
+      case ch              => Option(ch.getName).getOrElse("unnamed group chat")
+    channelName
+
   override def onEvent(event: GenericEvent): Unit = event match
     case NonBotReact(React.Text(`spoilerEmote`), message, channel, user) =>
-      val channelName = channel match
-        case ch: TextChannel => ch.getAsMention
-        case ch              => Option(ch.getName).getOrElse("unnamed group chat")
-
+      val channelName = getChannelName(channel)
       for
         maybeText <- spoilerTexts
           .get(message)
@@ -179,5 +203,17 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
       val futureRows = spoilerTexts.remove(id)
       futureRows.failed.foreach(APIHelper.failure("removing spoiler"))
       futureRows.foreach(r => if r != 0 then logger.info(s"Deleted spoiler $id"))
+    case ev: GenericComponentInteractionCreateEvent =>
+      if ev.getComponentId == "show-spoiler" then
+        for
+          maybeText <- spoilerTexts
+            .get(ev.getMessage.id)
+            .tap(_.failed.foreach(APIHelper.failure("displaying spoiler")))
+          text <- maybeText
+        do
+          logger.debug(
+            s"Sending spoiler id ${ev.getMessage.id.value} to ${ev.getUser.unambiguousString}"
+          )
+          ev.reply(text).setEphemeral(true).queue()
     case _ =>
 end Spoilers
