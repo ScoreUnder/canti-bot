@@ -32,7 +32,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       scalaTest % Test,
       jda,
-      "org.xerial" % "sqlite-jdbc" % "3.41.0.1",
+      "org.xerial" % "sqlite-jdbc" % "3.41.2.2",
       "com.typesafe" % "config" % "1.4.2",
       "com.github.rssh" %% "dotty-cps-async" % "0.9.16",
       "com.google.re2j" % "re2j" % "1.7",
