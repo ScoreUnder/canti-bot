@@ -34,7 +34,7 @@ lazy val root = (project in file("."))
       jda,
       "org.xerial" % "sqlite-jdbc" % "3.41.2.2",
       "com.typesafe" % "config" % "1.4.2",
-      "com.github.rssh" %% "dotty-cps-async" % "0.9.16",
+      "com.github.rssh" %% "dotty-cps-async" % "0.9.17",
       "com.google.re2j" % "re2j" % "1.7",
       "org.slf4j" % "slf4j-simple" % "2.0.7",
       "com.codedx" %% "mapk" % "1.2.0",
