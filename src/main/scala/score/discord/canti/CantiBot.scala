@@ -49,6 +49,7 @@ class CantiBot:
                 GUILD_EMOJIS_AND_STICKERS :: /* &find */
                   GUILD_MESSAGE_REACTIONS :: /* Voice kick, &help, &spoiler, delete owned messages */
                   GUILD_VOICE_STATES :: /* Voice kick, private voice chats */
+                  MESSAGE_CONTENT :: /* &quote, &read, `>>`, commands system */
                   DIRECT_MESSAGES :: /* Same as GUILD_MESSAGES, plus spoiler-in-DM */
                   DIRECT_MESSAGE_REACTIONS :: /* Same as GUILD_MESSAGE_REACTIONS */
                   Nil
@@ -62,7 +63,14 @@ class CantiBot:
           .nn
           .disableCache({
             import CacheFlag.*
-            util.Arrays.asList(ACTIVITY, CLIENT_STATUS, ONLINE_STATUS, ROLE_TAGS)
+            util.Arrays.asList(
+              ACTIVITY,
+              CLIENT_STATUS,
+              ONLINE_STATUS,
+              ROLE_TAGS,
+              SCHEDULED_EVENTS,
+              FORUM_TAGS
+            )
           })
           .nn
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
