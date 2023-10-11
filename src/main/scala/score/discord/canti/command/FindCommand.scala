@@ -21,7 +21,7 @@ import score.discord.canti.wrappers.jda.MessageConversions.given
 import score.discord.canti.wrappers.jda.RetrievableMessage
 import score.discord.canti.wrappers.jda.RichGenericComponentInteractionCreateEvent.messageId
 import score.discord.canti.wrappers.jda.RichMessage.{!, guild}
-import score.discord.canti.wrappers.jda.RichMessageChannel.{findMessage, participants}
+import score.discord.canti.wrappers.jda.RichMessageChannel.findMessage
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 import score.discord.canti.wrappers.jda.RichUser.{discriminator, mentionWithName, name}
 import score.discord.canti.wrappers.jda.matching.Events.NonBotReact
@@ -36,6 +36,7 @@ import scala.util.chaining.scalaUtilChainingOps
 import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import scala.collection.mutable.Buffer
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 
 class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
     extends GenericCommand:
@@ -163,8 +164,8 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
       case None =>
         // Private chat
         channel match
-          case Some(channel) =>
-            results ++= channel.participants
+          case Some(channel: PrivateChannel) =>
+            results ++= List(channel.getUser.nn)
               .filter(u => containsSearchTerm(s"@${u.name}#${u.discriminator}"))
               .map(u => (s"**User** ${u.mentionWithName}: `${u.getId}`", u.getId.nn))
           case None =>

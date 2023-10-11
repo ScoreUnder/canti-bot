@@ -10,8 +10,8 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 object IdConversions:
   extension (me: ID[MessageChannel])
     @targetName("find_ID_MessageChannel")
-    // TODO: test if this works for DMs
-    def find(using jda: JDA): Option[MessageChannel] = jda.getTextChannelById(me.value).?
+    def find(using jda: JDA): Option[MessageChannel] =
+      jda.getTextChannelById(me.value).?.orElse(jda.getPrivateChannelById(me.value).?)
 
   extension (me: ID[Guild])
     @targetName("find_ID_Guild")

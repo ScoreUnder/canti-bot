@@ -46,9 +46,6 @@ object RichMessageChannel:
       future.foreach(messageOwnership(_) = owner)
       future
 
-    /** A list of all users in this channel */
-    def participants: Seq[User] = ??? // TODO: this approach is discouraged by Discord
-
     def findMessage(messageId: ID[Message], logFail: Boolean = false): Future[Message] =
       val req = APIHelper.tryRequest(channel.retrieveMessageById(messageId.value).nn)
       if logFail then req.failed.foreach(APIHelper.failure("retrieving a message"))
