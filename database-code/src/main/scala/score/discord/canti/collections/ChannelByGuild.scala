@@ -1,6 +1,7 @@
 package score.discord.canti.collections
 
-import net.dv8tion.jda.api.entities.{Guild, GuildChannel => Channel}
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import score.discord.canti.util.DBUtils
 import score.discord.canti.wrappers.database.IDMapping._
 import score.discord.canti.wrappers.jda.ID
@@ -11,14 +12,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class ChannelByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: String)
-    extends AsyncMap[ID[Guild], ID[Channel]] {
+    extends AsyncMap[ID[Guild], ID[GuildChannel]] {
 
   import dbConfig.profile.api._
 
   private class ChannelByGuild(tag: Tag, name: String)
-      extends Table[(ID[Guild], ID[Channel])](tag, name) {
+      extends Table[(ID[Guild], ID[GuildChannel])](tag, name) {
     val guildId = column[ID[Guild]]("guild", O.PrimaryKey)
-    val channelId = column[ID[Channel]]("channel")
+    val channelId = column[ID[GuildChannel]]("channel")
 
     override def * = (guildId, channelId)
   }
@@ -31,15 +32,15 @@ class ChannelByGuild(dbConfig: DatabaseConfig[_ <: JdbcProfile], tableName: Stri
   })
   DBUtils.ensureTableCreated(dbConfig, channelByGuildTable, tableName)
 
-  override def get(key: ID[Guild]): Future[Option[ID[Channel]]] =
+  override def get(key: ID[Guild]): Future[Option[ID[GuildChannel]]] =
     dbConfig.db.run(lookupQuery(key).result).map(_.headOption)
 
-  override def update(guild: ID[Guild], role: ID[Channel]): Future[Int] =
+  override def update(guild: ID[Guild], role: ID[GuildChannel]): Future[Int] =
     database.run(channelByGuildTable.insertOrUpdate(guild, role))
 
   override def remove(guild: ID[Guild]): Future[Int] =
     database.run(lookupQuery(guild).delete)
 
-  override def items: Future[Seq[(ID[Guild], ID[Channel])]] =
+  override def items: Future[Seq[(ID[Guild], ID[GuildChannel])]] =
     throw new UnsupportedOperationException()
 }

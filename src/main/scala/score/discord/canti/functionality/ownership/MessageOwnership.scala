@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class MessageOwnership(backend: AsyncMap[? >: ID[Message], ID[User]]):
-  def apply(message: Message): Future[Option[User]] = this(message.id)(using message.getJDA)
+  def apply(message: Message): Future[Option[User]] = this(message.id)(using message.getJDA.nn)
 
   def apply(messageId: ID[Message])(using JDA): Future[Option[User]] =
     backend.get(messageId).map(_.flatMap(_.find))

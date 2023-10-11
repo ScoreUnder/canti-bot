@@ -3,14 +3,17 @@ package score.discord.canti.command
 import com.codedx.util.MapK
 import cps.*
 import cps.monads.FutureAsyncMonad
-import net.dv8tion.jda.api.{JDA, MessageBuilder}
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.channel.middleman.{GuildChannel, MessageChannel}
+import net.dv8tion.jda.api.entities.channel.concrete.{PrivateChannel, TextChannel}
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.exceptions.PermissionException
 import net.dv8tion.jda.api.hooks.EventListener
-import net.dv8tion.jda.api.interactions.components.{ActionRow, Button}
+import net.dv8tion.jda.api.interactions.components.ActionRow
+import net.dv8tion.jda.api.interactions.components.buttons.Button
 import net.dv8tion.jda.api.requests.ErrorResponse
-import net.dv8tion.jda.api.requests.restaction.MessageAction
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 import score.discord.canti.collections.{MessageCache, ReplyCache}
 import score.discord.canti.command.api.{
   ArgSpec, ArgType, CommandInvocation, CommandInvoker, CommandPermissions, MessageInvoker
@@ -30,6 +33,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.jdk.CollectionConverters.*
+import scala.util.chaining.scalaUtilChainingOps
 
 class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCache)
     extends GenericCommand:
@@ -65,10 +69,13 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
         ActionRow.of(Button.link(msg.getJumpUrl, "Go to message"))
       }
       val replyMsg = quotedMsg
-        .map(getMessageAsQuote(ctx.invoker, _))
-        .fold(e => MessageBuilder(BotMessages.error(e)), MessageBuilder(_))
-        .setActionRows(buttons*)
-        .build
+        .fold(
+          e => BotMessages.error(e).toMessageCreate,
+          m => getMessageAsQuote(ctx.invoker, m)
+        )
+        .pipe(MessageCreateBuilder.from).nn
+        .setComponents(buttons*).nn
+        .build.nn
       await(ctx.invoker.reply(replyMsg))
     }
 
@@ -77,7 +84,7 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
     args: String
   ): Future[Either[String, Message]] =
     async {
-      given JDA = invoker.user.getJDA
+      given JDA = invoker.user.getJDA.nn
       parseQuoteIDs(args) match
         case Some((quoteId, specifiedChannel)) =>
           val channel = channelOrBestGuess(invoker.channel, quoteId, specifiedChannel)
@@ -135,19 +142,19 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
       case None    => Left("I do not have access to the specified channel.")
 
   private def getMessageAsQuote(invoker: CommandInvoker, msg: Message) =
-    val ch = msg.getChannel
+    val ch = msg.getChannel.nn
     val chanName = Option(ch.getName).fold("Untitled channel")("#" + _)
-    val sender = msg.getAuthor
+    val sender = msg.getAuthor.nn
 
     val quote = BotMessages
-      .plain(msg.getContentRaw)
-      .setAuthor(sender.getName, null, sender.getAvatarUrl)
-      .setTimestamp(msg.getTimeCreated)
-      .setFooter(s"$chanName | Requested by ${invoker.user.mentionAsText}", null)
+      .plain(msg.getContentRaw.nn)
+      .setAuthor(sender.getName, null, sender.getAvatarUrl).nn
+      .setTimestamp(msg.getTimeCreated).nn
+      .setFooter(s"$chanName | Requested by ${invoker.user.mentionAsText}", null).nn
 
-    val embeds = msg.getEmbeds.asScala
+    val embeds = msg.getEmbeds.nn.asScala
 
-    msg.getAttachments.asScala.find(_.isImage) match
+    msg.getAttachments.nn.asScala.find(_.isImage) match
       case Some(image) => quote.setImage(image.getUrl)
       case None =>
         for image <- embeds.flatMap(_.getImage.?).headOption do quote.setImage(image.getUrl)
@@ -158,12 +165,12 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
     do
       quote.addField("[Embed description]", trimToSize(desc, chars = 1000, lines = 4), false)
 
-      embed.getFields.asScala.foreach(quote.addField)
+      embed.getFields.nn.asScala.foreach(quote.addField)
 
-    for sticker <- msg.getStickers.asScala.toSeq do
-      quote.addField(s"[Sticker: ${sticker.getName}]", sticker.getDescription, true)
+    for sticker <- msg.getStickers.nn.asScala.toSeq do
+      quote.addField(s"[Sticker: ${sticker.getName}]", sticker.getIconUrl(), true)
 
-    quote.toMessage
+    quote.toMessageCreate
 
   private def parseQuoteIDs(args: String) =
     val (firstIdStr, remains) = args.trimnn.span(Character.isDigit)
@@ -176,7 +183,7 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
       val quoteId = ID.fromString[Message](firstIdStr)
       val specifiedChannel = QuoteCommand.CHANNEL_REGEX
         .findPrefixMatchOf(remains)
-        .map(m => ID.fromString[TextChannel](m.group(1)))
+        .map(m => ID.fromString[MessageChannel](m.group(1)))
       Some((quoteId, specifiedChannel))
     else
       args match
@@ -192,7 +199,7 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
       case NonBotMessage(message) =>
         Future {
           QuoteCommand.GREENTEXT_REGEX
-            .findPrefixMatchOf(message.getContentRaw)
+            .findPrefixMatchOf(message.getContentRaw.nn)
             .foreach { m =>
               val invocation =
                 CommandInvocation(

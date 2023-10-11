@@ -1,7 +1,9 @@
 package score.discord.canti.functionality.ownership
 
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{ChannelType, Message, MessageChannel, User}
+import net.dv8tion.jda.api.entities.{Message, User}
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.util.APIHelper
@@ -17,7 +19,7 @@ class DeleteOwnedMessages(using messageOwnership: MessageOwnership) extends Even
   private def getOwnership(user: User, channel: MessageChannel, messageId: ID[Message]) =
     if channel.getType == ChannelType.PRIVATE then Future.successful(Some(user))
     else
-      given JDA = user.getJDA
+      given JDA = user.getJDA.nn
       messageOwnership(messageId)
 
   override def onEvent(ev: GenericEvent): Unit =
@@ -27,7 +29,7 @@ class DeleteOwnedMessages(using messageOwnership: MessageOwnership) extends Even
           case Some(`user`) =>
             channel.deleteMessage(messageId)
           case Some(_) =>
-            react.removeReaction(user).queue()
+            react.removeReaction(user).nn.queue()
           case None =>
         }
       case MessageDelete(message) =>

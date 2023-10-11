@@ -1,7 +1,7 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.events.interaction.GenericComponentInteractionCreateEvent
+import net.dv8tion.jda.api.events.interaction.component.GenericComponentInteractionCreateEvent
 
 object RichGenericComponentInteractionCreateEvent:
   extension (me: GenericComponentInteractionCreateEvent)

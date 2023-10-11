@@ -1,6 +1,7 @@
 package score.discord.canti.functionality
 
-import net.dv8tion.jda.api.entities.{Message, MessageChannel, User}
+import net.dv8tion.jda.api.entities.{Message, User}
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.wrappers.jda.ID
@@ -24,8 +25,8 @@ class Conversations extends EventListener:
 
   override def onEvent(event: GenericEvent): Unit = event match
     case NonBotMessage(msg) =>
-      val userId = msg.getAuthor.id
-      val chanId = msg.getChannel.id
+      val userId = msg.getAuthor.nn.id
+      val chanId = msg.getChannel.nn.id
       ongoingConversation
         .remove((userId, chanId))
         .foreach(_.success(msg))

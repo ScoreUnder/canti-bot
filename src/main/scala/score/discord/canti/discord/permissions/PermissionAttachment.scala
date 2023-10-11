@@ -34,7 +34,7 @@ case class PermissionAttachment(permissions: Map[Permission, PermissionValue]):
 
 object PermissionAttachment:
   def apply(ov: PermissionOverride): PermissionAttachment =
-    empty.allow(ov.getAllowed.asScala).deny(ov.getDenied.asScala)
+    empty.allow(ov.getAllowed.nn.asScala).deny(ov.getDenied.nn.asScala)
 
   val empty: PermissionAttachment =
     PermissionAttachment(Map.empty.withDefaultValue(Inherit))

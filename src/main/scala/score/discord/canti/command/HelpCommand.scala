@@ -76,7 +76,7 @@ class HelpCommand(commands: Commands) extends GenericCommand:
       )
 
   private def showHelpPage(invoker: CommandInvoker, page: Int) =
-    given JDA = invoker.user.getJDA
+    given JDA = invoker.user.getJDA.nn
 
     val myCommands = commands.all.filter(_.permissions.canExecute(invoker))
     val pageOffset = pageSize * (page - 1)

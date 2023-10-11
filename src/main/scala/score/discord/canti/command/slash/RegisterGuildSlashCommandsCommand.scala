@@ -48,7 +48,7 @@ class RegisterGuildSlashCommandsCommand(owner: ID[User])(using Scheduler) extend
         val result =
           for member <- ctx.invoker.member
           yield
-            val action = member.getGuild.updateCommands()
+            val action = member.getGuild.nn.updateCommands().nn
             val offArgStr = ctx.args.get(offArg).getOrElse("")
             (if offArgStr == "off" then action else slashCommands.registerCommands(action))
               .queueFuture()

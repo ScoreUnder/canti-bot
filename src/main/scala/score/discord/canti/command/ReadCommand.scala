@@ -74,7 +74,7 @@ class ReadCommand(messageCache: MessageCache)(using Scheduler) extends GenericCo
             .getOrElse("")
         case Some(text) => text
 
-      val guild = ctx.invoker.member.toOption.map(_.getGuild)
+      val guild = ctx.invoker.member.toOption.map(_.getGuild.nn)
       val input = CommandHelper.mentionsToPlaintext(guild, rawInput)
       if input.isEmpty then
         await(ctx.invoker.reply(BotMessages.error("You need to enter some text first")))

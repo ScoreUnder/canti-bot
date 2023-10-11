@@ -9,4 +9,4 @@ import scala.jdk.CollectionConverters.*
 object RichJDA:
   extension (jda: JDA)
     /** A list of guilds this bot (shard) is in */
-    def guilds: mutable.Buffer[Guild] = jda.getGuilds.asScala
+    def guilds: mutable.Buffer[Guild] = jda.getGuilds.nn.asScala

@@ -1,7 +1,8 @@
 package score.discord.canti.util
 
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.{Category, Guild, Role}
+import net.dv8tion.jda.api.entities.{Guild, Role}
+import net.dv8tion.jda.api.entities.channel.concrete.Category
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichRole.mention
 import score.discord.canti.wrappers.jda.RichSnowflake.rawId
@@ -34,7 +35,7 @@ object ParseUtils:
     *   all roles that match
     */
   def searchRoles(guild: Guild, roleName: String): Seq[Role] =
-    searchGeneric(roleName, guild.getRoleById, guild.getRolesByName(_, true))
+    searchGeneric(roleName, guild.getRoleById, guild.getRolesByName(_, true).nn)
 
   /** Searches the given guild for a single role by the given name/ID. If there are multiple matches
     * or no matches, a human-readable error message will be returned in a Left. Not case sensitive.
@@ -71,7 +72,7 @@ object ParseUtils:
     *   all categories that match
     */
   def searchCategories(guild: Guild, categoryName: String): Seq[Category] =
-    searchGeneric(categoryName, guild.getCategoryById, guild.getCategoriesByName(_, true))
+    searchGeneric(categoryName, guild.getCategoryById, guild.getCategoriesByName(_, true).nn)
 
   /** Searches the given guild for a single category by the given name/ID. If there are multiple
     * matches or no matches, a human-readable error message will be returned in a Left. Not case

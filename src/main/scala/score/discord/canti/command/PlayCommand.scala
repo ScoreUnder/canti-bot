@@ -21,7 +21,7 @@ class PlayCommand(owner: ID[User]) extends GenericCommand:
   override val argSpec = List(playingArg)
 
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
-    ctx.jda.getPresence.setActivity(ctx.args.get(playingArg) match
+    ctx.jda.getPresence.nn.setActivity(ctx.args.get(playingArg) match
       case None       => null
       case Some(name) => Activity.playing(name)
     )

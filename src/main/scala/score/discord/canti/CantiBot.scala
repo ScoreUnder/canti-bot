@@ -2,7 +2,6 @@ package score.discord.canti
 
 import com.typesafe.config.ConfigFactory
 import net.dv8tion.jda.api.entities.Activity
-import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.utils.cache.CacheFlag
@@ -27,8 +26,9 @@ import scala.compiletime.uninitialized
 import scala.concurrent.duration.*
 import scala.jdk.CollectionConverters.*
 import scala.language.postfixOps
+import net.dv8tion.jda.api.events.session.ReadyEvent
 
-@main def main() =
+@main def main(): Unit =
   CantiBot().start()
 
 class CantiBot:
@@ -46,7 +46,7 @@ class CantiBot:
             config.token, {
               import GatewayIntent.*
               var intents =
-                GUILD_EMOJIS :: /* &find */
+                GUILD_EMOJIS_AND_STICKERS :: /* &find */
                   GUILD_MESSAGE_REACTIONS :: /* Voice kick, &help, &spoiler, delete owned messages */
                   GUILD_VOICE_STATES :: /* Voice kick, private voice chats */
                   DIRECT_MESSAGES :: /* Same as GUILD_MESSAGES, plus spoiler-in-DM */
@@ -59,10 +59,12 @@ class CantiBot:
               intents.asJava
             }
           )
+          .nn
           .disableCache({
             import CacheFlag.*
             util.Arrays.asList(ACTIVITY, CLIENT_STATUS, ONLINE_STATUS, ROLE_TAGS)
           })
+          .nn
         val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("database", rawConfig)
         executor = Executors.newScheduledThreadPool(Runtime.getRuntime.nn.availableProcessors).nn
         given Scheduler = Scheduler(executor)
@@ -72,7 +74,7 @@ class CantiBot:
         given messageCache: MessageCache = MessageCache()
         given ReplyCache = ReplyCache()
         val userCreatedChannels =
-          UserByVoiceChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
+          UserByAudioChannel(dbConfig, "user_created_channels") withCache LruCache.empty(2000)
 
         val eventWaiter = EventWaiter()
         val commands = Commands()
@@ -140,9 +142,10 @@ class CantiBot:
             e.nn match
               case ev: ReadyEvent =>
                 // TODO: Make configurable?
-                ev.getJDA.getPresence
+                val jda = ev.getJDA.nn
+                jda.getPresence.nn
                   .setActivity(Activity `playing` s"Usage: ${commands.prefix}${helpCommand.name}")
-                ev.getJDA.setRequiredScopes("bot", "applications.commands")
+                jda.setRequiredScopes("bot", "applications.commands")
               case _ =>
           }: EventListener,
           EventLogger()
@@ -150,7 +153,7 @@ class CantiBot:
 
         // The discord bot spawns off new threads and its event handlers expect
         // everything to have been set up, so this must come last.
-        discord = Some(bot.build())
+        discord = Some(bot.build().nn)
 
       case Some(_) =>
         throw UnsupportedOperationException(

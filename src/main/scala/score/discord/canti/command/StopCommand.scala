@@ -1,6 +1,7 @@
 package score.discord.canti.command
 
 import net.dv8tion.jda.api.entities.{Message, User}
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import score.discord.canti.CantiBot
 import score.discord.canti.command.api.{ArgSpec, CommandInvocation, CommandPermissions}
 import score.discord.canti.wrappers.jda.{ID, RetrievableMessage}
@@ -25,7 +26,7 @@ class StopCommand(bot: CantiBot, owner: ID[User]) extends GenericCommand:
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     val reaction =
       ctx.invoker.originatingMessage match
-        case Some(message) => message.addReaction("👌").queueFuture()
+        case Some(message) => message.addReaction(Emoji.fromUnicode("👌")).nn.queueFuture()
         case None          => ctx.invoker.reply("👌 Shutting down...")
 
     // Wait a little to add the reaction, but give up quickly as shutting down is more important

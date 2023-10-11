@@ -1,6 +1,7 @@
 package score.discord.canti.wrappers.jda.matching
 
-import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.{Member, Message, MessageReaction, MessageType, User}
+import net.dv8tion.jda.api.entities.channel.middleman.{AudioChannel, MessageChannel}
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import net.dv8tion.jda.api.events.message.{
@@ -15,21 +16,23 @@ import score.discord.canti.wrappers.jda.RichGenericMessageEvent.messageId
 object Events:
   object NonBotMessage:
     def unapply(ev: MessageReceivedEvent): Option[Message] =
-      if ev.isWebhookMessage || ev.getAuthor.isBot
-        || ev.getMessage.getType != MessageType.DEFAULT
+      val msg = ev.getMessage.nn
+      if ev.isWebhookMessage || ev.getAuthor.nn.isBot
+        || msg.getType != MessageType.DEFAULT
       then None
-      else Some(ev.getMessage)
+      else Some(msg)
 
   object NonBotMessageEdit:
     def unapply(
       ev: MessageUpdateEvent
     )(using messageCache: MessageCache): Option[(BareMessage, Message)] =
-      if ev.getAuthor.isBot || ev.getMessage.getType != MessageType.DEFAULT then None
+      val editedMsg = ev.getMessage.nn
+      if ev.getAuthor.nn.isBot || editedMsg.getType != MessageType.DEFAULT then None
       else
         messageCache.find(_.messageId == ev.messageId) match
-          case None                                                 => None
-          case Some(msg) if msg.text == ev.getMessage.getContentRaw => None // Not an edit
-          case Some(msg)                                            => Some((msg, ev.getMessage))
+          case None                                             => None
+          case Some(msg) if msg.text == editedMsg.getContentRaw => None // Not an edit
+          case Some(msg)                                        => Some((msg, editedMsg))
 
   object NonBotReact:
     def unapply(
@@ -38,20 +41,20 @@ object Events:
       for
         user <- ev.getUser.?
         if !user.isBot
-      yield (ev.getReaction, ev.messageId, ev.getChannel, user)
+      yield (ev.getReaction.nn, ev.messageId, ev.getChannel.nn, user)
 
   object MessageDelete:
     def unapply(ev: MessageDeleteEvent): Tuple1[ID[Message]] =
       Tuple1(ev.messageId)
 
   object GuildVoiceUpdate:
-    def unapply(ev: GuildVoiceUpdateEvent): (Member, Option[VoiceChannel], Option[VoiceChannel]) =
-      (ev.getEntity, ev.getChannelLeft.?, ev.getChannelJoined.?)
+    def unapply(ev: GuildVoiceUpdateEvent): (Member, Option[AudioChannel], Option[AudioChannel]) =
+      (ev.getEntity.nn, ev.getChannelLeft.?, ev.getChannelJoined.?)
 
     // To hint to the IDE what the name of each unapplied parameter is (ctrl+P in intelliJ)
     private def apply(
       member: Member,
-      leftChannel: Option[VoiceChannel],
-      joinedChannel: Option[VoiceChannel]
+      leftChannel: Option[AudioChannel],
+      joinedChannel: Option[AudioChannel]
     ) =
       throw UnsupportedOperationException()

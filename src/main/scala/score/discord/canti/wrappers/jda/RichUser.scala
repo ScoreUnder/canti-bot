@@ -1,7 +1,8 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.{GuildChannel, User}
+import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import score.discord.canti.util.MessageUtils
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichSnowflake.rawId
@@ -9,13 +10,13 @@ import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 object RichUser:
   extension (me: User)
     /** This user's name */
-    def name = me.getName
+    def name = me.getName.nn
 
     /** This user's discriminator as a String */
-    def discriminator = me.getDiscriminator
+    def discriminator = me.getDiscriminator.nn
 
     /** The mention string for this user */
-    def mention = me.getAsMention
+    def mention = me.getAsMention.nn
 
     /** Gets the user's name and discriminator. Looks like what you would type in Discord if you
       * wanted to mention the user. Not sanitised.
@@ -38,4 +39,4 @@ object RichUser:
       *   `true` if the user can see this channel
       */
     def canSee(channel: GuildChannel): Boolean =
-      channel.getGuild.getMember(me).?.exists(_.hasPermission(channel, Permission.MESSAGE_READ))
+      channel.getGuild.nn.getMember(me).?.exists(_.hasPermission(channel, Permission.VIEW_CHANNEL))

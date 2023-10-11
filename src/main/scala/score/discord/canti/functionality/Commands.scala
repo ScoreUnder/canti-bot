@@ -1,7 +1,7 @@
 package score.discord.canti.functionality
 
 import com.codedx.util.MapK
-import net.dv8tion.jda.api.entities.{ChannelType, Message, MessageChannel}
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.collections.{MessageCache, ReplyCache}
@@ -14,7 +14,7 @@ import score.discord.canti.util.StringUtils.formatMessageForLog
 import score.discord.canti.util.{APIHelper, BotMessages}
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.Conversions.{
-  richMessage, richMessageChannel, richSnowflake, richUser
+  richChannel, richMessage, richMessageChannel, richSnowflake, richUser
 }
 import score.discord.canti.wrappers.jda.ID
 import score.discord.canti.wrappers.jda.MessageConversions.given
@@ -194,9 +194,11 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
             parseArgList(invoker, specs, s, acc)
 
   private def logIfMaybeCommand(logPrefix: String, message: Message): Unit =
-    if message.getContentRaw.startsWith(prefix) then
+    if message.getContentRaw.nn.startsWith(prefix) then
+      val author = message.getAuthor.nn
+      val channel = message.getChannel.nn
       logger.debug(
-        s"$logPrefix: ${message.rawId} ${message.getAuthor.unambiguousString} ${message.getChannel.unambiguousString}\n${formatMessageForLog(message)}"
+        s"$logPrefix: ${message.rawId} ${author.unambiguousString} ${channel.unambiguousString}\n${formatMessageForLog(message)}"
       )
 
   private def logAndInvoke(
@@ -213,7 +215,7 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
     case NonBotMessage(message) =>
       logIfMaybeCommand("COMMAND?", message)
       val invoker = MessageInvoker(message)
-      parseCommand(invoker, message.getContentRaw) match
+      parseCommand(invoker, message.getContentRaw.nn) match
         case NotACommand =>
         case ParseFailure(_, name, failure) =>
           logger.debug(s"Command $name parse failure: $failure")
@@ -231,12 +233,12 @@ class Commands(using MessageCache, ReplyCache, MessageOwnership) extends EventLi
               case Some((oldCmd, _, _)) if oldCmd.canBeEdited =>
                 EditedMessageInvoker(newMsg, replyId)
               case Some(_) =>
-                newMsg.getChannel.deleteMessage(replyId)
+                newMsg.getChannel.nn.deleteMessage(replyId)
                 MessageInvoker(newMsg)
               case None => MessageInvoker(newMsg)
           case _ => MessageInvoker(newMsg)
 
-      parseCommand(MessageInvoker(newMsg), newMsg.getContentRaw) match
+      parseCommand(MessageInvoker(newMsg), newMsg.getContentRaw.nn) match
         case NotACommand =>
         case ParseFailure(cmd, name, failure) =>
           logger.debug(s"Command $name parse failure: $failure")

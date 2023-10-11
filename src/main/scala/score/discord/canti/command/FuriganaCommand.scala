@@ -2,7 +2,7 @@ package score.discord.canti.command
 
 import cps.*
 import cps.monads.FutureAsyncMonad
-import net.dv8tion.jda.api.{JDA, MessageBuilder}
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Message
 import score.discord.canti.Furigana
 import score.discord.canti.collections.ReplyCache
@@ -23,6 +23,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.util.chaining.*
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
 
 class FuriganaCommand(using Scheduler) extends GenericCommand:
   override def name = "furigana"
@@ -55,7 +56,7 @@ class FuriganaCommand(using Scheduler) extends GenericCommand:
       given JDA = ctx.jda
       ctx.invoker.replyLater(false)
 
-      val guild = ctx.invoker.member.toOption.map(_.getGuild)
+      val guild = ctx.invoker.member.toOption.map(_.getGuild.nn)
       val cleanup = CommandHelper.mentionsToPlaintext(guild, _)
 
       val (origWithoutFuri, furiText) =
@@ -80,10 +81,13 @@ object FuriganaCommand:
     Furigana
       .renderPNG(furigana)
       .fold {
-        OutgoingMessage(BotMessages.error("No characters were visible in the output").toMessage)
+        OutgoingMessage(BotMessages.error("No characters were visible in the output").toMessageCreate)
       } { pngData =>
         OutgoingMessage(
-          MessageBuilder(plain.take(2000)).setAllowedMentions(Collections.emptySet).build,
+          MessageCreateBuilder()
+            .setContent(plain.take(2000)).nn
+            .setAllowedMentions(Collections.emptySet).nn
+            .build.nn,
           files = List("furigana.png" -> pngData)
         )
       }

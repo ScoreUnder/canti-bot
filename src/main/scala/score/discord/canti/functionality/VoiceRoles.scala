@@ -6,7 +6,8 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
 import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
-import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
+import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
@@ -83,14 +84,14 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
 
     override def execute(ctx: CommandInvocation): Future[RetrievableMessage] = async {
       val toSend =
-        ctx.invoker.member.map(_.getGuild) match
-          case Left(err) => BotMessages.error(err).toMessage
+        ctx.invoker.member.map(_.getGuild.nn) match
+          case Left(err) => BotMessages.error(err).toMessageCreate
           case Right(guild) =>
             await(ctx.args.get(roleArg) match
               case None                     => showVoiceRole(guild)
               case Some(DelVoiceRole)       => delVoiceRole(guild)
               case Some(SetVoiceRole(role)) => setVoiceRole(role, guild)
-            ).toMessage
+            ).toMessageCreate
       await(ctx.invoker.reply(toSend))
     }
 
@@ -110,7 +111,7 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
     }
 
     private def showVoiceRole(guild: Guild) = async {
-      given JDA = guild.getJDA
+      given JDA = guild.getJDA.nn
       await(roleByGuild.get(guild.id))
         .flatMap(_.find)
         .fold(BotMessages.plain("There is currently no voice chat role set."))(role =>
@@ -142,8 +143,8 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
       }
 
   private def shouldHaveRole(state: GuildVoiceState) =
-    !state.getMember.getUser.isBot && !state.isDeafened && Option(state.getChannel).exists(
-      _ != state.getGuild.getAfkChannel
+    !state.getMember.nn.getUser.nn.isBot && !state.isDeafened && Option(state.getChannel).exists(
+      _ != state.getGuild.nn.getAfkChannel
     )
 
   private def queueRoleUpdate(member: Member): Unit =
@@ -175,29 +176,29 @@ class VoiceRoles(roleByGuild: AsyncMap[ID[Guild], ID[Role]])(using
         val previousFuture = pendingRoleUpdates.put(memberId, newFuture).?
         previousFuture.foreach(_.cancel(false))
 
-      given JDA = member.getJDA
-      await(roleByGuild.get(member.getGuild.id)).flatMap(_.find).foreach(queueUpdate)
+      given JDA = member.getJDA.nn
+      await(roleByGuild.get(member.getGuild.nn.id)).flatMap(_.find).foreach(queueUpdate)
     }
 
   private def dequeueRoleUpdate(memberId: GuildUserId): Unit =
     pendingRoleUpdates.remove(memberId).?.foreach(_.cancel(false))
 
   private def refreshVoiceRoles(guild: Guild): Unit =
-    for voiceState <- guild.voiceStates do queueRoleUpdate(voiceState.getMember)
+    for voiceState <- guild.voiceStates do queueRoleUpdate(voiceState.getMember.nn)
 
   override def onEvent(event: GenericEvent): Unit =
     event match
       case ev: ReadyEvent =>
-        val jda = ev.getJDA
+        val jda = ev.getJDA.nn
         async {
           for guild <- jda.guilds do refreshVoiceRoles(guild)
         }
 
       case ev: GenericGuildVoiceEvent =>
-        queueRoleUpdate(ev.getMember)
+        queueRoleUpdate(ev.getMember.nn)
 
       case ev: GuildMemberRemoveEvent =>
-        dequeueRoleUpdate(GuildUserId(ev.getGuild.id, ev.getUser.id))
+        dequeueRoleUpdate(GuildUserId(ev.getGuild.nn.id, ev.getUser.nn.id))
 
       case _ =>
 end VoiceRoles

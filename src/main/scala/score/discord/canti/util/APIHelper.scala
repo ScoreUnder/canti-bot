@@ -1,6 +1,6 @@
 package score.discord.canti.util
 
-import net.dv8tion.jda.api.entities.{Message, MessageChannel}
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.exceptions.{
   ErrorResponseException, InsufficientPermissionException, PermissionException
 }
@@ -53,7 +53,7 @@ object APIHelper:
     */
   def loudFailure(whatFailed: String, receiver: MessageReceiver)(exception: Throwable): Unit =
     failure(whatFailed)(exception)
-    receiver.sendMessage(BotMessages.error(describeFailure(whatFailed, exception)): MessageFromX)
+    receiver.sendMessage(BotMessages.error(describeFailure(whatFailed, exception)): MessageCreateFromX)
 
   /** Tries to run apiCall, then queues the result if successful.
     *

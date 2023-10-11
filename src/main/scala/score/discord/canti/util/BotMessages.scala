@@ -9,8 +9,8 @@ object BotMessages:
   val ERROR_COLOR = Color(240, 100, 100)
   val OKAY_COLOR = Color(100, 130, 240)
 
-  def error(message: String) = plain(message).setColor(ERROR_COLOR)
+  def error(message: String): EmbedBuilder = plain(message).setColor(ERROR_COLOR).nn
 
-  def okay(message: String) = plain(message).setColor(OKAY_COLOR)
+  def okay(message: String): EmbedBuilder = plain(message).setColor(OKAY_COLOR).nn
 
-  def plain(message: String) = EmbedBuilder().setDescription(message)
+  def plain(message: String): EmbedBuilder = EmbedBuilder().setDescription(message).nn

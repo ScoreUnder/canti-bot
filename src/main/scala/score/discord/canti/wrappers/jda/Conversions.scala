@@ -1,6 +1,8 @@
 package score.discord.canti.wrappers.jda
 
 object Conversions:
+  given richChannel: RichChannel.type = RichChannel
+
   given richChannelAction: RichChannelAction.type = RichChannelAction
 
   given richGenericComponentInteractionCreateEvent
@@ -27,5 +29,3 @@ object Conversions:
   given richSnowflake: RichSnowflake.type = RichSnowflake
 
   given richUser: RichUser.type = RichUser
-
-  given richVoiceChannel: RichVoiceChannel.type = RichVoiceChannel

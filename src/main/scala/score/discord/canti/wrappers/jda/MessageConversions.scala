@@ -1,25 +1,31 @@
 package score.discord.canti.wrappers.jda
 
-import net.dv8tion.jda.api.{EmbedBuilder, MessageBuilder}
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.utils.messages.{MessageCreateData, MessageCreateBuilder}
 
 object MessageConversions:
-  trait MessageFromX:
-    def toMessage: Message
+  trait MessageCreateFromX:
+    def toMessageCreate: MessageCreateData
 
-  class MessageFromString(me: String) extends MessageFromX:
-    def toMessage = MessageBuilder().append(me).build
+  class MessageFromString(me: String) extends MessageCreateFromX:
+    def toMessageCreate = MessageCreateBuilder().setContent(me).nn.build.nn
 
-  class MessageFromEmbedBuilder(me: EmbedBuilder) extends MessageFromX:
-    def toMessage = MessageBuilder().setEmbeds(me.build).build
+  class MessageFromEmbedBuilder(me: EmbedBuilder) extends MessageCreateFromX:
+    def toMessageCreate = MessageCreateBuilder().setEmbeds(me.build).nn.build.nn
 
-  class MessageFromMessage(me: Message) extends MessageFromX:
-    def toMessage = me
+  class MessageFromMessage(me: Message) extends MessageCreateFromX:
+    def toMessageCreate = MessageCreateBuilder.fromMessage(me).nn.build.nn
 
-  given Conversion[String, MessageFromX] = MessageFromString(_)
+  class MessageFromMessageCreateData(me: MessageCreateData) extends MessageCreateFromX:
+    def toMessageCreate = me
 
-  given Conversion[EmbedBuilder, MessageFromX] = MessageFromEmbedBuilder(_)
+  given Conversion[String, MessageCreateFromX] = MessageFromString(_)
 
-  given Conversion[Message, MessageFromX] = MessageFromMessage(_)
+  given Conversion[EmbedBuilder, MessageCreateFromX] = MessageFromEmbedBuilder(_)
 
-  given Conversion[MessageFromX, OutgoingMessage] = x => OutgoingMessage(x.toMessage)
+  given Conversion[Message, MessageCreateFromX] = MessageFromMessage(_)
+
+  given Conversion[MessageCreateData, MessageCreateFromX] = MessageFromMessageCreateData(_)
+
+  given Conversion[MessageCreateFromX, OutgoingMessage] = x => OutgoingMessage(x.toMessageCreate)

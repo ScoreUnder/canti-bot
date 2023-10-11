@@ -18,14 +18,14 @@ object RichMember:
       *   true iff they have the role
       */
     infix def has(role: Role): Boolean = (member match
-      case x: MemberImpl => x.getRoleSet.nn
+      case x: MemberImpl => x.getRoleSet
       case x             => x.getRoles
-    ).contains(role)
+    ).nn.contains(role)
 
     /** Used to add/remove roles from this member */
     inline def roles = MemberRolesShim(member)
 
-    def unambiguousString = s"${member.getUser.userUnambiguousString} @ ${member.getGuild}"
+    def unambiguousString = s"${member.getUser.nn.userUnambiguousString} @ ${member.getGuild}"
 
   class MemberRolesShim(val member: Member) extends AnyVal:
     /** Add a role to this member.
@@ -37,12 +37,12 @@ object RichMember:
       */
     def +=(roleReason: (Role, String)): Future[Void] =
       val (role, reason) = roleReason
-      member.getGuild
-        .addRoleToMember(member, role)
-        .reason(reason)
+      member.getGuild.nn
+        .addRoleToMember(member, role).nn
+        .reason(reason).nn
         .addCheck { () =>
           !(member has role)
-        }
+        }.nn
         .queueFuture()
 
     /** Remove a role from this member.
@@ -54,11 +54,11 @@ object RichMember:
       */
     def -=(roleReason: (Role, String)): Future[Void] =
       val (role, reason) = roleReason
-      member.getGuild
-        .removeRoleFromMember(member, role)
-        .reason(reason)
+      member.getGuild.nn
+        .removeRoleFromMember(member, role).nn
+        .reason(reason).nn
         .addCheck { () =>
           member has role
-        }
+        }.nn
         .queueFuture()
 end RichMember

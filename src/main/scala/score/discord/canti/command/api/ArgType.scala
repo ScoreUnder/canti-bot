@@ -1,6 +1,8 @@
 package score.discord.canti.command.api
 
-import net.dv8tion.jda.api.entities.{Category, Guild, GuildChannel, Role, User}
+import net.dv8tion.jda.api.entities.{Guild, Role, User}
+import net.dv8tion.jda.api.entities.channel.concrete.Category
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import net.dv8tion.jda.api.interactions.commands.Command.Choice
 import net.dv8tion.jda.api.interactions.commands.{OptionMapping, OptionType}
 import net.dv8tion.jda.api.JDA
@@ -57,7 +59,7 @@ object ArgType:
       else Some((result, ""))
 
     override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[String] =
-      Some(m.getAsString)
+      Some(m.getAsString.nn)
 
   case object Integer extends ArgType[Long](INTEGER):
     override def fromString(invoker: CommandInvoker, s: String): Option[(Long, String)] =
@@ -83,24 +85,24 @@ object ArgType:
         val role =
           for
             member <- invoker.member
-            role <- ParseUtils.findRole(member.getGuild, arg)
+            role <- ParseUtils.findRole(member.getGuild.nn, arg)
           yield role
         Some((role, ""))
 
     override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[Either[String, Role]] =
       if m.getType == asJda then
-        val role = m.getAsRole
+        val role = m.getAsRole.nn
         Some(Right(role))
       else None
 
   case object MentionedUsers extends ArgType[Seq[User]](USER):
     override def fromString(invoker: CommandInvoker, s: String): Option[(Seq[User], String)] =
       invoker.originatingMessage
-        .map(m => (m.getMentionedUsers.asScala.toSeq, s))
+        .map(m => (m.getMentions.nn.getUsers.nn.asScala.toSeq, s))
         .filter(_._1.nonEmpty)
 
     override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[Seq[User]] =
-      if m.getType == asJda then Some(Seq(m.getAsUser))
+      if m.getType == asJda then Some(Seq(m.getAsUser.nn))
       else None
 
   case object CategoryFind extends ArgType[Either[String, Category]](CHANNEL):
@@ -114,7 +116,7 @@ object ArgType:
         val result =
           for
             member <- invoker.member
-            guild = member.getGuild
+            guild = member.getGuild.nn
             category <- ParseUtils.findCategory(guild, arg)
           yield category
         Some((result, ""))
@@ -124,7 +126,7 @@ object ArgType:
       m: OptionMapping
     ): Option[Either[String, Category]] =
       if m.getType == asJda then
-        m.getAsGuildChannel match
+        m.getAsChannel match
           case cat: Category => Some(Right(cat))
           case _             => Some(Left("That channel is not a category."))
       else None
@@ -135,11 +137,11 @@ object ArgType:
     override def fromString(invoker: CommandInvoker, s: String): Option[(GuildChannel, String)] =
       for
         matchResult <- channelRegex.findPrefixMatchOf(s)
-        channel <- invoker.user.getJDA.getGuildChannelById(matchResult.group(1)).?
+        channel <- invoker.user.getJDA.nn.getGuildChannelById(matchResult.group(1)).?
       yield (channel, matchResult.after.toString)
 
     override def fromJda(invoker: CommandInvoker, m: OptionMapping): Option[GuildChannel] =
-      if m.getType == asJda then Some(m.getAsGuildChannel)
+      if m.getType == asJda then Some(m.getAsChannel.nn)
       else None
 
   final case class Disjunction[+T](types: ArgType[T]*) extends ArgType[T](STRING):
@@ -150,7 +152,7 @@ object ArgType:
       types.view
         .map { typ =>
           typ
-            .fromString(invoker, m.getAsString)
+            .fromString(invoker, m.getAsString.nn)
             .collect {
               // Ensure whole buffer is consumed
               case (parsed, remaining) if remaining.trimnn.isEmpty => parsed

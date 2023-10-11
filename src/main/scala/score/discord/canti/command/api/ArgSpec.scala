@@ -13,4 +13,4 @@ final case class ArgSpec[T](
 ):
   @threadUnsafe lazy val asJda =
     val data = OptionData(argType.asJda, name.lowernn, description, required)
-    if argType.choices.nonEmpty then data.addChoices(argType.choices*) else data
+    if argType.choices.nonEmpty then data.addChoices(argType.choices*).nn else data

@@ -13,7 +13,7 @@ private class RetrievedMessage(message: Message) extends RetrievableMessage:
   override def retrieve() = Future.successful(message)
 
 private class InteractionHookMessage(origin: InteractionHook) extends RetrievableMessage:
-  override def retrieve() = origin.retrieveOriginal.queueFuture()
+  override def retrieve() = origin.retrieveOriginal.nn.queueFuture()
 
 object RetrievableMessage:
   def apply(message: Message): RetrievedMessage = RetrievedMessage(message)

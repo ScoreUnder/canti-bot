@@ -62,16 +62,16 @@ class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
     var timeReallySent: Option[Instant] = None
     for
       pingMessage <- message
-        .reply(s"⏲ Checking ping...")
-        .mentionRepliedUser(false)
+        .reply(s"⏲ Checking ping...").nn
+        .mentionRepliedUser(false).nn
         .setCheck({ () =>
           timeReallySent = Some(now())
           true
-        })
+        }).nn
         .queueFuture()
-      timeOnServer = pingMessage.getTimeCreated.toInstant.nn
+      timeOnServer = pingMessage.getTimeCreated.nn.toInstant.nn
       timeReceived = now()
-      _ = messageOwnership(pingMessage) = message.getAuthor
+      _ = messageOwnership(pingMessage) = message.getAuthor.nn
       _ <- pingMessage
         .editMessage(
           getPingMessage(
@@ -79,9 +79,9 @@ class PingCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
             timeReallySent,
             timeOnServer,
             timeReceived,
-            message.getJDA.getGatewayPing
+            message.getJDA.nn.getGatewayPing
           )
-        )
+        ).nn
         .queueFuture()
     yield RetrievableMessage(pingMessage)
 

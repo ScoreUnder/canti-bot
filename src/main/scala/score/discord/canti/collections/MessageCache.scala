@@ -1,6 +1,7 @@
 package score.discord.canti.collections
 
-import net.dv8tion.jda.api.entities.{Message, MessageChannel}
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.message.{MessageReceivedEvent, MessageUpdateEvent}
 import net.dv8tion.jda.api.hooks.EventListener
@@ -24,7 +25,7 @@ class MessageCache(capacity: Int = 2000) extends EventListener:
   }
 
   protected def toBareMessage(message: Message): BareMessage =
-    BareMessage(message.id, message.getChannel.id, message.getAuthor.id, message.getContentRaw)
+    BareMessage(message.id, message.getChannel.nn.id, message.getAuthor.nn.id, message.getContentRaw.nn)
 
   def findOrRetrieve(channel: MessageChannel, id: ID[Message]): Future[Option[BareMessage]] =
     this find {
@@ -41,13 +42,14 @@ class MessageCache(capacity: Int = 2000) extends EventListener:
 
   override def onEvent(event: GenericEvent): Unit = event match
     case ev: MessageReceivedEvent =>
-      val bareMessage = toBareMessage(ev.getMessage)
+      val bareMessage = toBareMessage(ev.getMessage.nn)
       messages.synchronized {
         messages ::= bareMessage
       }
     case ev: MessageUpdateEvent =>
-      val msgId = ev.getMessage.id
+      val msg = ev.getMessage.nn
+      val msgId = msg.id
       messages.synchronized {
-        messages.findAndUpdate(_.messageId == msgId)(_.copy(text = ev.getMessage.getContentRaw))
+        messages.findAndUpdate(_.messageId == msgId)(_.copy(text = msg.getContentRaw.nn))
       }
     case _ =>

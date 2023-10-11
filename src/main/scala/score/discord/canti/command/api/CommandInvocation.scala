@@ -8,4 +8,4 @@ final case class CommandInvocation(
   args: MapK[ArgSpec, [T] =>> T],
   invoker: CommandInvoker
 ):
-  def jda = invoker.user.getJDA
+  def jda = invoker.user.getJDA.nn

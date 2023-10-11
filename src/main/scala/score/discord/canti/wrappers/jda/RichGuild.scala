@@ -1,6 +1,7 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
 import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.jda.RichSnowflake.rawId
 
@@ -16,7 +17,7 @@ object RichGuild:
     def unambiguousString = s"Guild(${guild.rawId} /* ${guild.name} */)"
 
     /** A list of all voice states in this guild */
-    def voiceStates: mutable.Buffer[GuildVoiceState] = guild.getVoiceStates.asScala
+    def voiceStates: mutable.Buffer[GuildVoiceState] = guild.getVoiceStates.nn.asScala
 
     /** Find a voice channel within this guild by ID.
       *

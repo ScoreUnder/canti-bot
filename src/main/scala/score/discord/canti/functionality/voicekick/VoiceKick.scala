@@ -3,16 +3,14 @@ package score.discord.canti.functionality.voicekick
 import cps.*
 import cps.monads.FutureAsyncMonad
 import net.dv8tion.jda.api.entities.*
-import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
-import net.dv8tion.jda.api.events.{GenericEvent, ReadyEvent}
+import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.interactions.InteractionHook
-import net.dv8tion.jda.api.interactions.components.Button
+import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.managers.Manager
 import net.dv8tion.jda.api.requests.ErrorResponse.*
 import net.dv8tion.jda.api.requests.RestAction
-import net.dv8tion.jda.api.requests.restaction.{MessageAction, WebhookMessageUpdateAction}
-import net.dv8tion.jda.api.{JDA, MessageBuilder, Permission}
+import net.dv8tion.jda.api.{JDA, Permission}
 import score.discord.canti.collections.{AsyncMap, ReplyCache}
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.command.GenericCommand
@@ -27,7 +25,7 @@ import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.collections.AsyncMapConversions.*
 import score.discord.canti.wrappers.jda.Conversions.{
-  richMessage, richMessageChannel, richUser, richVoiceChannel
+  richChannel, richMessage, richMessageChannel, richUser, richGuildChannel
 }
 import score.discord.canti.wrappers.jda.{ID, MessageReceiver, RetrievableMessage}
 import score.discord.canti.wrappers.jda.IdConversions.*
@@ -47,11 +45,21 @@ import scala.concurrent.{Future, blocking}
 import scala.jdk.CollectionConverters.*
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.chaining.*
-import net.dv8tion.jda.api.interactions.components.ActionRow
+import scala.util.Try
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel
+import net.dv8tion.jda.api.interactions.components.buttons.Button
+import net.dv8tion.jda.api.requests.restaction.MessageEditAction
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
+import net.dv8tion.jda.api.utils.messages.MessageEditRequest
+import net.dv8tion.jda.api.events.session.ReadyEvent
 
 class VoiceKick(
-  ownerByChannel: AsyncMap[(ID[Guild], ID[VoiceChannel]), ID[User]],
-  voiceBanExpiries: AsyncMap[(ID[Guild], ID[VoiceChannel], ID[User]), VoiceBanExpiry]
+  ownerByChannel: AsyncMap[(ID[Guild], ID[AudioChannel]), ID[User]],
+  voiceBanExpiries: AsyncMap[(ID[Guild], ID[AudioChannel], ID[User]), VoiceBanExpiry]
 )(using MessageOwnership, ReplyCache, Scheduler)
     extends EventListener:
 
@@ -63,7 +71,7 @@ class VoiceKick(
   case class KickState(
     votes: Map[ID[Member], Option[VoteType]],
     target: ID[Member],
-    channel: ID[VoiceChannel],
+    channel: ID[AudioChannel],
     expiry: Long
   ):
     private def sumVotes(f: VoteType => Int): Int = votes.values.flatten.map(f).sum
@@ -93,7 +101,7 @@ class VoiceKick(
 
   private val pendingKicks = mutable.Map.empty[ID[Message], KickState]
   private val kickMessagesByMember =
-    mutable.Map.empty[ID[Member], Set[(ID[TextChannel], ID[Message])]].withDefaultValue(Set.empty)
+    mutable.Map.empty[ID[Member], Set[(ID[MessageChannel], ID[Message])]].withDefaultValue(Set.empty)
 
   object VoiceKickCommand extends GenericCommand:
     override def name: String = "voicekick"
@@ -119,12 +127,12 @@ class VoiceKick(
     override def execute(ctx: CommandInvocation): Future[RetrievableMessage] = async {
       val result = for
         member <- ctx.invoker.member
-        guild = member.getGuild
+        guild = member.getGuild.nn
         voiceState <- member.getVoiceState ?<> "Internal error: no voice state cached for you"
-        voiceChan <- voiceState.getChannel ?<> "You must be in a voice channel to run this command"
+        audioChan <- voiceState.getChannel ?<> "You must be in a voice channel to run this command"
 
         _ <- Either.cond(
-          voiceChan != member.getGuild.getAfkChannel,
+          audioChan != member.getGuild.nn.getAfkChannel,
           (),
           "You cannot kick a user from the guild AFK channel"
         )
@@ -134,14 +142,16 @@ class VoiceKick(
         mentionedUser <- singleMentionedUser(ctx.args(kickUserArg))
         mentioned <- guild.getMember(mentionedUser) ?<> "Cannot find that user in this server"
         mentionedVoiceState <- mentioned.getVoiceState ?<>
-          s"Internal error: no voice state cached for ${mentioned.getUser.mentionWithName}"
+          s"Internal error: no voice state cached for ${mentioned.getUser.nn.mentionWithName}"
         mentionedVoiceChan <- mentionedVoiceState.getChannel ?<>
-          s"The user ${mentioned.getUser.mentionWithName} is not in voice chat"
+          s"The user ${mentioned.getUser.nn.mentionWithName} is not in voice chat"
+        voiceChan <- Try(audioChan.asVoiceChannel.nn).toOption
+          .toRight("This command can only be used with voice channels") // as opposed to stage channels
 
         _ <- Either.cond(
           voiceChan == mentionedVoiceChan,
           (),
-          s"You are not in the same voice channel as ${mentioned.getUser.mentionWithName}!"
+          s"You are not in the same voice channel as ${mentioned.getUser.nn.mentionWithName}!"
         )
         _ <- Either.cond(mentioned != member, (), "You cannot vote to kick yourself.")
         _ <- Either.cond(
@@ -150,13 +160,13 @@ class VoiceKick(
           "You cannot run this command while deafened (i.e. you must be part of the voice chat)"
         )
 
-        voteEligibleUsers = voiceChan.getMembers.asScala.toSeq
+        voteEligibleUsers = voiceChan.getMembers.nn.asScala.toSeq
           .filter(m => m != mentioned && m.getVoiceState.?.exists(!_.isDeafened))
-        usersMissing = voteEligibleUsers.filter(!_.getUser.canSee(guildTextChannel))
+        usersMissing = voteEligibleUsers.filter(!_.getUser.nn.canSee(guildTextChannel))
         _ <- Either.cond(
           usersMissing.isEmpty,
           (),
-          s"Some users cannot see this channel: ${usersMissing.map(_.getUser.mentionWithName).mkString(", ")}"
+          s"Some users cannot see this channel: ${usersMissing.map(_.getUser.nn.mentionWithName).mkString(", ")}"
         )
         _ <- Either.cond(
           voteEligibleUsers.size >= 2,
@@ -173,7 +183,7 @@ class VoiceKick(
           channel = voiceChan.id,
           expiry = System.currentTimeMillis() + (10 minutes).toMillis
         )
-        val msg = makeMessageContents(kickState, member.getGuild)
+        val msg = makeMessageContents(kickState, member.getGuild.nn)
         (kickState, guildTextChannel, msg, voiceChan, mentioned)
 
       val msg =
@@ -181,19 +191,19 @@ class VoiceKick(
           case Left(err) => ctx.invoker.reply(BotMessages.error(err))
           case Right((kickState, guildTextChannel, successMsg, voiceChan, mentioned)) =>
             await(ownerByChannel(voiceChan)) match
-              case Some(owner) if owner == ctx.invoker.user =>
+              case Some(owner) if owner == ctx.invoker.user.id =>
                 addTemporaryVoiceBan(voiceChan, mentioned, MessageReceiver(guildTextChannel))
                 kickVoiceMember(voiceChan, mentioned, guildTextChannel)
                 ctx.invoker.reply(
                   BotMessages.okay(
-                    s"${mentioned.getAsMention} was forcibly kicked from #${voiceChan.name} by the owner ${owner.getAsMention}"
+                    s"${mentioned.getAsMention} was forcibly kicked from #${voiceChan.name} by the owner ${ctx.invoker.user.getAsMention}"
                   )
                 )
               case _ =>
                 val msgWithButtons = ctx.invoker.reply(
-                  MessageBuilder(successMsg)
-                    .setActionRows(ActionRow.of(kickVoteComponents*))
-                    .build
+                  MessageCreateBuilder().setContent(successMsg).nn
+                    .setComponents(ActionRow.of(kickVoteComponents*)).nn
+                    .build.nn
                 )
 
                 val botMsg = await(await(msgWithButtons).retrieve())
@@ -210,7 +220,7 @@ class VoiceKick(
                 ) {
                   pendingKicks.synchronized {
                     for state <- pendingKicks.get(botMsg.id) do
-                      updateVoteKickMessage(botMsg.getTextChannel, state, botMsg.id, None)
+                      updateVoteKickMessage(guildTextChannel, state, botMsg.id, None)
                   }
                 }
 
@@ -220,10 +230,10 @@ class VoiceKick(
 
     private def ensureIsGuildTextChannel(
       textChannel: Option[MessageChannel]
-    ): Either[String, TextChannel] =
+    ): Either[String, GuildMessageChannel] =
       textChannel match
-        case Some(c: TextChannel) => Right(c)
-        case None => Left("I cannot read the member list of this channel") // Executed in thread
+        case Some(c: GuildMessageChannel) => Right(c)
+        case None => Left("Cannot determine current channel")
         case _ =>
           Left(
             "Internal error: Command not run from within a guild, but `message.getMember()` disagrees"
@@ -241,15 +251,17 @@ class VoiceKick(
   def allCommands = Seq(VoiceKickCommand)
 
   private def makeMessageContents(kickState: KickState, guild: Guild) =
-    given JDA = guild.getJDA
+    given JDA = guild.getJDA.nn
     extension (me: ID[Member])
       def toStr(f: Member => String): String =
-        me.find(guild).map(f).getOrElse("[error: user left server?]")
+        me.find(guild).fold("[error: user left server?]")(f)
 
-    val targetMention = kickState.target.toStr(_.getUser.mentionWithName)
-    val chanMention = kickState.channel.find.map(_.mention).getOrElse("[error: channel gone?]")
+    val targetMention = kickState.target.toStr(_.getUser.nn.mentionWithName)
+    // TODO: support stage channels?
+    val chanMention = kickState.channel.asInstanceOf[ID[VoiceChannel]].find
+      .fold("[error: channel gone?]")(_.mention)
     val usersWhoShouldVote = kickState.votes.keys
-      .map(memId => memId.toStr(mem => mem.getUser.mention))
+      .map(memId => memId.toStr(mem => mem.getUser.nn.mention))
       .mkString(", ")
     val votesSoFar = kickState.votes.values.flatten.map(_.emoji).toVector.sorted.mkString
 
@@ -288,20 +300,20 @@ class VoiceKick(
   )
 
   def removeTemporaryVoiceBan(
-    voiceChannel: VoiceChannel,
+    audioChannel: AudioChannel,
     member: Member,
     logChannel: MessageReceiver,
     explicitGrant: Boolean
   ): Unit =
-    for permissionOverride <- voiceChannel.getPermissionOverride(member).? do
+    for permissionOverride <- audioChannel.getPermissionOverride(member).? do
       val originalPerms = PermissionAttachment(permissionOverride)
       val permsWithoutVoiceBan = originalPerms.clear(Set(Permission.VOICE_CONNECT))
 
       APIHelper.tryRequest(
         {
-          if explicitGrant then permissionOverride.getManager.grant(Permission.VOICE_CONNECT)
-          else if permsWithoutVoiceBan.isEmpty then permissionOverride.delete()
-          else permissionOverride.getManager.clear(Permission.VOICE_CONNECT)
+          if explicitGrant then permissionOverride.getManager.nn.grant(Permission.VOICE_CONNECT).nn
+          else if permsWithoutVoiceBan.isEmpty then permissionOverride.delete().nn
+          else permissionOverride.getManager.nn.clear(Permission.VOICE_CONNECT).nn
         },
         onFail = {
           case Error(
@@ -309,27 +321,27 @@ class VoiceKick(
               ) => // Ignore (ban is no longer applicable anyway)
           case throwable =>
             APIHelper.loudFailure(
-              s"undoing voice tempban permissions in ${voiceChannel.mention} for ${member.getUser.mention}",
+              s"undoing voice tempban permissions in ${audioChannel.mention} for ${member.getUser.nn.mention}",
               logChannel
             )(throwable)
         }
       )
 
     // Remove voice ban expiry info from DB (no longer necessary)
-    voiceBanExpiries.remove(voiceBanKey(voiceChannel, member))
+    voiceBanExpiries.remove(voiceBanKey(audioChannel, member))
 
   private def voiceBanKey(
-    channel: VoiceChannel,
+    channel: AudioChannel,
     member: Member
-  ): (ID[Guild], ID[VoiceChannel], ID[User]) =
-    (channel.getGuild.id, channel.id, member.getUser.id)
+  ): (ID[Guild], ID[AudioChannel], ID[User]) =
+    (channel.getGuild.nn.id, channel.id, member.getUser.nn.id)
 
   def addTemporaryVoiceBan(
-    voiceChannel: VoiceChannel,
+    audioChannel: AudioChannel,
     member: Member,
     logChannel: MessageReceiver
   ): Unit =
-    val originalPerms = voiceChannel.getPermissionAttachment(member)
+    val originalPerms = audioChannel.getPermissionAttachment(member)
 
     if originalPerms.get(Permission.VOICE_CONNECT) != PermissionValue.Deny then
       val permsWithVoiceBan = originalPerms.deny(Set(Permission.VOICE_CONNECT))
@@ -339,13 +351,13 @@ class VoiceKick(
           // XXX Hack: JDA seems to consistently get the wrong idea about permissions here for some reason.
           Manager.setPermissionChecksEnabled(false)
           try
-            voiceChannel.applyPerms(
+            audioChannel.applyPerms(
               PermissionCollection(member.asPermissionHolder -> permsWithVoiceBan)
             )
           finally Manager.setPermissionChecksEnabled(true)
         },
         onFail = APIHelper.loudFailure(
-          s"adding voice tempban permissions to ${voiceChannel.mention} for ${member.getUser.mention}",
+          s"adding voice tempban permissions to ${audioChannel.mention} for ${member.getUser.nn.mention}",
           logChannel
         )
       )
@@ -356,43 +368,45 @@ class VoiceKick(
       for _ <- futureReq do
         // Take note (in DB) of when the voice ban should expire
         val expiryTimestamp = System.currentTimeMillis() + (10 minutes).toMillis
-        voiceBanExpiries(voiceBanKey(voiceChannel, member)) =
+        voiceBanExpiries(voiceBanKey(audioChannel, member)) =
           VoiceBanExpiry(expiryTimestamp, explicitGrant)
 
         // Expire voice ban using scheduler
         summon[Scheduler].schedule(10 minutes) {
-          removeTemporaryVoiceBan(voiceChannel, member, logChannel, explicitGrant)
+          removeTemporaryVoiceBan(audioChannel, member, logChannel, explicitGrant)
         }
 
   def kickVoiceMember(
-    voiceChannel: VoiceChannel,
+    audioChannel: AudioChannel,
     member: Member,
     logChannel: MessageChannel
   ): Unit =
     for
       voiceState <- member.getVoiceState.?
-      if voiceState.getChannel == voiceChannel
+      if voiceState.getChannel == audioChannel
     do
       APIHelper.tryRequest(
-        voiceChannel.getGuild.kickVoiceMember(member),
+        audioChannel.getGuild.nn.kickVoiceMember(member).nn,
         onFail = APIHelper.loudFailure(
-          s"kicking ${member.getUser.mention} from voice chat",
+          s"kicking ${member.getUser.nn.mention} from voice chat",
           MessageReceiver(logChannel)
         )
       )
 
   private def completeKick(
-    channel: TextChannel,
+    channel: GuildMessageChannel,
     kickState: KickState,
     myMessage: ID[Message],
     deferredEdit: Option[Future[InteractionHook]]
   ): Unit =
+    val guild = channel.getGuild.nn
     val maybeResults = for
       member <- kickState.target
-        .find(channel.getGuild)
+        .find(guild)
         .toRight("Could not find the member to kick them from the channel")
-      voiceChannel <- channel.getGuild
-        .findVoiceChannel(kickState.channel)
+      voiceChannel <- guild
+        // TODO: support stage channels?
+        .findVoiceChannel(kickState.channel.asInstanceOf[ID[VoiceChannel]])
         .toRight("Could not find the voice channel to kick from")
     yield (member, voiceChannel)
 
@@ -403,34 +417,34 @@ class VoiceKick(
         kickVoiceMember(voiceChannel, member, channel)
         updateVoteKickMessage(channel, kickState, myMessage, deferredEdit)
         channel ! BotMessages.plain(
-          s"The vote has passed and ${member.getUser.mention} will be kicked from ${voiceChannel.mention}"
+          s"The vote has passed and ${member.getUser.nn.mention} will be kicked from ${voiceChannel.mention}"
         )
 
   def updateVoteKickMessage(
-    channel: TextChannel,
+    channel: GuildMessageChannel,
     kickState: KickState,
     myMessage: ID[Message],
     deferredEdit: Option[Future[InteractionHook]]
   ): Unit =
-    def tryEdit[A <: RestAction[Message]](editAction: String => A, clearActionRows: A => A) =
+    def tryEdit[T <: MessageEditRequest[T] & RestAction[?]](editAction: String => T) =
       APIHelper.tryRequest(
         {
-          val msg = editAction(makeMessageContents(kickState, channel.getGuild))
-          if kickState.ended then clearActionRows(msg) else msg
+          val msg = editAction(makeMessageContents(kickState, channel.getGuild.nn))
+          if kickState.ended then msg.setComponents().nn else msg
         },
         onFail = APIHelper.failure("editing voice kick results")
       )
 
     deferredEdit match
       case Some(deferredEdit) =>
-        deferredEdit.flatMap(deferredEdit => tryEdit(deferredEdit.editOriginal, _.setActionRows()))
+        deferredEdit.flatMap(deferredEdit => tryEdit(m => deferredEdit.editOriginal(m).nn))
       case None =>
-        tryEdit(channel.editMessageById(myMessage.value, _), _.setActionRows())
+        tryEdit(m => channel.editMessageById(myMessage.value, m).nn)
 
     if kickState.ended then removePendingKick(channel, myMessage)
 
   private def updateKickVote(
-    channel: TextChannel,
+    channel: GuildMessageChannel,
     myMessage: ID[Message],
     voteType: VoteType,
     member: Member,
@@ -460,7 +474,7 @@ class VoiceKick(
       })
     }
 
-  private def removePendingKick(channel: TextChannel, myMessage: ID[Message]) =
+  private def removePendingKick(channel: MessageChannel, myMessage: ID[Message]) =
     pendingKicks.synchronized {
       pendingKicks.remove(myMessage).tap { kickStateMaybe =>
         for kickState <- kickStateMaybe; member <- kickState.votes.keys do
@@ -469,7 +483,7 @@ class VoiceKick(
     }
 
   private def afterUpdateKickState(
-    channel: TextChannel,
+    channel: GuildMessageChannel,
     myMessage: ID[Message],
     deferredEdit: Option[Future[InteractionHook]],
     kickState: KickState
@@ -479,7 +493,7 @@ class VoiceKick(
       case _                   => updateVoteKickMessage(channel, kickState, myMessage, deferredEdit)
 
   private def removeUserFromVote(member: Member): Unit = Future {
-    given JDA = member.getJDA
+    given JDA = member.getJDA.nn
     blocking {
       pendingKicks.synchronized {
         val oldMessages = kickMessagesByMember(member.id)
@@ -494,22 +508,25 @@ class VoiceKick(
         oldMessages.view.map(tup => (tup, pendingKicks(tup._2))).toSeq
       }
     }.foreach { case ((textChannelId, messageId), kickState) =>
-      textChannelId.find.foreach { textChannel =>
-        afterUpdateKickState(textChannel, messageId, None, kickState)
+      textChannelId.find.foreach {
+        case textChannel: GuildMessageChannel =>
+          afterUpdateKickState(textChannel, messageId, None, kickState)
+
       }
     }
   }
 
   override def onEvent(event: GenericEvent): Unit = event match
     case _: ReadyEvent =>
-      given JDA = event.getJDA
+      given JDA = event.getJDA.nn
       for
         expiries <- voiceBanExpiries.items
         ((guildId, channelId, userId), VoiceBanExpiry(expiryTime, explicitGrant)) <- expiries
       do
         val scheduledUnban = for
           guild <- guildId.find
-          channel <- channelId.find
+          // TODO: support stage channels?
+          channel <- channelId.asInstanceOf[ID[VoiceChannel]].find
           user <- userId.find
           member <- guild.findMember(user)
         yield summon[Scheduler].schedule(
@@ -521,21 +538,28 @@ class VoiceKick(
         if scheduledUnban.isEmpty then
           // One of the entities (e.g. voice channel) no longer exists, so not applicable
           voiceBanExpiries.remove((guildId, channelId, userId))
-    case NonBotReact(React.Text(emoji), msgId, channel: TextChannel, user) =>
+    case NonBotReact(React.Text(emoji), msgId, channel: GuildMessageChannel, user) =>
       for
         vote <- getEmojiMeaning(emoji)
-        member <- channel.getGuild.getMember(user).?
+        member <- channel.getGuild.nn.getMember(user).?
       do updateKickVote(channel, msgId, vote, member, None)
     // TODO: Handle deletion of message
-    case ev: ButtonClickEvent =>
+    case ev: ButtonInteractionEvent =>
       for
-        vote <- getButtonMeaning(ev.getComponentId)
+        vote <- getButtonMeaning(ev.getComponentId.nn)
         member <- ev.getMember.?
-        channel = ev.getTextChannel
+        channel = ev.getChannel.nn
         msgId = ev.messageId
       do
-        val edit = ev.deferEdit().queueFuture()
-        updateKickVote(channel, msgId, vote, member, Some(edit))
+        channel match
+          case channel: GuildMessageChannel =>
+            val edit = ev.deferEdit().nn.queueFuture()
+            updateKickVote(channel, msgId, vote, member, Some(edit))
+          case _ =>
+            APIHelper.tryRequest(
+              ev.reply("This command can only be used within a guild").nn,
+              onFail = APIHelper.failure("replying with error to button click")
+            )
     case GuildVoiceUpdate(member, Some(_), _) =>
       removeUserFromVote(member)
     case _ =>

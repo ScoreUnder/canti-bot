@@ -1,10 +1,13 @@
 package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.*
-import net.dv8tion.jda.api.requests.restaction.MessageAction
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.{MessageChannel, GuildChannel}
+import net.dv8tion.jda.api.requests.restaction.MessageEditAction
+import net.dv8tion.jda.api.utils.messages.{MessageRequest, MessageEditBuilder}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper
-import score.discord.canti.wrappers.jda.MessageConversions.MessageFromX
+import score.discord.canti.wrappers.jda.MessageConversions.MessageCreateFromX
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 import score.discord.canti.wrappers.jda.RichSnowflake.*
 
@@ -15,15 +18,6 @@ import scala.language.postfixOps
 
 object RichMessageChannel:
   extension (channel: MessageChannel)
-    /** The name of this channel */
-    inline def name: String = channel.getName
-
-    /** A debug-friendly plaintext representation of this channel object */
-    def unambiguousString = s"MessageChannel(${channel.rawId} /* ${channel.name} */)"
-
-    /** The mention string for this channel */
-    def mention = s"<#${channel.rawId}>"
-
     /** Send a message to this channel.
       *
       * @param message
@@ -31,8 +25,8 @@ object RichMessageChannel:
       * @return
       *   the resulting Message, wrapped in Future
       */
-    def !(message: MessageFromX): Future[Message] =
-      channel.sendMessage(message.toMessage).queueFuture()
+    def !(message: MessageCreateFromX): Future[Message] =
+      channel.sendMessage(message.toMessageCreate).nn.queueFuture()
 
     /** Send a message to this channel, tracking it as owned by a specific user.
       *
@@ -45,7 +39,7 @@ object RichMessageChannel:
       * @return
       *   the resulting Message, wrapped in Future
       */
-    def sendOwned(message: MessageFromX, owner: User)(using
+    def sendOwned(message: MessageCreateFromX, owner: User)(using
       messageOwnership: MessageOwnership
     ): Future[Message] =
       val future = channel ! message
@@ -53,31 +47,28 @@ object RichMessageChannel:
       future
 
     /** A list of all users in this channel */
-    def participants: Seq[User] = channel match
-      case guildChannel: GuildChannel =>
-        guildChannel.getMembers.iterator().nn.asScala.map(_.getUser).toSeq
-      case privateChannel: PrivateChannel =>
-        List(channel.getJDA.getSelfUser, privateChannel.getUser)
+    def participants: Seq[User] = ??? // TODO: this approach is discouraged by Discord
 
     def findMessage(messageId: ID[Message], logFail: Boolean = false): Future[Message] =
-      val req = APIHelper.tryRequest(channel.retrieveMessageById(messageId.value))
+      val req = APIHelper.tryRequest(channel.retrieveMessageById(messageId.value).nn)
       if logFail then req.failed.foreach(APIHelper.failure("retrieving a message"))
       req
 
     def editMessage(
       messageId: ID[Message],
       newMessage: Message,
-      transform: MessageAction => MessageAction = identity
+      transform: MessageEditAction => MessageEditAction = identity,
     ): Future[Message] =
+      val messageEdit = MessageEditBuilder.fromMessage(newMessage).nn
       APIHelper.tryRequest(
-        transform(channel.editMessageById(messageId.value, newMessage)),
+        transform(channel.editMessageById(messageId.value, messageEdit.build.nn).nn),
         onFail = APIHelper.failure("editing a message")
       )
 
     def deleteMessage(messageId: ID[Message]): Future[Unit] =
       APIHelper
         .tryRequest(
-          channel.deleteMessageById(messageId.value),
+          channel.deleteMessageById(messageId.value).nn,
           onFail = APIHelper.failure("deleting a message")
         )
         .map(_ => ())(using ExecutionContext.parasitic)

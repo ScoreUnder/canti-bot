@@ -1,9 +1,10 @@
 package score.discord.canti.wrappers.jda
 
-import net.dv8tion.jda.api.entities.{Guild, Message, TextChannel}
+import net.dv8tion.jda.api.entities.{Guild, Message}
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.functionality.ownership.MessageOwnership
-import score.discord.canti.wrappers.jda.MessageConversions.MessageFromX
+import score.discord.canti.wrappers.jda.MessageConversions.MessageCreateFromX
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 import score.discord.canti.wrappers.jda.RichSnowflake.id
 
@@ -25,21 +26,23 @@ object RichMessage:
       * @return
       *   the new Message, wrapped in Future
       */
-    def !(contents: MessageFromX)(using MessageOwnership, ReplyCache): Future[Message] =
-      me.reply(contents.toMessage).mentionRepliedUser(false).queueFuture().tap(registerReply)
+    def !(contents: MessageCreateFromX)(using MessageOwnership, ReplyCache): Future[Message] =
+      me.reply(contents.toMessageCreate).nn
+        .mentionRepliedUser(false).nn
+        .queueFuture().tap(registerReply)
 
     def registerReply(
       future: Future[Message]
     )(using mo: MessageOwnership, replyCache: ReplyCache): Future[Unit] =
       future.map { message =>
-        mo(message) = me.getAuthor
+        mo(message) = me.getAuthor.nn
         replyCache += me.id -> message.id
       }
 
     def guild: Option[Guild] =
-      if me.isFromGuild then Some(me.getGuild)
+      if me.isFromGuild then Some(me.getGuild.nn)
       else None
 
-    def textChannel: Option[TextChannel] =
-      if me.isFromGuild then Some(me.getTextChannel)
+    def guildMessageChannel: Option[GuildMessageChannel] =
+      if me.isFromGuild then Some(me.getGuildChannel.nn)
       else None

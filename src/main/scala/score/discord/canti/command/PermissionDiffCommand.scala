@@ -2,7 +2,8 @@ package score.discord.canti.command
 
 import cps.*
 import net.dv8tion.jda.api.{EmbedBuilder, JDA, Permission}
-import net.dv8tion.jda.api.entities.{GuildChannel, PermissionOverride}
+import net.dv8tion.jda.api.entities.PermissionOverride
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.discord.permissions.*
 import score.discord.canti.util.BotMessages
@@ -104,7 +105,8 @@ class PermissionDiffCommand extends GenericCommand:
 
   private def compareChannels(baseChannel: GuildChannel, compareChannel: GuildChannel) =
     def permMap(ch: GuildChannel) =
-      ch.getPermissionOverrides().asScala.view.map(p => PermissionHolder(p) -> p).toMap
+      ch.getPermissionContainer.nn.getPermissionOverrides.nn.asScala.view
+        .map(p => PermissionHolder(p) -> p).toMap
     val perms1 = permMap(baseChannel)
     val perms2 = permMap(compareChannel)
 

@@ -30,22 +30,22 @@ class BotInfoCommand(owner: ID[User]) extends GenericCommand:
     async {
       val jda = ctx.jda
       val allGuilds = jda.guilds
-      val topGuilds = allGuilds.sortBy(-_.getMemberCache.size).take(10).map { guild =>
-        val memberCount = guild.getMemberCache.size
-        val owner = guild.getOwner.?.map(_.getUser).fold(s"unknown user ${guild.getOwnerIdLong}")(
+      val topGuilds = allGuilds.sortBy(-_.getMemberCache.nn.size).take(10).map { guild =>
+        val memberCount = guild.getMemberCache.nn.size
+        val owner = guild.getOwner.?.map(_.getUser.nn).fold(s"unknown user ${guild.getOwnerIdLong}")(
           user => s"${user.name}#${user.discriminator}"
         )
         s"${guild.getName} ($memberCount users; owner: $owner)"
       }
-      val me = await(jda.retrieveApplicationInfo.queueFuture())
+      val me = await(jda.retrieveApplicationInfo.nn.queueFuture())
       await(
         ctx.invoker.reply(
           BotMessages
             .plain("Some basic bot info")
-            .addField("Owner", s"<@$owner>", true)
-            .addField("Servers", s"${allGuilds.size}", true)
-            .addField("Top servers", topGuilds.mkString("\n"), false)
-            .setThumbnail(me.getIconUrl)
+            .addField("Owner", s"<@$owner>", true).nn
+            .addField("Servers", s"${allGuilds.size}", true).nn
+            .addField("Top servers", topGuilds.mkString("\n"), false).nn
+            .setThumbnail(me.getIconUrl).nn
         )
       )
     }

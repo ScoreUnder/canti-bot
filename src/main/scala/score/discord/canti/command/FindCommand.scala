@@ -3,13 +3,14 @@ package score.discord.canti.command
 import cps.*
 import cps.monads.FutureAsyncMonad
 import com.google.re2j.{Pattern as RE2JPattern, PatternSyntaxException}
-import net.dv8tion.jda.api.entities.{Guild, GuildChannel, Message, MessageChannel}
+import net.dv8tion.jda.api.entities.{Guild, Message}
+import net.dv8tion.jda.api.entities.channel.middleman.{GuildChannel, MessageChannel}
 import net.dv8tion.jda.api.events.GenericEvent
-import net.dv8tion.jda.api.events.interaction.ButtonClickEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import net.dv8tion.jda.api.interactions.components.{ActionRow, Button}
-import net.dv8tion.jda.api.requests.restaction.MessageAction
-import net.dv8tion.jda.api.{EmbedBuilder, JDA, MessageBuilder}
+import net.dv8tion.jda.api.interactions.components.ActionRow
+import net.dv8tion.jda.api.interactions.components.buttons.Button
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder
+import net.dv8tion.jda.api.{EmbedBuilder, JDA}
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.command.api.{ArgSpec, ArgType, CommandInvocation, CommandPermissions}
 import score.discord.canti.functionality.ownership.MessageOwnership
@@ -32,6 +33,9 @@ import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
 import scala.util.Try
 import scala.util.chaining.scalaUtilChainingOps
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
+import scala.collection.mutable.Buffer
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 
 class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCache)
     extends GenericCommand:
@@ -64,7 +68,7 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
 
   override def execute(ctx: CommandInvocation): Future[RetrievableMessage] =
     async {
-      val guild = ctx.invoker.member.toOption.map(_.getGuild)
+      val guild = ctx.invoker.member.toOption.map(_.getGuild.nn)
       val reply = makeSearchReply(ctx.invoker.channel, guild, ctx.args(arg))
       await(ctx.invoker.reply(reply))
     }
@@ -73,7 +77,7 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
     channel: Option[MessageChannel],
     guild: Option[Guild],
     searchTerm: String
-  ): Message =
+  ): MessageCreateData =
     val maxResults = 10
     val searchTermSanitised = MessageUtils.sanitiseCode(searchTerm)
     Try(RE2JPattern.compile(searchTerm, RE2JPattern.CASE_INSENSITIVE).nn)
@@ -85,7 +89,7 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
           .toVector
 
         if results.isEmpty then
-          BotMessages.plain(s"No results found for ``$searchTermSanitised``").toMessage
+          BotMessages.plain(s"No results found for ``$searchTermSanitised``").toMessageCreate
         else
           val header =
             if results.size > maxResults then
@@ -103,21 +107,22 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
               .map(_._2)
               .zipWithIndex
               .map { case (id, index) =>
-                Button.secondary(ReactListener.ACTION_PREFIX + id, index.toString)
+                Button.secondary(ReactListener.ACTION_PREFIX + id, index.toString).nn
               }
               .grouped(5)
               .map(buttons => ActionRow.of(buttons.asJava))
               .toSeq
 
-          MessageBuilder(
+          MessageCreateBuilder().setEmbeds(
             BotMessages
               .okay(s"$header\n${results take maxResults map (_._1) mkString "\n"}$footer")
-          ).setActionRows(buttonRows*).build
+              .build
+          ).nn.setComponents(buttonRows*).nn.build.nn
       }
       .recover { case e: PatternSyntaxException =>
         BotMessages
           .error(s"Could not parse regex for $name command: ${e.getDescription}")
-          .toMessage
+          .toMessageCreate
       }
       .get
   end makeSearchReply
@@ -130,30 +135,30 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
     inline def containsSearchTerm(haystack: String) =
       searchPattern.matcher(haystack).nn.find()
 
-    var results: Seq[(String, String)] = Vector.empty
+    var results: Buffer[(String, String)] = Buffer.empty
     guild match
       case Some(guild) =>
-        results ++= guild.getRoles.asScala.view
+        results ++= guild.getRoles.nn.asScala.view
           .filter(r => containsSearchTerm(s"@${r.getName}"))
           .map(r =>
             (
               s"**Role** ${r.getAsMention} (${MessageUtils.sanitise(s"@${r.getName}")}): `${r.getId}`",
-              r.getId
+              r.getId.nn
             )
           )
-        results ++= guild.getEmotes.asScala.view
+        results ++= guild.getEmojis.nn.asScala.view
           .filter(e => containsSearchTerm(s":${e.getName}:"))
-          .map(e => (s"**Emote** ${e.getAsMention} (:${e.getName}:): `${e.getId}`", e.getId))
-        results ++= guild.getMembers.asScala.view
+          .map(e => (s"**Emote** ${e.getAsMention} (:${e.getName}:): `${e.getId}`", e.getId.nn))
+        results ++= guild.getMembers.nn.asScala.view
           .filter(m =>
-            containsSearchTerm(s"@${m.getUser.name}#${m.getUser.discriminator}") ||
+            containsSearchTerm(s"@${m.getUser.nn.name}#${m.getUser.nn.discriminator}") ||
               m.getNickname.?.exists(n => containsSearchTerm(s"@$n"))
           )
           .map(m =>
-            val u = m.getUser
+            val u = m.getUser.nn
             val nick = m.getNickname.?.map(MessageUtils.sanitise)
               .fold("")(name => s" (aka $name)")
-            (s"**User** ${u.mentionWithName}$nick: `${u.getId}`", u.getId)
+            (s"**User** ${u.mentionWithName}$nick: `${u.getId}`", u.getId.nn)
           )
       case None =>
         // Private chat
@@ -161,11 +166,11 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
           case Some(channel) =>
             results ++= channel.participants
               .filter(u => containsSearchTerm(s"@${u.name}#${u.discriminator}"))
-              .map(u => (s"**User** ${u.mentionWithName}: `${u.getId}`", u.getId))
+              .map(u => (s"**User** ${u.mentionWithName}: `${u.getId}`", u.getId.nn))
           case None =>
             logger.warn("Not sure where I am (running find command outside of channel and guild)")
             results ++= Vector.fill(10)(("Where am I?", "???")) // Error or creepypasta?
-    results
+    results.toSeq
 
   object ReactListener extends EventListener:
     val ICONS =
@@ -182,7 +187,7 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
     ): Future[Option[(Message, String)]] =
       for msg <- channel.findMessage(myMsgId, logFail = true)
       yield (for
-        embed <- msg.getEmbeds.asScala
+        embed <- msg.getEmbeds.nn.asScala
         description = embed.getDescription ?? ""
         if description.contains(SEARCHABLE_MESSAGE_TAG)
         case LINE_REGEX(`idLabel`, selected) <- description.splitnn("\n")
@@ -190,7 +195,7 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
 
     override def onEvent(event: GenericEvent): Unit = event match
       case NonBotReact(React.Text(react), msgId, channel, user) =>
-        given JDA = event.getJDA
+        given JDA = event.getJDA.nn
         if ICONS contains react then
           for
             case Some(`user`) <- messageOwnership(msgId)
@@ -199,12 +204,12 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
             (msg, selected) = msgId
           do
             APIHelper.tryRequest(
-              msg.editMessage(selected),
+              msg.editMessage(selected).nn,
               onFail = APIHelper.failure("editing message for reaction")
             )
-      case ev: ButtonClickEvent =>
-        given JDA = event.getJDA
-        val rawId = ev.getComponentId
+      case ev: ButtonInteractionEvent =>
+        given JDA = event.getJDA.nn
+        val rawId = ev.getComponentId.nn
         if rawId.startsWith(ACTION_PREFIX) then
           val id = rawId.drop(ACTION_PREFIX.length)
           for
@@ -215,8 +220,8 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
           do
             val user = ev.getUser
             owner match
-              case Some(`user`) => ev.editMessage(id).queueFuture()
-              case _            => ev.reply(id).setEphemeral(true).queueFuture()
+              case Some(`user`) => ev.editMessage(id).nn.queueFuture()
+              case _            => ev.reply(id).nn.setEphemeral(true).nn.queueFuture()
       case _ =>
   end ReactListener
 end FindCommand

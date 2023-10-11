@@ -1,6 +1,6 @@
 package score.discord.canti.wrappers.jda
 
-import net.dv8tion.jda.api.entities.GuildChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import net.dv8tion.jda.api.requests.restaction.ChannelAction
 import score.discord.canti.discord.permissions.{PermissionCollection, PermissionHolder}
 import score.discord.canti.wrappers.NullWrappers.*

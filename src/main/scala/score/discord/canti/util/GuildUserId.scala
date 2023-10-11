@@ -8,4 +8,6 @@ import score.discord.canti.wrappers.jda.RichSnowflake.id
 case class GuildUserId(guild: ID[Guild], user: ID[User])
 
 object GuildUserId:
-  def apply(member: Member): GuildUserId = GuildUserId(member.getGuild.id, member.getUser.id)
+  def apply(member: Member): GuildUserId =
+    import scala.language.unsafeNulls  // getGuild/getUser are both non-null anyway
+    GuildUserId(member.getGuild.id, member.getUser.id)

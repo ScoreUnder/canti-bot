@@ -2,7 +2,8 @@ package score.discord.canti.command.api
 
 import net.dv8tion.jda.api.interactions.commands.CommandInteraction
 import net.dv8tion.jda.api.interactions.InteractionHook
-import net.dv8tion.jda.api.entities.{Member, Message, MessageChannel, User}
+import net.dv8tion.jda.api.entities.{Member, Message, User}
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
 import net.dv8tion.jda.api.requests.ErrorResponse.{MISSING_PERMISSIONS, UNKNOWN_MESSAGE}
 import score.discord.canti.collections.ReplyCache
 import score.discord.canti.command.api.TypingManager
@@ -21,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
+import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction
 
 trait CommandInvoker:
   def user: User = getUser()
@@ -45,7 +47,7 @@ trait CommandInvoker:
   final def reply(message: OutgoingMessage): Future[RetrievableMessage] =
     asMessageReceiver.sendMessage(message)
 
-  final def reply(message: MessageFromX): Future[RetrievableMessage] =
+  final def reply(message: MessageCreateFromX): Future[RetrievableMessage] =
     asMessageReceiver.sendMessage(message)
 
 private abstract class TypingCommandInvoker(channel: MessageChannel) extends CommandInvoker:
@@ -55,8 +57,10 @@ private abstract class TypingCommandInvoker(channel: MessageChannel) extends Com
     typingManager.sendTypingNotification()
 
 final case class MessageInvoker(origin: Message)(using MessageOwnership, ReplyCache)
-    extends TypingCommandInvoker(origin.getChannel):
-  export origin.{getAuthor as getUser, getChannel, getMember}
+    extends TypingCommandInvoker(origin.getChannel.nn):
+  export origin.{getChannel, getMember}
+
+  override protected def getUser(): User = origin.getAuthor.nn
 
   override def originatingMessage = Some(origin)
 
@@ -65,15 +69,17 @@ final case class MessageInvoker(origin: Message)(using MessageOwnership, ReplyCa
       MessageReceiver(origin).sendMessage(message)
     }
 
-final case class SlashCommandInvoker(origin: CommandInteraction)(using MessageOwnership, ReplyCache)
+final case class SlashCommandInvoker(origin: SlashCommandInteraction)(using MessageOwnership, ReplyCache)
     extends CommandInvoker:
-  export origin.{getChannel, getMember, getUser}
+  export origin.{getChannel, getMember}
+
+  override protected def getUser(): User = origin.getUser.nn
 
   private var deferredReply: Option[Future[InteractionHook]] = None
 
   override def replyLater(transientIfPossible: Boolean)(using Scheduler): Future[Unit] =
     synchronized {
-      val future = origin.deferReply(transientIfPossible).queueFuture()
+      val future = origin.deferReply(transientIfPossible).nn.queueFuture()
       deferredReply = Some(future)
       future.map(_ => ())(using ExecutionContext.parasitic)
     }
@@ -94,8 +100,10 @@ final case class SlashCommandInvoker(origin: CommandInteraction)(using MessageOw
 final case class EditedMessageInvoker(origin: Message, myMessage: ID[Message])(using
   MessageOwnership,
   ReplyCache
-) extends TypingCommandInvoker(origin.getChannel):
-  export origin.{getAuthor as getUser, getChannel, getMember}
+) extends TypingCommandInvoker(origin.getChannel.nn):
+  export origin.{getChannel, getMember}
+
+  override protected def getUser(): User = origin.getAuthor.nn
 
   override def originatingMessage = Some(origin)
 
@@ -106,7 +114,7 @@ final case class EditedMessageInvoker(origin: Message, myMessage: ID[Message])(u
       if replied.getAndSet(true) then MessageReceiver(origin).sendMessage(message)
       else
         MessageReceiver
-          .intoEdit(origin.getChannel, myMessage)
+          .intoEdit(origin.getChannel.nn, myMessage)
           .sendMessage(message)
           .recoverWith { case Error(UNKNOWN_MESSAGE) =>
             reply(message)
