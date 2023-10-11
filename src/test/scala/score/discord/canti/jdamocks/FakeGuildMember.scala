@@ -4,21 +4,28 @@ import java.awt.Color
 import java.time.OffsetDateTime
 import java.util
 
-import net.dv8tion.jda.api.Permission.*
 import net.dv8tion.jda.api.{JDA, OnlineStatus, Permission}
 import net.dv8tion.jda.api.entities.*
 
 import scala.jdk.CollectionConverters.*
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.attribute.IPermissionContainer
+import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji
+import net.dv8tion.jda.api.entities.channel.unions.DefaultGuildChannelUnion
 
 class FakeGuildMember(guild: Guild, user: User) extends Member:
   val myPerms = Vector.empty[Permission]
-  val myChanPerms = Vector(MESSAGE_READ, MESSAGE_WRITE, VIEW_CHANNEL)
+  val myChanPerms =
+    import net.dv8tion.jda.api.Permission.*
+    Vector(MESSAGE_SEND, VIEW_CHANNEL, MESSAGE_HISTORY)
 
   override def getUser: User = user
 
   override def getGuild: Guild = guild
 
-  override def getJDA: JDA = guild.getJDA
+  override def getJDA: JDA = guild.getJDA.nn
 
   override def getTimeJoined: OffsetDateTime = ???
 
@@ -45,11 +52,9 @@ class FakeGuildMember(guild: Guild, user: User) extends Member:
 
   override def canInteract(role: Role): Boolean = ???
 
-  override def canInteract(emote: Emote): Boolean = ???
-
   override def isOwner: Boolean = ???
 
-  override def getDefaultChannel: TextChannel = ???
+  override def getDefaultChannel: DefaultGuildChannelUnion = ???
 
   override def getAsMention: String = ???
 
@@ -85,9 +90,23 @@ class FakeGuildMember(guild: Guild, user: User) extends Member:
 
   override def isPending: Boolean = ???
 
-  override def canSync(targetChannel: GuildChannel, syncSource: GuildChannel): Boolean = ???
-
-  override def canSync(channel: GuildChannel): Boolean = ???
-
   override def getAvatarId(): String | Null = ???
+
+  override def getTimeOutEnd(): OffsetDateTime | Null = ???
+
+  override def canInteract(emoji: RichCustomEmoji | Null): Boolean = ???
+
+  override def getDefaultAvatarId(): String | Null = ???
+
+  override def isBoosting(): Boolean = ???
+
+  override def canSync(channel: IPermissionContainer | Null): Boolean = ???
+
+  override def canSync(
+    targetChannel: IPermissionContainer | Null,
+    syncSource: IPermissionContainer | Null
+  ): Boolean = ???
+
+  override def getFlagsRaw(): Int = ???
+
 end FakeGuildMember

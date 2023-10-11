@@ -5,91 +5,110 @@ import java.util
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function.{BiConsumer, BooleanSupplier, Consumer}
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{IMentionable, Message, MessageChannel, MessageEmbed}
+import net.dv8tion.jda.api.entities.{IMentionable, Message, MessageEmbed}
 import net.dv8tion.jda.api.interactions.components.ActionRow
 import net.dv8tion.jda.api.requests.RestAction
-import net.dv8tion.jda.api.requests.restaction.MessageAction
-import net.dv8tion.jda.api.utils.AttachmentOption
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel
+import net.dv8tion.jda.api.interactions.components.LayoutComponent
+import net.dv8tion.jda.api.entities.Message.MentionType
+import net.dv8tion.jda.api.entities.sticker.StickerSnowflake
+import net.dv8tion.jda.api.utils.FileUpload
+import java.util as ju
 
-class FakeMessageAction(message: Message) extends MessageAction:
+class FakeMessageAction(message: Message) extends MessageCreateAction:
   override def queue(success: Consumer[? >: Message], failure: Consumer[? >: Throwable]): Unit =
     success.accept(message)
 
   override def complete(shouldQueue: Boolean): Message = message
 
-  override def setCheck(checks: BooleanSupplier): MessageAction = ???
-
-  override def getChannel: MessageChannel = ???
-
-  override def isEmpty: Boolean = ???
-
-  override def isEdit: Boolean = ???
-
-  override def apply(message: Message): MessageAction = ???
-
-  override def tts(isTTS: Boolean): MessageAction = ???
-
-  override def reset(): MessageAction = ???
-
-  override def nonce(nonce: String): MessageAction = ???
-
-  override def content(content: String): MessageAction = ???
-
-  override def embed(embed: MessageEmbed): MessageAction = ???
-
-  override def append(csq: CharSequence, start: Int, end: Int): MessageAction = ???
-
-  override def append(c: Char): MessageAction = ???
-
-  override def addFile(
-    data: InputStream,
-    name: String,
-    options: Array[? <: AttachmentOption]
-  ): MessageAction = ???
-
-  override def addFile(
-    file: File,
-    name: String,
-    options: Array[? <: AttachmentOption]
-  ): MessageAction = ???
-
-  override def clearFiles(): MessageAction = ???
-
-  override def clearFiles(finalizer: BiConsumer[String, InputStream]): MessageAction = ???
-
-  override def clearFiles(finalizer: Consumer[InputStream]): MessageAction = ???
-
-  override def `override`(bool: Boolean): MessageAction = ???
+  override def setCheck(checks: BooleanSupplier): this.type = ???
 
   override def getJDA: JDA = ???
 
   override def submit(shouldQueue: Boolean): CompletableFuture[Message] = ???
 
-  override def deadline(timestamp: Long): MessageAction = ???
+  override def deadline(timestamp: Long): this.type = ???
 
-  override def timeout(timeout: Long, unit: TimeUnit): MessageAction = ???
+  override def timeout(timeout: Long, unit: TimeUnit): this.type = ???
 
-  override def allowedMentions(
+  override def setAllowedMentions(
     allowedMentions: util.Collection[Message.MentionType]
-  ): MessageAction =
+  ): this.type =
     if allowedMentions.isEmpty then this else ???
 
-  override def mention(mentions: Array[? <: IMentionable]): MessageAction =
+  override def mention(mentions: Array[? <: IMentionable]): this.type =
     if mentions.isEmpty then this else ???
 
-  override def mentionUsers(userIds: Array[? <: String]): MessageAction = ???
+  override def mentionUsers(userIds: Array[? <: String]): this.type = ???
 
-  override def mentionRoles(roleIds: Array[? <: String]): MessageAction = ???
+  override def mentionRoles(roleIds: Array[? <: String]): this.type = ???
 
-  override def referenceById(messageId: Long): MessageAction = this
+  override def mentionRepliedUser(mention: Boolean): this.type =
+    this // Not tracking replies (yet)
 
-  override def mentionRepliedUser(mention: Boolean): MessageAction = this
+  override def failOnInvalidReply(fail: Boolean): this.type = ???
 
-  override def failOnInvalidReply(fail: Boolean): MessageAction = ???
+  override def setEmbeds(embeds: util.Collection[? <: MessageEmbed]): this.type = ???
 
-  override def retainFilesById(ids: util.Collection[String]): MessageAction = ???
+  override def mentionUsers(userIds: ju.Collection[String] | Null): MessageCreateAction | Null = ???
 
-  override def setActionRows(rows: Array[? <: ActionRow]): MessageAction = this
+  override def getAllowedMentions(): ju.EnumSet[MentionType] | Null = ???
 
-  override def setEmbeds(embeds: util.Collection[? <: MessageEmbed]): MessageAction = ???
+  override def isMentionRepliedUser(): Boolean = ???
+
+  override def setMessageReference(messageId: String | Null): MessageCreateAction | Null =
+    this // Not tracking replies (yet)
+
+  override def setFiles(files: ju.Collection[? <: FileUpload] | Null): MessageCreateAction | Null =
+    this // Not tracking files (yet)
+
+  override def getComponents(): ju.List[LayoutComponent] | Null = ???
+
+  override def getMentionedRoles(): ju.Set[String] | Null = ???
+
+  override def setNonce(nonce: String | Null): MessageCreateAction | Null = ???
+
+  override def addComponents(
+    components: ju.Collection[? <: LayoutComponent] | Null
+  ): MessageCreateAction | Null = ???
+
+  override def addEmbeds(embeds: ju.Collection[? <: MessageEmbed] | Null): MessageCreateAction |
+    Null = ???
+
+  override def getContent(): String | Null = ???
+
+  override def setContent(content: String | Null): MessageCreateAction | Null = ???
+
+  override def setSuppressedNotifications(suppressed: Boolean): MessageCreateAction | Null = ???
+
+  override def getMentionedUsers(): ju.Set[String] | Null = ???
+
+  override def setTTS(tts: Boolean): MessageCreateAction | Null = ???
+
+  override def isSuppressEmbeds(): Boolean = ???
+
+  override def addFiles(files: ju.Collection[? <: FileUpload] | Null): MessageCreateAction | Null =
+    ???
+
+  override def getAttachments(): ju.List[FileUpload] | Null = ???
+
+  override def addContent(content: String | Null): MessageCreateAction | Null = ???
+
+  override def setStickers(
+    stickers: ju.Collection[? <: StickerSnowflake] | Null
+  ): MessageCreateAction | Null = ???
+
+  override def getEmbeds(): ju.List[MessageEmbed] | Null = ???
+
+  override def mentionRoles(roleIds: ju.Collection[String] | Null): MessageCreateAction | Null = ???
+
+  override def mention(mentions: ju.Collection[? <: IMentionable] | Null): MessageCreateAction |
+    Null = ???
+
+  override def setSuppressEmbeds(suppress: Boolean): MessageCreateAction | Null = ???
+
+  override def setComponents(
+    components: ju.Collection[? <: LayoutComponent] | Null
+  ): MessageCreateAction | Null = ???
 end FakeMessageAction

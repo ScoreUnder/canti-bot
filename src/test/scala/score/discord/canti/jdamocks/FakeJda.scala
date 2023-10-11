@@ -17,6 +17,27 @@ import net.dv8tion.jda.api.{AccountType, JDA, Permission}
 import okhttp3.OkHttpClient
 
 import scala.jdk.CollectionConverters.*
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.Category
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
+import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel
+import net.dv8tion.jda.api.entities.sticker.StickerPack
+import net.dv8tion.jda.api.requests.restaction.CacheRestAction
+import java.util as ju
+import net.dv8tion.jda.api.entities.channel.concrete.MediaChannel
+import net.dv8tion.jda.api.entities.sticker.StickerUnion
+import net.dv8tion.jda.api.entities.channel.concrete.StageChannel
+import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel
+import java.util.concurrent.TimeUnit
+import net.dv8tion.jda.api.entities.sticker.StickerSnowflake
+import net.dv8tion.jda.api.JDA.Status
+import scala.annotation.varargs
+import net.dv8tion.jda.api.managers.AccountManager
 
 class FakeJda extends JDA:
   private var guilds = Map.empty[Long, Guild]
@@ -60,21 +81,30 @@ class FakeJda extends JDA:
   override def getTextChannelCache: SnowflakeCacheView[TextChannel] =
     ScalaSnowflakeCacheView[GuildChannel, TextChannel](
       guilds.values
-        .flatMap(_.getTextChannels.asScala)
+        .flatMap(_.getTextChannels.nn.asScala)
         .groupBy(_.getIdLong)
         .view
         .mapValues(_.head)
         .toMap,
-      _.getName
+      _.getName.nn
     )
 
   override def getVoiceChannelCache: SnowflakeCacheView[VoiceChannel] = ???
 
   override def getPrivateChannelCache: SnowflakeCacheView[PrivateChannel] = ???
 
-  override def getEmoteCache: SnowflakeCacheView[Emote] = ???
+  override def getEmojiCache: SnowflakeCacheView[RichCustomEmoji] = ???
 
-  override def getSelfUser: SelfUser = ???
+  override val getSelfUser: SelfUser = new FakeUser(this, "Self-user", -123123L) with SelfUser:
+    override def getAllowedFileSize(): Long = ???
+
+    override def getApplicationIdLong(): Long = ???
+
+    override def isVerified(): Boolean = ???
+
+    override def isMfaEnabled(): Boolean = ???
+
+    override def getManager(): AccountManager | Null = ???
 
   override def getPresence: Presence = ???
 
@@ -98,8 +128,6 @@ class FakeJda extends JDA:
 
   override def shutdownNow(): Unit = ???
 
-  override def getAccountType: AccountType = ???
-
   override def getGatewayPing: Long = ???
 
   override def awaitStatus(status: JDA.Status): JDA = ???
@@ -113,8 +141,6 @@ class FakeJda extends JDA:
   override def getHttpClient: OkHttpClient = ???
 
   override def getDirectAudioController: DirectAudioController = ???
-
-  override def getStoreChannelCache: SnowflakeCacheView[StoreChannel] = ???
 
   override def getEventManager: IEventManager = ???
 
@@ -141,11 +167,7 @@ class FakeJda extends JDA:
 
   override def cancelRequests(): Int = ???
 
-  override def retrieveUserById(id: Long, update: Boolean): RestAction[User] = ???
-
   override def isUnavailable(guildId: Long): Boolean = ???
-
-  override def openPrivateChannelById(userId: Long): RestAction[PrivateChannel] = ???
 
   override def getCacheFlags: util.EnumSet[CacheFlag] = ???
 
@@ -165,4 +187,35 @@ class FakeJda extends JDA:
 
   override def createGuildFromTemplate(code: String, name: String, icon: Icon): RestAction[Void] =
     ???
+
+  override def getThreadChannelCache(): SnowflakeCacheView[ThreadChannel] = ???
+
+  override def getScheduledEventCache(): SnowflakeCacheView[ScheduledEvent] = ???
+
+  override def getNewsChannelCache(): SnowflakeCacheView[NewsChannel] = ???
+
+  override def getStageChannelCache(): SnowflakeCacheView[StageChannel] = ???
+
+  override def retrieveUserById(id: Long): CacheRestAction[User] = ???
+
+  override def retrieveRoleConnectionMetadata(): RestAction[ju.List[RoleConnectionMetadata]] = ???
+
+  override def awaitShutdown(duration: Long, unit: TimeUnit | Null): Boolean = ???
+
+  override def getForumChannelCache(): SnowflakeCacheView[ForumChannel] = ???
+
+  override def getMediaChannelCache(): SnowflakeCacheView[MediaChannel] = ???
+
+  override def openPrivateChannelById(userId: Long): CacheRestAction[PrivateChannel] = ???
+
+  override def retrieveSticker(sticker: StickerSnowflake | Null): RestAction[StickerUnion] = ???
+
+  override def updateRoleConnectionMetadata(
+    records: ju.Collection[? <: RoleConnectionMetadata] | Null
+  ): RestAction[ju.List[RoleConnectionMetadata]] = ???
+
+  override def retrieveCommands(withLocalizations: Boolean): RestAction[ju.List[Command]] = ???
+
+  override def retrieveNitroStickerPacks(): RestAction[ju.List[StickerPack]] = ???
+
 end FakeJda

@@ -28,7 +28,7 @@ lazy val root = (project in file("."))
   .dependsOn(common, database)
   .settings(
     name := "canti-bot",
-    scalacOptions ++= Seq("-Yexplicit-nulls", "-Ysafe-init", "-source:future"),
+    scalacOptions ++= Seq("-Yexplicit-nulls", "-Ysafe-init", "-source:future", "-explain"),
     libraryDependencies ++= Seq(
       scalaTest % Test,
       jda,

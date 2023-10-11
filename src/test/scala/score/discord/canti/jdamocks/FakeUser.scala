@@ -3,10 +3,13 @@ package score.discord.canti.jdamocks
 import java.util
 
 import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.entities.{Guild, PrivateChannel, User}
+import net.dv8tion.jda.api.entities.{Guild, User}
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
 import net.dv8tion.jda.api.requests.RestAction
+import net.dv8tion.jda.api.requests.restaction.CacheRestAction
 
-class FakeUser(jda: JDA, name: String, id: Long) extends User:
+open class FakeUser(jda: JDA, name: String, id: Long) extends User:
+
   override def getName: String = name
 
   override def getDiscriminator: String = "1234"
@@ -17,7 +20,7 @@ class FakeUser(jda: JDA, name: String, id: Long) extends User:
 
   override def hasPrivateChannel: Boolean = ???
 
-  override def openPrivateChannel(): RestAction[PrivateChannel] = ???
+  override def openPrivateChannel(): CacheRestAction[PrivateChannel] = ???
 
   override def getMutualGuilds: util.List[Guild] = ???
 
@@ -37,4 +40,6 @@ class FakeUser(jda: JDA, name: String, id: Long) extends User:
 
   override def isSystem: Boolean = ???
 
-  override def retrieveProfile(): RestAction[User.Profile] = ???
+  override def retrieveProfile(): CacheRestAction[User.Profile] = ???
+
+  override def getGlobalName(): String = ???

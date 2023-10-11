@@ -5,15 +5,39 @@ import java.util.Collections
 
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
-import net.dv8tion.jda.api.managers.ChannelManager
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.concrete.Category
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.managers.channel.concrete.TextChannelManager
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.*
+import net.dv8tion.jda.api.utils.messages.MessageCreateData
 import score.discord.canti.wrappers.jda.ID
 
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
+import net.dv8tion.jda.api.entities.channel.attribute.IPermissionContainer
+import net.dv8tion.jda.api.requests.restaction.pagination.ThreadChannelPaginationAction
+import net.dv8tion.jda.api.entities.sticker.StickerSnowflake
+import java.util as ju
+import net.dv8tion.jda.api.entities.channel.unions.GuildMessageChannelUnion
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildChannel
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel
+import net.dv8tion.jda.api.entities.channel.concrete.StageChannel
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel
+import net.dv8tion.jda.api.entities.channel.attribute.IThreadContainer
+import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel
 
-class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChannel:
+class FakeTextChannel(guild: FakeGuild, id: Long, name: String)
+    extends TextChannel,
+      MessageChannelUnion:
   private var cachedMessages = Map.empty[Long, Message]
   private var lastMessage: Long = 0L
 
@@ -47,11 +71,8 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def clearReactionsById(messageId: String): RestAction[Void] = ???
 
-  override def removeReactionById(
-    messageId: String,
-    unicode: String,
-    user: User
-  ): RestAction[Void] = ???
+  override def removeReactionById(messageId: String, emoji: Emoji, user: User): RestAction[Void] =
+    ???
 
   override def retrieveMessageById(messageId: String): RestAction[Message] = FakeMessageAction(
     cachedMessages(ID.fromString(messageId).value)
@@ -63,7 +84,7 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def getGuild: Guild = guild
 
-  override def getParent: Category = ???
+  override def getParentCategory: Category = ???
 
   override def getMembers: util.List[Member] = ???
 
@@ -75,12 +96,12 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def getMemberPermissionOverrides: util.List[PermissionOverride] = ???
 
-  override def sendMessage(msg: Message): MessageAction =
+  override def sendMessage(msg: MessageCreateData): MessageCreateAction =
     FakeMessageAction(
       addMessage(
-        content = msg.getContentRaw,
-        author = Try(msg.getAuthor).toOption.orNull,
-        embeds = msg.getEmbeds
+        content = msg.getContent.nn,
+        author = getJDA.getSelfUser,
+        embeds = msg.getEmbeds.nn
       )
     )
 
@@ -90,15 +111,13 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def createCopy(guild: Guild): ChannelAction[TextChannel] = ???
 
-  override def getManager: ChannelManager = ???
+  override def getManager: TextChannelManager = ???
 
   override def delete(): AuditableRestAction[Void] = ???
 
   override def createInvite(): InviteAction = ???
 
   override def getLatestMessageIdLong: Long = lastMessage
-
-  override def hasLatestMessage: Boolean = ???
 
   override def getName: String = name
 
@@ -116,25 +135,56 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String) extends TextChan
 
   override def getPermissionOverride(permissionHolder: IPermissionHolder): PermissionOverride = ???
 
-  override def createPermissionOverride(
-    permissionHolder: IPermissionHolder
-  ): PermissionOverrideAction = ???
-
-  override def putPermissionOverride(
-    permissionHolder: IPermissionHolder
-  ): PermissionOverrideAction = ???
-
   override def retrieveInvites(): RestAction[util.List[Invite]] = ???
 
   override def compareTo(o: GuildChannel): Int = ???
 
-  override def clearReactionsById(messageId: String, unicode: String): RestAction[Void] = ???
-
-  override def clearReactionsById(messageId: String, emote: Emote): RestAction[Void] = ???
-
-  override def isNews: Boolean = ???
+  override def clearReactionsById(messageId: String, emote: Emoji): RestAction[Void] = ???
 
   override def isSynced: Boolean = ???
 
-  override def follow(targetChannelId: String): RestAction[Webhook.WebhookReference] = ???
+  override def retrieveArchivedPrivateThreadChannels(): ThreadChannelPaginationAction | Null = ???
+
+  override def getDefaultThreadSlowmode(): Int = ???
+
+  override def retrieveArchivedPublicThreadChannels(): ThreadChannelPaginationAction | Null = ???
+
+  override def sendStickers(
+    stickers: ju.Collection[? <: StickerSnowflake] | Null
+  ): MessageCreateAction | Null = ???
+
+  override def retrieveArchivedPrivateJoinedThreadChannels(): ThreadChannelPaginationAction | Null =
+    ???
+
+  override def getParentCategoryIdLong(): Long = ???
+
+  override def createThreadChannel(name: String | Null, messageId: Long): ThreadChannelAction |
+    Null = ???
+
+  override def createThreadChannel(name: String | Null, isPrivate: Boolean): ThreadChannelAction |
+    Null = ???
+
+  override def upsertPermissionOverride(
+    permissionHolder: IPermissionHolder | Null
+  ): PermissionOverrideAction | Null = ???
+
+  override def getPermissionContainer(): IPermissionContainer | Null = ???
+
+  override def asAudioChannel(): AudioChannel | Null = ???
+
+  override def asGuildMessageChannel(): this.type = this
+
+  override def asPrivateChannel(): PrivateChannel | Null = ???
+
+  override def asVoiceChannel(): VoiceChannel | Null = ???
+
+  override def asThreadChannel(): ThreadChannel | Null = ???
+
+  override def asStageChannel(): StageChannel | Null = ???
+
+  override def asTextChannel(): this.type = this
+
+  override def asThreadContainer(): IThreadContainer | Null = ???
+
+  override def asNewsChannel(): NewsChannel | Null = ???
 end FakeTextChannel

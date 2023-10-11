@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.templates.Template
 import net.dv8tion.jda.api.interactions.commands.Command
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
-import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege
 import net.dv8tion.jda.api.managers.{AudioManager, GuildManager}
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.{
@@ -24,6 +23,38 @@ import net.dv8tion.jda.api.utils.cache.{
 }
 import net.dv8tion.jda.api.utils.concurrent.Task
 import net.dv8tion.jda.api.{JDA, Region}
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
+import net.dv8tion.jda.api.entities.channel.concrete.Category
+import net.dv8tion.jda.api.interactions.commands.PrivilegeConfig
+import net.dv8tion.jda.api.entities.channel.concrete.StageChannel
+import net.dv8tion.jda.api.entities.emoji.Emoji
+import net.dv8tion.jda.api.entities.emoji.RichCustomEmoji
+import net.dv8tion.jda.api.interactions.DiscordLocale
+import java.util.concurrent.TimeUnit
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel
+import net.dv8tion.jda.api.requests.restaction.CacheRestAction
+import net.dv8tion.jda.api.requests.restaction.pagination.BanPaginationAction
+import net.dv8tion.jda.api.entities.channel.unions.DefaultGuildChannelUnion
+import net.dv8tion.jda.api.interactions.commands.privileges.IntegrationPrivilege
+import net.dv8tion.jda.api.managers.GuildStickerManager
+import net.dv8tion.jda.api.entities.automod.AutoModRule
+import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel
+import net.dv8tion.jda.api.requests.restaction.ScheduledEventAction
+import net.dv8tion.jda.api.entities.sticker.GuildSticker
+import java.util as ju
+import net.dv8tion.jda.api.entities.Guild.Ban
+import net.dv8tion.jda.api.entities.channel.concrete.MediaChannel
+import net.dv8tion.jda.api.entities.sticker.StickerSnowflake
+import java.time.temporal.TemporalAccessor
+import net.dv8tion.jda.api.managers.AutoModRuleManager
+import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel
+import java.time.OffsetDateTime
+import net.dv8tion.jda.api.utils.FileUpload
+import net.dv8tion.jda.api.managers.GuildWelcomeScreenManager
+import net.dv8tion.jda.api.entities.automod.build.AutoModRuleData
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 
 class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
   var channels = Map.empty[Long, GuildChannel]
@@ -55,13 +86,11 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def getAfkTimeout: Guild.Timeout = ???
 
-  override def getRegionRaw: String = ???
-
-  override def isMember(user: User): Boolean = ???
+  override def isMember(user: UserSnowflake): Boolean = ???
 
   override def getSelfMember: Member = ???
 
-  override def getMember(user: User): Member | Null = members.get(user.getIdLong).orNull
+  override def getMember(user: UserSnowflake): Member | Null = members.get(user.getIdLong).orNull
 
   override def getMemberCache: MemberCacheView = ???
 
@@ -72,18 +101,16 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
       channels.collect { case (id, c: TextChannel) =>
         id -> c
       },
-      _.getName
+      _.getName.nn
     )
 
   override def getVoiceChannelCache: SortedSnowflakeCacheView[VoiceChannel] = ???
 
   override def getRoleCache: SortedSnowflakeCacheView[Role] = ???
 
-  override def getEmoteCache: SnowflakeCacheView[Emote] = ???
-
   override def getPublicRole: Role = ???
 
-  override def getDefaultChannel: TextChannel = ???
+  override def getDefaultChannel: DefaultGuildChannelUnion = ???
 
   override def getManager: GuildManager = ???
 
@@ -107,17 +134,9 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def getExplicitContentLevel: Guild.ExplicitContentLevel = ???
 
-  override def checkVerification(): Boolean = ???
-
-  override def isAvailable: Boolean = ???
-
   override def getIdLong: Long = id
 
   override def retrieveRegions(includeDeprecated: Boolean): RestAction[util.EnumSet[Region]] = ???
-
-  override def addMember(accessToken: String, userId: String): MemberAction = ???
-
-  override def retrieveVanityUrl(): RestAction[String] = ???
 
   override def getVanityCode: String = ???
 
@@ -137,17 +156,9 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def getOwnerIdLong: Long = ???
 
-  override def getStoreChannelCache: SortedSnowflakeCacheView[StoreChannel] = ???
-
   override def getChannels(includeHidden: Boolean): util.List[GuildChannel] = ???
 
-  override def retrieveEmotes(): RestAction[util.List[ListedEmote]] = ???
-
-  override def retrieveEmoteById(id: String): RestAction[ListedEmote] = ???
-
-  override def retrieveBanList(): RestAction[util.List[Guild.Ban]] = ???
-
-  override def retrieveBanById(userId: String): RestAction[Guild.Ban] = ???
+  override def retrieveBanList(): BanPaginationAction = ???
 
   override def retrievePrunableMemberCount(days: Int): RestAction[Integer] = ???
 
@@ -157,25 +168,24 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def retrieveWebhooks(): RestAction[util.List[Webhook]] = ???
 
-  override def moveVoiceMember(member: Member, voiceChannel: VoiceChannel): RestAction[Void] = ???
+  override def moveVoiceMember(member: Member, voiceChannel: AudioChannel): RestAction[Void] = ???
 
   override def modifyNickname(member: Member, nickname: String): AuditableRestAction[Void] = ???
 
-  override def kick(member: Member, reason: String): AuditableRestAction[Void] = ???
+  override def kick(member: UserSnowflake, reason: String): AuditableRestAction[Void] = ???
 
-  override def ban(user: User, delDays: Int, reason: String): AuditableRestAction[Void] = ???
+  override def ban(user: UserSnowflake, time: Int, unit: TimeUnit): AuditableRestAction[Void] = ???
 
-  override def ban(userId: String, delDays: Int, reason: String): AuditableRestAction[Void] = ???
+  override def unban(userId: UserSnowflake): AuditableRestAction[Void] = ???
 
-  override def unban(userId: String): AuditableRestAction[Void] = ???
+  override def deafen(member: UserSnowflake, deafen: Boolean): AuditableRestAction[Void] = ???
 
-  override def deafen(member: Member, deafen: Boolean): AuditableRestAction[Void] = ???
+  override def mute(member: UserSnowflake, mute: Boolean): AuditableRestAction[Void] = ???
 
-  override def mute(member: Member, mute: Boolean): AuditableRestAction[Void] = ???
+  override def addRoleToMember(member: UserSnowflake, role: Role): AuditableRestAction[Void] = ???
 
-  override def addRoleToMember(member: Member, role: Role): AuditableRestAction[Void] = ???
-
-  override def removeRoleFromMember(member: Member, role: Role): AuditableRestAction[Void] = ???
+  override def removeRoleFromMember(member: UserSnowflake, role: Role): AuditableRestAction[Void] =
+    ???
 
   override def modifyMemberRoles(
     member: Member,
@@ -194,8 +204,6 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def createRole(): RoleAction = ???
 
-  override def createEmote(name: String, icon: Icon, roles: Role*): AuditableRestAction[Emote] = ???
-
   override def modifyCategoryPositions(): ChannelOrderAction = ???
 
   override def modifyTextChannelPositions(): ChannelOrderAction = ???
@@ -212,17 +220,13 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def getMemberCount: Int = ???
 
-  override def retrieveMembers(): CompletableFuture[Void] = ???
-
-  override def kick(userId: String, reason: String): AuditableRestAction[Void] = ???
-
   override def pruneMemberCache(): Unit = ???
 
   override def unloadMember(userId: Long): Boolean = ???
 
   override def retrieveMetaData(): RestAction[Guild.MetaData] = ???
 
-  override def retrieveMemberById(id: Long, update: Boolean): RestAction[Member] = ???
+  override def retrieveMemberById(id: Long): CacheRestAction[Member] = ???
 
   override def retrieveMembersByIds(
     includePresence: Boolean,
@@ -231,7 +235,7 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def retrieveMembersByPrefix(prefix: String, limit: Int): Task[util.List[Member]] = ???
 
-  override def getLocale: Locale = ???
+  override def getLocale: DiscordLocale = ???
 
   override def loadMembers(callback: Consumer[Member]): Task[Void] = ???
 
@@ -263,22 +267,6 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
 
   override def deleteCommandById(commandId: String): RestAction[Void] = ???
 
-  override def retrieveCommandPrivilegesById(
-    commandId: String
-  ): RestAction[util.List[CommandPrivilege]] = ???
-
-  override def retrieveCommandPrivileges()
-    : RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
-
-  override def updateCommandPrivilegesById(
-    id: String,
-    privileges: util.Collection[? <: CommandPrivilege]
-  ): RestAction[util.List[CommandPrivilege]] = ???
-
-  override def updateCommandPrivileges(
-    privileges: util.Map[String, util.Collection[? <: CommandPrivilege]]
-  ): RestAction[util.Map[String, util.List[CommandPrivilege]]] = ???
-
   override def createTemplate(name: String, description: String): RestAction[Template] = ???
 
   override def retrieveTemplates(): RestAction[util.List[Template]] = ???
@@ -291,4 +279,119 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
   override def requestToSpeak(): Task[Void] = ???
 
   override def getNSFWLevel(): Guild.NSFWLevel = ???
+
+  override def removeTimeout(user: UserSnowflake | Null): AuditableRestAction[Void] | Null = ???
+
+  override def getThreadChannelCache(): SortedSnowflakeCacheView[ThreadChannel] | Null = ???
+
+  override def createEmoji(
+    name: String | Null,
+    icon: Icon | Null,
+    roles: (Role | Null)*
+  ): AuditableRestAction[RichCustomEmoji] | Null = ???
+
+  override def modifyAutoModRuleById(id: String | Null): AutoModRuleManager | Null = ???
+
+  override def retrieveStickers(): RestAction[ju.List[GuildSticker]] | Null = ???
+
+  override def addMember(accessToken: String | Null, user: UserSnowflake | Null): MemberAction |
+    Null = ???
+
+  override def createScheduledEvent(
+    name: String | Null,
+    channel: GuildChannel | Null,
+    startTime: OffsetDateTime | Null
+  ): ScheduledEventAction | Null = ???
+
+  override def createScheduledEvent(
+    name: String | Null,
+    location: String | Null,
+    startTime: OffsetDateTime | Null,
+    endTime: OffsetDateTime | Null
+  ): ScheduledEventAction | Null = ???
+
+  override def getScheduledEventCache(): SortedSnowflakeCacheView[ScheduledEvent] | Null = ???
+
+  override def retrieveEmojis(): RestAction[ju.List[RichCustomEmoji]] | Null = ???
+
+  override def timeoutUntil(
+    user: UserSnowflake | Null,
+    temporal: TemporalAccessor | Null
+  ): AuditableRestAction[Void] | Null = ???
+
+  override def retrieveAutoModRules(): RestAction[ju.List[AutoModRule]] | Null = ???
+
+  override def kick(user: UserSnowflake | Null): AuditableRestAction[Void] | Null = ???
+
+  override def deleteAutoModRuleById(id: String | Null): AuditableRestAction[Void] | Null = ???
+
+  override def retrieveActiveThreads(): RestAction[ju.List[ThreadChannel]] | Null = ???
+
+  override def retrieveIntegrationPrivilegesById(
+    targetId: String | Null
+  ): RestAction[ju.List[IntegrationPrivilege]] | Null = ???
+
+  override def getForumChannelCache(): SortedSnowflakeCacheView[ForumChannel] | Null = ???
+
+  override def getMediaChannelCache(): SnowflakeCacheView[MediaChannel] | Null = ???
+
+  override def createForumChannel(
+    name: String | Null,
+    parent: Category | Null
+  ): ChannelAction[ForumChannel] | Null = ???
+
+  override def retrieveCommandPrivileges(): RestAction[PrivilegeConfig] | Null = ???
+
+  override def createMediaChannel(
+    name: String | Null,
+    parent: Category | Null
+  ): ChannelAction[MediaChannel] | Null = ???
+
+  override def retrieveAutoModRuleById(id: String | Null): RestAction[AutoModRule] | Null = ???
+
+  override def retrieveWelcomeScreen(): RestAction[GuildWelcomeScreen] | Null = ???
+
+  override def getNewsChannelCache(): SortedSnowflakeCacheView[NewsChannel] | Null = ???
+
+  override def retrieveBan(user: UserSnowflake | Null): RestAction[Ban] | Null = ???
+
+  override def retrieveScheduledEventById(id: String | Null): CacheRestAction[ScheduledEvent] |
+    Null = ???
+
+  override def createSticker(
+    name: String | Null,
+    description: String | Null,
+    file: FileUpload | Null,
+    tags: ju.Collection[String] | Null
+  ): AuditableRestAction[GuildSticker] | Null = ???
+
+  override def createNewsChannel(
+    name: String | Null,
+    parent: Category | Null
+  ): ChannelAction[NewsChannel] | Null = ???
+
+  override def retrieveCommands(withLocalizations: Boolean): RestAction[ju.List[Command]] | Null =
+    ???
+
+  override def retrieveSticker(sticker: StickerSnowflake | Null): RestAction[GuildSticker] | Null =
+    ???
+
+  override def getEmojiCache(): SnowflakeCacheView[RichCustomEmoji] | Null = ???
+
+  override def retrieveEmojiById(id: String | Null): RestAction[RichCustomEmoji] | Null = ???
+
+  override def editSticker(sticker: StickerSnowflake | Null): GuildStickerManager | Null = ???
+
+  override def getStickerCache(): SnowflakeCacheView[GuildSticker] | Null = ???
+
+  override def modifyWelcomeScreen(): GuildWelcomeScreenManager | Null = ???
+
+  override def createAutoModRule(data: AutoModRuleData | Null): AuditableRestAction[AutoModRule] |
+    Null = ???
+
+  override def isBoostProgressBarEnabled(): Boolean = ???
+
+  override def deleteSticker(id: StickerSnowflake | Null): AuditableRestAction[Void] | Null = ???
+
+  override def getStageChannelCache(): SortedSnowflakeCacheView[StageChannel] | Null = ???
 end FakeGuild
