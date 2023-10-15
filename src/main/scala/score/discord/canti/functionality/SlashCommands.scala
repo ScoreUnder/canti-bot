@@ -19,6 +19,8 @@ import scala.concurrent.Future
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.build.{Commands as JCommands}
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
+import score.discord.canti.command.api.CommandPermissions
 
 class SlashCommands(commands: GenericCommand*)(using MessageOwnership, ReplyCache)
     extends EventListener:
@@ -31,7 +33,12 @@ class SlashCommands(commands: GenericCommand*)(using MessageOwnership, ReplyCach
 
   def registerCommands(what: CommandListUpdateAction): CommandListUpdateAction =
     what.addCommands(commands.map { cmd =>
-      JCommands.slash(cmd.name.lowernn, cmd.description).nn.addOptions(cmd.argSpec.map(_.asJda)*)
+      JCommands.slash(cmd.name.lowernn, cmd.description).nn
+        .addOptions(cmd.argSpec.map(_.asJda)*).nn
+        .setDefaultPermissions(
+          if cmd.permissions == CommandPermissions.Anyone then DefaultMemberPermissions.ENABLED
+          else DefaultMemberPermissions.DISABLED
+        ).nn
     }*).nn
 
   override def onEvent(event: GenericEvent): Unit = event match
