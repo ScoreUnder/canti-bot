@@ -23,9 +23,9 @@ object Events:
       else Some(msg)
 
   object NonBotMessageEdit:
-    def unapply(
-      ev: MessageUpdateEvent
-    )(using messageCache: MessageCache): Option[(BareMessage, Message)] =
+    def unapply(ev: MessageUpdateEvent)(using
+      messageCache: MessageCache
+    ): Option[(BareMessage, Message)] =
       val editedMsg = ev.getMessage.nn
       if ev.getAuthor.nn.isBot || editedMsg.getType != MessageType.DEFAULT then None
       else

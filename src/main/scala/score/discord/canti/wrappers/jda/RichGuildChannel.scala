@@ -17,12 +17,16 @@ object RichGuildChannel:
 
   extension (_me: GuildChannel)
     def permissionAttachments: PermissionCollection[PermissionHolder] =
-      PermissionCollection(_me.getPermissionContainer.nn.getPermissionOverrides.nn.asScala.map { ov =>
-        PermissionHolder(ov) -> PermissionAttachment(ov)
-      }.toSeq)
+      PermissionCollection(
+        _me.getPermissionContainer.nn.getPermissionOverrides.nn.asScala.map { ov =>
+          PermissionHolder(ov) -> PermissionAttachment(ov)
+        }.toSeq
+      )
 
     def getPermissionAttachment(what: IPermissionHolder): PermissionAttachment =
-      _me.getPermissionContainer.nn.getPermissionOverride(what).?
+      _me.getPermissionContainer.nn
+        .getPermissionOverride(what)
+        .?
         .fold(PermissionAttachment.empty)(PermissionAttachment.apply)
 
     def applyPerms(perms: PermissionCollection[?]): IPermissionContainerManager[?, ?] =

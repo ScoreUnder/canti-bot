@@ -25,7 +25,12 @@ class MessageCache(capacity: Int = 2000) extends EventListener:
   }
 
   protected def toBareMessage(message: Message): BareMessage =
-    BareMessage(message.id, message.getChannel.nn.id, message.getAuthor.nn.id, message.getContentRaw.nn)
+    BareMessage(
+      message.id,
+      message.getChannel.nn.id,
+      message.getAuthor.nn.id,
+      message.getContentRaw.nn
+    )
 
   def findOrRetrieve(channel: MessageChannel, id: ID[Message]): Future[Option[BareMessage]] =
     this find {

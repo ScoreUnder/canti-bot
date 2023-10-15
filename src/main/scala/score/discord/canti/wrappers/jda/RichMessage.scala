@@ -27,9 +27,12 @@ object RichMessage:
       *   the new Message, wrapped in Future
       */
     def !(contents: MessageCreateFromX)(using MessageOwnership, ReplyCache): Future[Message] =
-      me.reply(contents.toMessageCreate).nn
-        .mentionRepliedUser(false).nn
-        .queueFuture().tap(registerReply)
+      me.reply(contents.toMessageCreate)
+        .nn
+        .mentionRepliedUser(false)
+        .nn
+        .queueFuture()
+        .tap(registerReply)
 
     def registerReply(
       future: Future[Message]

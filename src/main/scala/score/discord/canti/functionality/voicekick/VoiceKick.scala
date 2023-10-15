@@ -25,7 +25,7 @@ import score.discord.canti.wrappers.NullWrappers.*
 import score.discord.canti.wrappers.Scheduler
 import score.discord.canti.wrappers.collections.AsyncMapConversions.*
 import score.discord.canti.wrappers.jda.Conversions.{
-  richChannel, richMessage, richMessageChannel, richUser, richGuildChannel
+  richChannel, richGuildChannel, richMessage, richMessageChannel, richUser
 }
 import score.discord.canti.wrappers.jda.{ID, MessageReceiver, RetrievableMessage}
 import score.discord.canti.wrappers.jda.IdConversions.*
@@ -101,7 +101,9 @@ class VoiceKick(
 
   private val pendingKicks = mutable.Map.empty[ID[Message], KickState]
   private val kickMessagesByMember =
-    mutable.Map.empty[ID[Member], Set[(ID[MessageChannel], ID[Message])]].withDefaultValue(Set.empty)
+    mutable.Map
+      .empty[ID[Member], Set[(ID[MessageChannel], ID[Message])]]
+      .withDefaultValue(Set.empty)
 
   object VoiceKickCommand extends GenericCommand:
     override def name: String = "voicekick"
@@ -146,7 +148,9 @@ class VoiceKick(
         mentionedVoiceChan <- mentionedVoiceState.getChannel ?<>
           s"The user ${mentioned.getUser.nn.mentionWithName} is not in voice chat"
         voiceChan <- Try(audioChan.asVoiceChannel.nn).toOption
-          .toRight("This command can only be used with voice channels") // as opposed to stage channels
+          .toRight(
+            "This command can only be used with voice channels"
+          ) // as opposed to stage channels
 
         _ <- Either.cond(
           voiceChan == mentionedVoiceChan,
@@ -201,9 +205,13 @@ class VoiceKick(
                 )
               case _ =>
                 val msgWithButtons = ctx.invoker.reply(
-                  MessageCreateBuilder().setContent(successMsg).nn
-                    .setComponents(ActionRow.of(kickVoteComponents*)).nn
-                    .build.nn
+                  MessageCreateBuilder()
+                    .setContent(successMsg)
+                    .nn
+                    .setComponents(ActionRow.of(kickVoteComponents*))
+                    .nn
+                    .build
+                    .nn
                 )
 
                 val botMsg = await(await(msgWithButtons).retrieve())
@@ -233,7 +241,7 @@ class VoiceKick(
     ): Either[String, GuildMessageChannel] =
       textChannel match
         case Some(c: GuildMessageChannel) => Right(c)
-        case None => Left("Cannot determine current channel")
+        case None                         => Left("Cannot determine current channel")
         case _ =>
           Left(
             "Internal error: Command not run from within a guild, but `message.getMember()` disagrees"
@@ -258,7 +266,9 @@ class VoiceKick(
 
     val targetMention = kickState.target.toStr(_.getUser.nn.mentionWithName)
     // TODO: support stage channels?
-    val chanMention = kickState.channel.asInstanceOf[ID[VoiceChannel]].find
+    val chanMention = kickState.channel
+      .asInstanceOf[ID[VoiceChannel]]
+      .find
       .fold("[error: channel gone?]")(_.mention)
     val usersWhoShouldVote = kickState.votes.keys
       .map(memId => memId.toStr(mem => mem.getUser.nn.mention))
@@ -508,9 +518,8 @@ class VoiceKick(
         oldMessages.view.map(tup => (tup, pendingKicks(tup._2))).toSeq
       }
     }.foreach { case ((textChannelId, messageId), kickState) =>
-      textChannelId.find.foreach {
-        case textChannel: GuildMessageChannel =>
-          afterUpdateKickState(textChannel, messageId, None, kickState)
+      textChannelId.find.foreach { case textChannel: GuildMessageChannel =>
+        afterUpdateKickState(textChannel, messageId, None, kickState)
 
       }
     }

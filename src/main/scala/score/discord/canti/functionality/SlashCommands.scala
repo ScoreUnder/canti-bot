@@ -11,14 +11,16 @@ import score.discord.canti.command.GenericCommand
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper
 import score.discord.canti.wrappers.NullWrappers.*
-import score.discord.canti.wrappers.jda.Conversions.{richChannel, richGuild, richMessageChannel, richUser}
+import score.discord.canti.wrappers.jda.Conversions.{
+  richChannel, richGuild, richMessageChannel, richUser
+}
 import score.discord.canti.wrappers.jda.RichRestAction.queueFuture
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
-import net.dv8tion.jda.api.interactions.commands.build.{Commands as JCommands}
+import net.dv8tion.jda.api.interactions.commands.build.Commands as JCommands
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions
 import score.discord.canti.command.api.CommandPermissions
 
@@ -32,14 +34,20 @@ class SlashCommands(commands: GenericCommand*)(using MessageOwnership, ReplyCach
   private def normaliseCommandName(name: String): String = name.lowernn
 
   def registerCommands(what: CommandListUpdateAction): CommandListUpdateAction =
-    what.addCommands(commands.map { cmd =>
-      JCommands.slash(cmd.name.lowernn, cmd.description).nn
-        .addOptions(cmd.argSpec.map(_.asJda)*).nn
-        .setDefaultPermissions(
-          if cmd.permissions == CommandPermissions.Anyone then DefaultMemberPermissions.ENABLED
-          else DefaultMemberPermissions.DISABLED
-        ).nn
-    }*).nn
+    what
+      .addCommands(commands.map { cmd =>
+        JCommands
+          .slash(cmd.name.lowernn, cmd.description)
+          .nn
+          .addOptions(cmd.argSpec.map(_.asJda)*)
+          .nn
+          .setDefaultPermissions(
+            if cmd.permissions == CommandPermissions.Anyone then DefaultMemberPermissions.ENABLED
+            else DefaultMemberPermissions.DISABLED
+          )
+          .nn
+      }*)
+      .nn
 
   override def onEvent(event: GenericEvent): Unit = event match
     case ev: ReadyEvent =>
@@ -69,3 +77,4 @@ class SlashCommands(commands: GenericCommand*)(using MessageOwnership, ReplyCach
             CommandInvocation("/", ev.getName.nn, args, invoker)
           }.foreach(Commands.runIfAllowed(_, cmd))
     case _ =>
+end SlashCommands

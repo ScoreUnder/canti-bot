@@ -80,7 +80,7 @@ object MessageReceiver:
     def sendMessage(outgoingMessage: OutgoingMessage) = Future.never
 
   def applyOutgoingMessage(req: MessageRequest[?], outgoingMessage: OutgoingMessage): Unit =
-    req.setFiles(outgoingMessage.files.map {
-      case (name, data) => FileUpload.fromData(data, name).nn
+    req.setFiles(outgoingMessage.files.map { case (name, data) =>
+      FileUpload.fromData(data, name).nn
     }*)
     req.mentionRepliedUser(false)

@@ -69,8 +69,10 @@ final case class MessageInvoker(origin: Message)(using MessageOwnership, ReplyCa
       MessageReceiver(origin).sendMessage(message)
     }
 
-final case class SlashCommandInvoker(origin: SlashCommandInteraction)(using MessageOwnership, ReplyCache)
-    extends CommandInvoker:
+final case class SlashCommandInvoker(origin: SlashCommandInteraction)(using
+  MessageOwnership,
+  ReplyCache
+) extends CommandInvoker:
   export origin.{getChannel, getMember}
 
   override protected def getUser(): User = origin.getUser.nn

@@ -53,7 +53,9 @@ object APIHelper:
     */
   def loudFailure(whatFailed: String, receiver: MessageReceiver)(exception: Throwable): Unit =
     failure(whatFailed)(exception)
-    receiver.sendMessage(BotMessages.error(describeFailure(whatFailed, exception)): MessageCreateFromX)
+    receiver.sendMessage(
+      BotMessages.error(describeFailure(whatFailed, exception)): MessageCreateFromX
+    )
 
   /** Tries to run apiCall, then queues the result if successful.
     *

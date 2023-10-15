@@ -2,7 +2,7 @@ package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Message
-import net.dv8tion.jda.api.utils.messages.{MessageCreateData, MessageCreateBuilder}
+import net.dv8tion.jda.api.utils.messages.{MessageCreateBuilder, MessageCreateData}
 
 object MessageConversions:
   trait MessageCreateFromX:

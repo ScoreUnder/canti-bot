@@ -53,9 +53,11 @@ class PermissionDiffCommand extends GenericCommand:
       }
     }
 
-  private def makeDiffMessage(baseChannel: GuildChannel, compareChannel: GuildChannel, diffs: PermissionDiffs)(
-    using JDA
-  ) =
+  private def makeDiffMessage(
+    baseChannel: GuildChannel,
+    compareChannel: GuildChannel,
+    diffs: PermissionDiffs
+  )(using JDA) =
     val embed = BotMessages.plain(
       s"Difference between permissions on ${baseChannel.getAsMention} and ${compareChannel.getAsMention}"
     )
@@ -106,7 +108,8 @@ class PermissionDiffCommand extends GenericCommand:
   private def compareChannels(baseChannel: GuildChannel, compareChannel: GuildChannel) =
     def permMap(ch: GuildChannel) =
       ch.getPermissionContainer.nn.getPermissionOverrides.nn.asScala.view
-        .map(p => PermissionHolder(p) -> p).toMap
+        .map(p => PermissionHolder(p) -> p)
+        .toMap
     val perms1 = permMap(baseChannel)
     val perms2 = permMap(compareChannel)
 

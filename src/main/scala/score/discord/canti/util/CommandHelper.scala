@@ -8,8 +8,7 @@ import score.discord.canti.wrappers.NullWrappers.*
 object CommandHelper:
   private val mentionsRegex = """<(@&?|#)!?(-?\d+)>""".r
 
-  /** Replace all mentions in the provided text with readable plaintext,
-    * for use outside of Discord.
+  /** Replace all mentions in the provided text with readable plaintext, for use outside of Discord.
     *
     * Not for sanitising mentions out of messages to be sent to Discord.
     *
@@ -21,17 +20,21 @@ object CommandHelper:
     *   sanitised text
     */
   def mentionsToPlaintext(guild: Option[Guild], message: String)(using jda: JDA): String =
-    mentionsRegex.replaceSomeIn(message, { m =>
-      val mentionType = m.group(1)
-      for
-        id <- m.group(2).toLongOption
-        plaintext <-
-          mentionType match
-            case "#" => jda.getGuildChannelById(id).?.map(c => s"#${c.getName}")
-            case "@" =>
-              guild.flatMap(_.getMemberById(id).?.map(m => s"@${m.getEffectiveName}"))
-                .orElse(jda.getUserById(id).?.map(u => s"@${u.getName}"))
-            case "@&" => jda.getRoleById(id).?.map(r => s"@${r.getName}")
-            case _ => throw IllegalStateException("Unexpected match in mentions regex")
-      yield plaintext
-    })
+    mentionsRegex.replaceSomeIn(
+      message,
+      { m =>
+        val mentionType = m.group(1)
+        for
+          id <- m.group(2).toLongOption
+          plaintext <-
+            mentionType match
+              case "#" => jda.getGuildChannelById(id).?.map(c => s"#${c.getName}")
+              case "@" =>
+                guild
+                  .flatMap(_.getMemberById(id).?.map(m => s"@${m.getEffectiveName}"))
+                  .orElse(jda.getUserById(id).?.map(u => s"@${u.getName}"))
+              case "@&" => jda.getRoleById(id).?.map(r => s"@${r.getName}")
+              case _    => throw IllegalStateException("Unexpected match in mentions regex")
+        yield plaintext
+      }
+    )

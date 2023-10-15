@@ -114,11 +114,17 @@ class FindCommand(using messageOwnership: MessageOwnership, replyCache: ReplyCac
               .map(buttons => ActionRow.of(buttons.asJava))
               .toSeq
 
-          MessageCreateBuilder().setEmbeds(
-            BotMessages
-              .okay(s"$header\n${results take maxResults map (_._1) mkString "\n"}$footer")
-              .build
-          ).nn.setComponents(buttonRows*).nn.build.nn
+          MessageCreateBuilder()
+            .setEmbeds(
+              BotMessages
+                .okay(s"$header\n${results take maxResults map (_._1) mkString "\n"}$footer")
+                .build
+            )
+            .nn
+            .setComponents(buttonRows*)
+            .nn
+            .build
+            .nn
       }
       .recover { case e: PatternSyntaxException =>
         BotMessages

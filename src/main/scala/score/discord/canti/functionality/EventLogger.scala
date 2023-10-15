@@ -65,9 +65,14 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
     case ev: GuildVoiceUpdateEvent =>
       val member = ev.getMember.nn
       (ev.getChannelLeft, ev.getChannelJoined) match
-        case (null, null) => logger.debug(s"VOICE UPDATE: no change for ${member.unambiguousString}")
-        case (null, chan) => logger.debug(s"VOICE JOIN: ${member.unambiguousString} to ${chan.nn.unambiguousString}")
-        case (chan, null) => logger.debug(s"VOICE LEAVE: ${member.unambiguousString} from ${chan.nn.unambiguousString}")
+        case (null, null) =>
+          logger.debug(s"VOICE UPDATE: no change for ${member.unambiguousString}")
+        case (null, chan) =>
+          logger.debug(s"VOICE JOIN: ${member.unambiguousString} to ${chan.nn.unambiguousString}")
+        case (chan, null) =>
+          logger.debug(
+            s"VOICE LEAVE: ${member.unambiguousString} from ${chan.nn.unambiguousString}"
+          )
         case (from, to) =>
           logger.debug(
             s"VOICE MOVE: ${member.unambiguousString} from " +
@@ -109,12 +114,11 @@ class EventLogger(using messageOwnership: MessageOwnership) extends EventListene
       if logger.isTraceEnabled then
         logger.trace(s"HTTP REQUEST: ${req.getRoute}\nResponse: ${ev.getResponseRaw}")
       else logger.debug(s"HTTP REQUEST: ${req.getRoute}")
-    case _: GenericUserEvent | _: GuildMemberUpdateEvent |
-        _: RoleUpdatePositionEvent | _: GatewayPingEvent | _: GuildVoiceSelfMuteEvent |
-        _: GuildVoiceMuteEvent | _: GuildVoiceGuildMuteEvent | _: GuildVoiceSelfDeafenEvent |
-        _: GuildVoiceGuildDeafenEvent | _: GuildMemberUpdateNicknameEvent |
-        _: GuildMemberRemoveEvent | _: GuildMemberJoinEvent | _: GuildVoiceStreamEvent |
-        _: MessageEmbedEvent =>
+    case _: GenericUserEvent | _: GuildMemberUpdateEvent | _: RoleUpdatePositionEvent |
+        _: GatewayPingEvent | _: GuildVoiceSelfMuteEvent | _: GuildVoiceMuteEvent |
+        _: GuildVoiceGuildMuteEvent | _: GuildVoiceSelfDeafenEvent | _: GuildVoiceGuildDeafenEvent |
+        _: GuildMemberUpdateNicknameEvent | _: GuildMemberRemoveEvent | _: GuildMemberJoinEvent |
+        _: GuildVoiceStreamEvent | _: MessageEmbedEvent =>
     // Ignored (they're pretty boring)
     case ev =>
       if !ev.getClass.getAnnotations.nn.exists(_.isInstanceOf[Deprecated]) then

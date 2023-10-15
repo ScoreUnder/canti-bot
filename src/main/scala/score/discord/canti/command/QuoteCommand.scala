@@ -69,13 +69,13 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
         ActionRow.of(Button.link(msg.getJumpUrl, "Go to message"))
       }
       val replyMsg = quotedMsg
-        .fold(
-          e => BotMessages.error(e).toMessageCreate,
-          m => getMessageAsQuote(ctx.invoker, m)
-        )
-        .pipe(MessageCreateBuilder.from).nn
-        .setComponents(buttons*).nn
-        .build.nn
+        .fold(e => BotMessages.error(e).toMessageCreate, m => getMessageAsQuote(ctx.invoker, m))
+        .pipe(MessageCreateBuilder.from)
+        .nn
+        .setComponents(buttons*)
+        .nn
+        .build
+        .nn
       await(ctx.invoker.reply(replyMsg))
     }
 
@@ -148,9 +148,12 @@ class QuoteCommand(messageCache: MessageCache)(using MessageOwnership, ReplyCach
 
     val quote = BotMessages
       .plain(msg.getContentRaw.nn)
-      .setAuthor(sender.getName, null, sender.getAvatarUrl).nn
-      .setTimestamp(msg.getTimeCreated).nn
-      .setFooter(s"$chanName | Requested by ${invoker.user.mentionAsText}", null).nn
+      .setAuthor(sender.getName, null, sender.getAvatarUrl)
+      .nn
+      .setTimestamp(msg.getTimeCreated)
+      .nn
+      .setFooter(s"$chanName | Requested by ${invoker.user.mentionAsText}", null)
+      .nn
 
     val embeds = msg.getEmbeds.nn.asScala
 

@@ -2,9 +2,9 @@ package score.discord.canti.wrappers.jda
 
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel
-import net.dv8tion.jda.api.entities.channel.middleman.{MessageChannel, GuildChannel}
+import net.dv8tion.jda.api.entities.channel.middleman.{GuildChannel, MessageChannel}
 import net.dv8tion.jda.api.requests.restaction.MessageEditAction
-import net.dv8tion.jda.api.utils.messages.{MessageRequest, MessageEditBuilder}
+import net.dv8tion.jda.api.utils.messages.{MessageEditBuilder, MessageRequest}
 import score.discord.canti.functionality.ownership.MessageOwnership
 import score.discord.canti.util.APIHelper
 import score.discord.canti.wrappers.jda.MessageConversions.MessageCreateFromX

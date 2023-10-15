@@ -81,13 +81,18 @@ object FuriganaCommand:
     Furigana
       .renderPNG(furigana)
       .fold {
-        OutgoingMessage(BotMessages.error("No characters were visible in the output").toMessageCreate)
+        OutgoingMessage(
+          BotMessages.error("No characters were visible in the output").toMessageCreate
+        )
       } { pngData =>
         OutgoingMessage(
           MessageCreateBuilder()
-            .setContent(plain.take(2000)).nn
-            .setAllowedMentions(Collections.emptySet).nn
-            .build.nn,
+            .setContent(plain.take(2000))
+            .nn
+            .setAllowedMentions(Collections.emptySet)
+            .nn
+            .build
+            .nn,
           files = List("furigana.png" -> pngData)
         )
       }

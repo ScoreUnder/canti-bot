@@ -113,7 +113,8 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
           .sendMessage({
             val channelText = channel.fold("")(c => s" for ${c.mention}")
             s"Please enter your spoiler contents$channelText, or reply with 'cancel' to cancel."
-          }).nn
+          })
+          .nn
           .queueFuture()
         spoilerTextMessage <- conversations.awaitMessage(invoker.user, privateChannel)
       yield
@@ -149,10 +150,14 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
           OutgoingMessage(
             MessageCreateBuilder()
               .setEmbeds(
-                BotMessages.okay(
-                  s"""**Click the button** to see ${hintText.trim} (from ${author.mentionWithName})
-                    |If the buttons are gone, you can react with a :mag: emoji.""".stripMargin
-                ).build).nn
+                BotMessages
+                  .okay(
+                    s"""**Click the button** to see ${hintText.trim} (from ${author.mentionWithName})
+                       |If the buttons are gone, you can react with a :mag: emoji.""".stripMargin
+                  )
+                  .build
+              )
+              .nn
               .setComponents(
                 ActionRow.of(
                   Button.of(
@@ -162,8 +167,10 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
                     Emoji.fromUnicode(spoilerEmote)
                   )
                 )
-              ).nn
-              .build.nn
+              )
+              .nn
+              .build
+              .nn
           )
         )
       )
@@ -208,9 +215,7 @@ class Spoilers(spoilerTexts: AsyncMap[ID[Message], String], conversations: Conve
             .tap(_.failed.foreach(APIHelper.failure("displaying spoiler")))
           text <- maybeText
         do
-          logger.debug(
-            s"Sending spoiler id ${msg.id.value} to ${ev.getUser.nn.unambiguousString}"
-          )
+          logger.debug(s"Sending spoiler id ${msg.id.value} to ${ev.getUser.nn.unambiguousString}")
           ev.reply(text).nn.setEphemeral(true).nn.queue()
     case _ =>
 end Spoilers

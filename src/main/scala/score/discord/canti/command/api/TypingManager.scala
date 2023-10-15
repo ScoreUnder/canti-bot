@@ -61,3 +61,4 @@ class TypingManager(channel: MessageChannel):
       typingFuture = Future.unit
       result
     }
+end TypingManager

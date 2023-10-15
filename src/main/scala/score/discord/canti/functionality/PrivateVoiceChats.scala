@@ -110,7 +110,8 @@ class PrivateVoiceChats(
           ctx.invoker.reply(
             BotMessages
               .okay(s"Moved you into the $voiceMention channel.")
-              .setTitle(s"$memberName: Success!", null).nn
+              .setTitle(s"$memberName: Success!", null)
+              .nn
           )
         case Failure(ex) =>
           sendErrorOrRetry(member, ctx, this)(ex)
@@ -370,7 +371,10 @@ class PrivateVoiceChats(
           (defaultCategoryByGuild(guild.id) = cat.id)
             .map(_ => describeCategoryBehaviour(Some(cat)))
         }
-        .fold(e => Future.successful(e.toMessageCreate), _.map(s => BotMessages.okay(s).toMessageCreate))
+        .fold(
+          e => Future.successful(e.toMessageCreate),
+          _.map(s => BotMessages.okay(s).toMessageCreate)
+        )
 
     private def describeCategoryBehaviour(category: Option[Category]): String =
       category
@@ -446,7 +450,9 @@ class PrivateVoiceChats(
   ) =
     reply.sendMessage(
       BotMessages
-        .plain("Please join voice chat. Your command has been remembered until then."): MessageCreateFromX
+        .plain(
+          "Please join voice chat. Your command has been remembered until then."
+        ): MessageCreateFromX
     )
     val promise = Promise[T]()
     eventWaiter.queue(identifier) { case GuildVoiceUpdate(`member`, None, Some(_)) =>
@@ -487,7 +493,8 @@ class PrivateVoiceChats(
         }.failed.foreach { ex =>
           APIHelper.failure("saving private channel")(ex)
           newVoiceChannel
-            .delete().nn
+            .delete()
+            .nn
             .queueFuture()
             .failed
             .foreach(APIHelper.failure("deleting private channel after database error"))
@@ -598,7 +605,8 @@ class PrivateVoiceChats(
 
     val successMessage = BotMessages
       .okay(message)
-      .setTitle("Success", null).nn
+      .setTitle("Success", null)
+      .nn
 
     if maybeMistake then
       name match
@@ -626,9 +634,10 @@ class PrivateVoiceChats(
 
     if !public && limit == 0 then
       // If no limit, deny access to all users by default
-      collection = collection :+ guild.getPublicRole.nn.asPermissionHolder -> PermissionAttachment.deny(
-        Set(Permission.VOICE_CONNECT)
-      )
+      collection =
+        collection :+ guild.getPublicRole.nn.asPermissionHolder -> PermissionAttachment.deny(
+          Set(Permission.VOICE_CONNECT)
+        )
 
     collection :+
       guild.getSelfMember.nn.asPermissionHolder -> PermissionAttachment.allow(
@@ -653,7 +662,9 @@ class PrivateVoiceChats(
     newName take maxNameLen
 
   private def createChannel(name: String, guild: Guild, category: Option[Category]) =
-    Try(category.fold(guild.createVoiceChannel(name).nn)(_.createVoiceChannel(name).nn)).toEither.left
+    Try(
+      category.fold(guild.createVoiceChannel(name).nn)(_.createVoiceChannel(name).nn)
+    ).toEither.left
       .map({
         case e: InsufficientPermissionException if e.getChannelId != 0 =>
           s"I don't have permission to create a voice channel. A server administrator will need to fix this. Missing `${e.getPermission.nn.getName}` on <#${e.getChannelId}>."
@@ -700,7 +711,7 @@ class PrivateVoiceChats(
         val toRemove = mutable.HashSet[(ID[Guild], ID[AudioChannel])]()
 
         for ((guildId, channelId), _) <- allUsersByChannel do
-          channelId.asInstanceOf[ID[VoiceChannel]].find match  // TODO: stage channels?
+          channelId.asInstanceOf[ID[VoiceChannel]].find match // TODO: stage channels?
             case None =>
               toRemove += ((guildId, channelId))
             case Some(channel) if channel.getMembers.nn.isEmpty =>
