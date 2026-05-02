@@ -9,14 +9,16 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.managers.{AudioManager, DirectAudioController, Presence}
 import net.dv8tion.jda.api.requests.{GatewayIntent, RestAction}
 import net.dv8tion.jda.api.requests.restaction.{
-  CommandCreateAction, CommandEditAction, CommandListUpdateAction, GuildAction
+  CommandCreateAction, CommandEditAction, CommandListUpdateAction, GuildAction,
+  TestEntitlementCreateAction
 }
 import net.dv8tion.jda.api.sharding.ShardManager
-import net.dv8tion.jda.api.utils.cache.{CacheFlag, CacheView, SnowflakeCacheView}
+import net.dv8tion.jda.api.utils.cache.{CacheFlag, CacheView, ChannelCacheView, SnowflakeCacheView}
 import net.dv8tion.jda.api.{AccountType, JDA, Permission}
 import okhttp3.OkHttpClient
 
 import scala.jdk.CollectionConverters.*
+import net.dv8tion.jda.api.entities.channel.Channel
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
 import net.dv8tion.jda.api.entities.channel.concrete.Category
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel
@@ -28,6 +30,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel
 import net.dv8tion.jda.api.entities.sticker.StickerPack
 import net.dv8tion.jda.api.requests.restaction.CacheRestAction
+import net.dv8tion.jda.api.requests.restaction.pagination.EntitlementPaginationAction
 import java.util as ju
 import net.dv8tion.jda.api.entities.channel.concrete.MediaChannel
 import net.dv8tion.jda.api.entities.sticker.StickerUnion
@@ -85,6 +88,15 @@ class FakeJda extends JDA:
         .groupBy(_.getIdLong)
         .view
         .mapValues(_.head)
+        .toMap,
+      _.getName.nn
+    )
+
+  override def getChannelCache: ChannelCacheView[Channel] =
+    ScalaChannelCacheView[Channel](
+      guilds.values
+        .flatMap(_.getTextChannels.nn.asScala)
+        .map(channel => channel.getIdLong -> channel.asInstanceOf[Channel])
         .toMap,
       _.getName.nn
     )
@@ -184,6 +196,18 @@ class FakeJda extends JDA:
   override def deleteCommandById(commandId: String): RestAction[Void] = ???
 
   override def setRequiredScopes(scopes: util.Collection[String]): JDA = ???
+
+  override def retrieveEntitlements(): EntitlementPaginationAction = ???
+
+  override def retrieveEntitlementById(id: Long): RestAction[Entitlement] = ???
+
+  override def createTestEntitlement(
+    skuId: Long,
+    ownerId: Long,
+    ownerType: TestEntitlementCreateAction.OwnerType | Null
+  ): TestEntitlementCreateAction = ???
+
+  override def deleteTestEntitlement(id: Long): RestAction[Void] = ???
 
   override def createGuildFromTemplate(code: String, name: String, icon: Icon): RestAction[Void] =
     ???

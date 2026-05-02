@@ -19,7 +19,7 @@ import net.dv8tion.jda.api.requests.restaction.order.{
 }
 import net.dv8tion.jda.api.requests.restaction.pagination.AuditLogPaginationAction
 import net.dv8tion.jda.api.utils.cache.{
-  MemberCacheView, SnowflakeCacheView, SortedSnowflakeCacheView
+  MemberCacheView, SnowflakeCacheView, SortedChannelCacheView, SortedSnowflakeCacheView
 }
 import net.dv8tion.jda.api.utils.concurrent.Task
 import net.dv8tion.jda.api.{JDA, Region}
@@ -50,7 +50,7 @@ import net.dv8tion.jda.api.entities.sticker.StickerSnowflake
 import java.time.temporal.TemporalAccessor
 import net.dv8tion.jda.api.managers.AutoModRuleManager
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel
-import java.time.OffsetDateTime
+import java.time.{Duration, OffsetDateTime}
 import net.dv8tion.jda.api.utils.FileUpload
 import net.dv8tion.jda.api.managers.GuildWelcomeScreenManager
 import net.dv8tion.jda.api.entities.automod.build.AutoModRuleData
@@ -103,6 +103,8 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
       },
       _.getName.nn
     )
+
+  override def getChannelCache: SortedChannelCacheView[GuildChannel] = ???
 
   override def getVoiceChannelCache: SortedSnowflakeCacheView[VoiceChannel] = ???
 
@@ -175,6 +177,11 @@ class FakeGuild(val fakeJda: FakeJda, id: Long) extends Guild:
   override def kick(member: UserSnowflake, reason: String): AuditableRestAction[Void] = ???
 
   override def ban(user: UserSnowflake, time: Int, unit: TimeUnit): AuditableRestAction[Void] = ???
+
+  override def ban(
+    users: util.Collection[? <: UserSnowflake],
+    deletionTimeframe: Duration
+  ): AuditableRestAction[BulkBanResponse] = ???
 
   override def unban(userId: UserSnowflake): AuditableRestAction[Void] = ???
 

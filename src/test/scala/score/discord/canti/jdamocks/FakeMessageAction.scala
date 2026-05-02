@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.interactions.components.LayoutComponent
 import net.dv8tion.jda.api.entities.Message.MentionType
 import net.dv8tion.jda.api.entities.sticker.StickerSnowflake
 import net.dv8tion.jda.api.utils.FileUpload
+import net.dv8tion.jda.api.utils.messages.MessagePollData
 import java.util as ju
 
 class FakeMessageAction(message: Message) extends MessageCreateAction:
@@ -64,6 +65,10 @@ class FakeMessageAction(message: Message) extends MessageCreateAction:
     this // Not tracking files (yet)
 
   override def getComponents(): ju.List[LayoutComponent] | Null = ???
+
+  override def getPoll(): MessagePollData | Null = ???
+
+  override def setPoll(poll: MessagePollData | Null): MessageCreateAction | Null = ???
 
   override def getMentionedRoles(): ju.Set[String] | Null = ???
 

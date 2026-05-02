@@ -53,7 +53,7 @@ class FakeTextChannel(guild: FakeGuild, id: Long, name: String)
       author = author,
       embeds = embeds
     )
-    cachedMessages += message.getIdLong -> message
+    cachedMessages = cachedMessages + (message.getIdLong -> message)
     lastMessage = message.getIdLong
     message
 
